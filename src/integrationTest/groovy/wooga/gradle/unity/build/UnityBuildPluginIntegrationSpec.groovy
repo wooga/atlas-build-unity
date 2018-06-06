@@ -45,11 +45,11 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "exportDeltaCi"      | "unityBuild.platforms('delta', 'epsilon')"
         "exportAndroidAlpha" | "unityBuild.environments = ['alpha']"
         "exportAndroidBeta"  | "unityBuild.environments(['beta'])"
-        "exportAndroidGamma" | "unityBuild.environments('gamma')"
+        "exportAndroidGamma" | "unityBuild.environment('gamma')"
         "exportAndroidDelta" | "unityBuild.environments('delta', 'epsilon')"
         "exportZetaAlpha"    | "unityBuild.environments = ['alpha']\n unityBuild.platforms = ['zeta']"
         "exportEtaBeta"      | "unityBuild.environments(['beta'])\n unityBuild.platforms(['eta'])"
-        "exportThetaGamma"   | "unityBuild.environments('gamma')\n unityBuild.platform('theta')"
+        "exportThetaGamma"   | "unityBuild.environment('gamma')\n unityBuild.platform('theta')"
         "exportIotaDelta"    | "unityBuild.environments('delta', 'epsilon')\n unityBuild.platforms('iota', 'kappa')"
     }
 
