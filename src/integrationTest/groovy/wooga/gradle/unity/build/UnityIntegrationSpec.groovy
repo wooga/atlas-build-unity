@@ -62,5 +62,10 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
          
             unity.unityPath(file("${escapedPath(unityTestLocation.path)}"))
         """.stripIndent()
+
+        //create Assets dir with some files
+        def assets = new File(projectDir, "Assets")
+        assets.mkdirs()
+        createFile("Test.cs", assets)
     }
 }

@@ -30,7 +30,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @InputDirectory
     getInputDirectory() {
-        getProjectPath()
+        new File(getProjectPath(), "Assets")
     }
 
     @OutputDirectory
