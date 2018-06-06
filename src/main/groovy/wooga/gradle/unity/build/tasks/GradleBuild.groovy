@@ -23,7 +23,6 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
-import org.gradle.tooling.model.gradle.BuildInvocations
 
 class GradleBuild extends DefaultTask {
 
@@ -66,7 +65,6 @@ class GradleBuild extends DefaultTask {
                 .connect()
 
         try {
-            connection.model(BuildInvocations.class).get().tasks
             connection.newBuild().forTasks(*getTasks().toArray(new String[0]))
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
