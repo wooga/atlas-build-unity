@@ -17,7 +17,17 @@
 
 package wooga.gradle.unity.build
 
+import org.apache.commons.text.StringEscapeUtils
+
 class IntegrationSpec extends nebula.test.IntegrationSpec{
+
+    def escapedPath(String path) {
+        String osName = System.getProperty("os.name").toLowerCase()
+        if (osName.contains("windows")) {
+            return StringEscapeUtils.escapeJava(path)
+        }
+        path
+    }
 
     def setup() {
         def gradleVersion = System.getenv("GRADLE_VERSION")

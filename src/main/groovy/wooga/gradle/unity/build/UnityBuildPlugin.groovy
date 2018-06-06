@@ -21,10 +21,10 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.tasks.GradleBuild
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.build.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.unity.build.tasks.GradleBuild
 import wooga.gradle.unity.build.tasks.UnityBuildPlayerTask
 
 class UnityBuildPlugin implements Plugin<Project> {

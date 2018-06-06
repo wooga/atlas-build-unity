@@ -17,21 +17,10 @@
 
 package wooga.gradle.unity.build
 
-import org.apache.commons.text.StringEscapeUtils
-
-
 abstract class UnityIntegrationSpec extends IntegrationSpec {
 
     File unityTestLocation
     File unityMainDirectory
-
-    def escapedPath(String path) {
-        String osName = System.getProperty("os.name").toLowerCase()
-        if (osName.contains("windows")) {
-            return StringEscapeUtils.escapeJava(path)
-        }
-        path
-    }
 
     def setup() {
         String osName = System.getProperty("os.name").toLowerCase()
