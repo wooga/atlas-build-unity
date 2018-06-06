@@ -17,65 +17,81 @@
 
 package wooga.gradle.unity.build
 
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.tasks.GradleBuild
-import org.gradle.internal.impldep.aQute.bnd.service.lifecycle.LifeCyclePlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.unity.UnityPlugin
-import wooga.gradle.unity.build.internal.DefaultBuildUnityPluginExtension
-import wooga.gradle.unity.tasks.Unity
+import wooga.gradle.unity.build.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.unity.build.tasks.UnityBuildPlayerTask
 
 class UnityBuildPlugin implements Plugin<Project> {
+
+    static final String EXTENSION_NAME = "unityBuild"
+    static final String EXPORT_ALL_TASK_NAME = "exportAll"
 
     @Override
     void apply(Project project) {
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(UnityPlugin.class)
 
-        def extension = project.extensions.create(BuildUnityPluginExtension, "unityBuild", DefaultBuildUnityPluginExtension)
-        def exportLifecycleTask = project.tasks.create("exportAll")
-        extension.platforms.each { String platform ->
-            def platformLifecycleTask = project.tasks.create("export${platform.capitalize()}")
+        def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
+        def exportLifecycleTask = project.tasks.create(EXPORT_ALL_TASK_NAME)
 
-            extension.environments.each { String environment ->
-                def environmentLifecycleTask = project.tasks.maybeCreate("export${environment.capitalize()}")
+        def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME, LifecycleBasePlugin.CHECK_TASK_NAME, LifecycleBasePlugin.BUILD_TASK_NAME]
 
-                def exportTask = project.tasks.create(name: "export${platform.capitalize()}${environment.capitalize()}", type: Unity) {
-                    outputs.dir temporaryDir
+        project.tasks.withType(UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
+            @Override
+            void execute(UnityBuildPlayerTask task) {
+                def conventionMapping = task.getConventionMapping()
+                conventionMapping.map("exportMethodName", {extension.getExportMethodName()})
+            }
+        })
 
-                    args "-executeMethod", "Wooga.UnityBuild.NewAutomatedBuild.Export"
-                    args "-CustomArgs:platform=${platform};environment=${environment};outputPath=${temporaryDir.path}"
-                }
+        project.afterEvaluate {
+            extension.platforms.each { String platform ->
+                def platformLifecycleTask = project.tasks.create("export${platform.capitalize()}")
 
-                ['assemble', 'publish', 'check', 'build'].each { String taskName ->
-                    def t = project.tasks.maybeCreate("${taskName}${platform.capitalize()}${environment.capitalize()}", GradleBuild)
-                    t.with {
-                        group = environment.capitalize()
-                        dependsOn exportTask
-                        dir = exportTask.outputs.files.singleFile
-                        tasks = [taskName]
+                extension.environments.each { String environment ->
+                    def environmentLifecycleTask = project.tasks.maybeCreate("export${environment.capitalize()}")
+
+                    def exportTask = project.tasks.create("export${platform.capitalize()}${environment.capitalize()}", UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
+                        @Override
+                        void execute(UnityBuildPlayerTask unityBuildPlayerTask) {
+                            unityBuildPlayerTask.buildEnvironment(environment)
+                            unityBuildPlayerTask.buildPlatform(platform)
+                        }
+                    })
+
+                    baseLifecycleTaskNames.each { String taskName ->
+                        def t = project.tasks.maybeCreate("${taskName}${platform.capitalize()}${environment.capitalize()}", GradleBuild)
+                        t.with {
+                            group = environment.capitalize()
+                            dependsOn exportTask
+                            dir = exportTask.outputs.files.singleFile
+                            tasks = [taskName]
+                        }
                     }
+
+                    platformLifecycleTask.dependsOn exportTask
+                    environmentLifecycleTask.dependsOn exportTask
+                    exportLifecycleTask.dependsOn environmentLifecycleTask
                 }
 
-                platformLifecycleTask.dependsOn exportTask
-                environmentLifecycleTask.dependsOn exportTask
-                exportLifecycleTask.dependsOn environmentLifecycleTask
+                exportLifecycleTask.dependsOn platformLifecycleTask
             }
 
-            exportLifecycleTask.dependsOn platformLifecycleTask
-        }
-
-        [LifecycleBasePlugin.ASSEMBLE_TASK_NAME, LifecycleBasePlugin.CHECK_TASK_NAME, LifecycleBasePlugin.BUILD_TASK_NAME].each {
-            project.tasks[it].dependsOn project.tasks[getDefaultTaskNameFor(project, extension, it)]
+            baseLifecycleTaskNames.each {
+                project.tasks[it].dependsOn project.tasks[getDefaultTaskNameFor(extension, it)]
+            }
         }
     }
 
-    private static String getDefaultTaskNameFor(final Project project, final BuildUnityPluginExtension extension, final String taskName) {
-        def platform = System.env['RELEASE_PLATFORM'] ?: project.properties.get('release.platform', extension.platforms.first())
-        def environment = System.env['RELEASE_ENVIRONMENT'] ?: project.properties.get('release.environment', extension.environments.first())
-
-        "${taskName}${platform.capitalize()}${environment.capitalize()}"
+    private static String getDefaultTaskNameFor(final UnityBuildPluginExtension extension, final String taskName) {
+        def platform = extension.defaultPlatform.capitalize()
+        def environment = extension.defaultEnvironment.capitalize()
+        "${taskName}${platform}${environment}"
     }
 }
