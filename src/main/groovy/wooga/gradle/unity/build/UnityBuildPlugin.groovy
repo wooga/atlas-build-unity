@@ -47,6 +47,8 @@ class UnityBuildPlugin implements Plugin<Project> {
             void execute(UnityBuildPlayerTask task) {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("exportMethodName", {extension.getExportMethodName()})
+                conventionMapping.map("buildEnvironment", {extension.getDefaultEnvironment()})
+                conventionMapping.map("buildPlatform", {extension.getDefaultPlatform()})
             }
         })
 
