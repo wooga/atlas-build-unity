@@ -20,6 +20,8 @@ package wooga.gradle.unity.build.tasks
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
+import wooga.gradle.unity.batchMode.BatchModeFlags
+import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
 
 class UnityBuildPlayerTask extends AbstractUnityProjectTask {
@@ -49,6 +51,14 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     void setBuildPlatform(String platform) {
         buildPlatform = platform
+        try {
+            buildTarget = platform as BuildTarget
+        }
+        catch(IllegalArgumentException ignored) {
+            logger.warn("build target ${platform} unknown")
+            buildTarget = BuildTarget.undefined
+        }
+
     }
 
     void buildPlatform(String platform) {
@@ -84,6 +94,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     protected void exec() {
         args "-executeMethod", getExportMethodName()
         args "-CustomArgs:platform=${getBuildPlatform()};environment=${getBuildEnvironment()};outputPath=${getOutputDirectory().getPath()}"
+
+        if (buildTarget == BuildTarget.undefined) {
+            args BatchModeFlags.BUILD_TARGET, getBuildPlatform()
+        }
         super.exec()
     }
 }

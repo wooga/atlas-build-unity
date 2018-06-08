@@ -54,6 +54,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         result.standardOutput.contains("-executeMethod ${expectedExportMethod}")
         result.standardOutput.contains("platform=${expectedPlatform}")
+        result.standardOutput.contains("-buildTarget ${expectedPlatform}")
         result.standardOutput.contains("environment=${expectedEnvironment}")
 
         where:
