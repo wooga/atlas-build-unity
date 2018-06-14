@@ -68,6 +68,7 @@ class GradleBuild extends DefaultTask {
             connection.newBuild().forTasks(*getTasks().toArray(new String[0]))
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
+                    .setStandardError(System.out)
                     .run()
         } finally {
             connection.close()
