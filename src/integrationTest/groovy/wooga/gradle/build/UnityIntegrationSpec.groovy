@@ -15,7 +15,9 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build
+
+import wooga.gradle.build.unity.UnityBuildPlugin
 
 abstract class UnityIntegrationSpec extends IntegrationSpec {
 

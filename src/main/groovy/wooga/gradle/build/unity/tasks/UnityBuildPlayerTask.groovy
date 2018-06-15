@@ -15,10 +15,11 @@
  *
  */
 
-package wooga.gradle.unity.build.tasks
+package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
@@ -43,6 +44,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     private String buildPlatform
     private String buildEnvironment
     private String exportMethodName
+    private String toolsVersion
 
     @Input
     String getBuildPlatform() {
@@ -90,10 +92,32 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         setExportMethodName(method)
     }
 
+    @Optional
+    @Input
+    String getToolsVersion() {
+        toolsVersion
+    }
+
+    void setToolsVersion(String version) {
+        toolsVersion = version
+    }
+
+    void toolsVersion(String version) {
+        setToolsVersion(version)
+    }
+
     @Override
     protected void exec() {
+        String customArgs = "-CustomArgs:platform=${getBuildPlatform()};"
+        customArgs += "environment=${getBuildEnvironment()};"
+        customArgs += "outputPath=${getOutputDirectory().getPath()};"
+
+        if(getToolsVersion()) {
+            customArgs += "toolsVersion=${getToolsVersion()}"
+        }
+
         args "-executeMethod", getExportMethodName()
-        args "-CustomArgs:platform=${getBuildPlatform()};environment=${getBuildEnvironment()};outputPath=${getOutputDirectory().getPath()}"
+        args customArgs
 
         if (buildTarget == BuildTarget.undefined) {
             args BatchModeFlags.BUILD_TARGET, getBuildPlatform()

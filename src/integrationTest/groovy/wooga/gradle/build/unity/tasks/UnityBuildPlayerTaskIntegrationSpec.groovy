@@ -15,16 +15,16 @@
  *
  */
 
-package wooga.gradle.unity.build.tasks
+package wooga.gradle.build.unity.tasks
 
 import spock.lang.Unroll
-import wooga.gradle.unity.build.UnityIntegrationSpec
+import wooga.gradle.build.UnityIntegrationSpec
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
     def setup() {
         buildFile << """
-            task("exportCustom", type: wooga.gradle.unity.build.tasks.UnityBuildPlayerTask)
+            task("exportCustom", type: wooga.gradle.build.unity.tasks.UnityBuildPlayerTask)
         """.stripIndent()
     }
 
@@ -38,11 +38,37 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
         result.standardOutput.contains("platform=android")
         result.standardOutput.contains("environment=ci")
+        !result.standardOutput.contains("toolsVersion=")
     }
 
     @Unroll
-    def "can override #property with #methodName with #value"() {
-        given: "execute on a default project"
+    def "can override optional property #property with #methodName with value: #value"() {
+        given: "a export task with toolsVersion configuration"
+        buildFile << """
+            exportCustom.${methodName}('${value}')
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+
+        result.standardOutput.contains("toolsVersion=${value}")
+        //rest of the values are default
+        result.standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
+        result.standardOutput.contains("platform=android")
+        result.standardOutput.contains("environment=ci")
+
+        where:
+        property       | value   | useSetter
+        "toolsVersion" | "1.2.3" | true
+        "toolsVersion" | "3.2.1" | false
+        methodName = (useSetter) ? "set${property.capitalize()}" : property
+    }
+
+    @Unroll
+    def "can override #property with #methodName with value: #vsalue"() {
+        given: "a export task with custom configuration"
         buildFile << """
             exportCustom.${methodName}('${value}')
         """.stripIndent()

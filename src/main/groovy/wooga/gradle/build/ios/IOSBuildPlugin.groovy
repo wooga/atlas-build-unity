@@ -15,13 +15,15 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build.ios
 
-import nebula.test.PluginProjectSpec
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-class UnityBuildPluginActivationSpec extends PluginProjectSpec {
+class IOSBuildPlugin implements Plugin<Project> {
+
     @Override
-    String getPluginName() {
-        return 'net.wooga.build-unity'
+    void apply(Project project) {
+
     }
 }

@@ -15,11 +15,11 @@
  *
  */
 
-package wooga.gradle.unity.build.tasks
+package wooga.gradle.build.unity.tasks
 
 import spock.lang.Shared
-import wooga.gradle.unity.build.IntegrationSpec
-import wooga.gradle.unity.build.UnityBuildPlugin
+import wooga.gradle.build.IntegrationSpec
+import wooga.gradle.build.unity.UnityBuildPlugin
 
 class GradleBuildIntegrationSpec extends IntegrationSpec {
 
@@ -60,7 +60,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
     def "can execute external gradle build"() {
         given: "build script with exernal execution task"
         buildFile << """
-            task("externalGradle", type:wooga.gradle.unity.build.tasks.GradleBuild) {
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
                 dir "${escapedPath(externalDir.path)}"
                 tasks = ['foo']
             }
@@ -76,7 +76,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
     def "can execute multiple tasks in external gradle build"() {
         given: "build script with exernal execution task"
         buildFile << """
-            task("externalGradle", type:wooga.gradle.unity.build.tasks.GradleBuild) {
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
                 dir "${escapedPath(externalDir.path)}"
                 tasks = ['foo', 'bar']
             }

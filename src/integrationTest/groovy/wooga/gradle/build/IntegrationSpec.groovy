@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build
 
 import org.apache.commons.text.StringEscapeUtils
 

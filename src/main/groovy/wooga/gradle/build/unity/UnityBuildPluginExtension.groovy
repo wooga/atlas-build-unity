@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build.unity
 
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
@@ -42,4 +42,8 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     String getDefaultEnvironment()
     void setDefaultEnvironment(String environment)
     T defaultEnvironment(String environment)
+
+    String getToolsVersion()
+    void setToolsVersion(String version)
+    T toolsVersion(String version)
 }

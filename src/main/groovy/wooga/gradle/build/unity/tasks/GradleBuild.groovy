@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.unity.build.tasks
+package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input

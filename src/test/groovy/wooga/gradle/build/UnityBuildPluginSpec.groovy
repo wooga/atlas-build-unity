@@ -15,13 +15,14 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
 import spock.lang.Unroll
-import wooga.gradle.unity.build.internal.DefaultUnityBuildPluginExtension
-import wooga.gradle.unity.build.tasks.UnityBuildPlayerTask
+import wooga.gradle.build.unity.UnityBuildPlugin
+import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 
 class UnityBuildPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.build-unity'

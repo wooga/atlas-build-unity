@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build.unity
 
 class UnityBuildPluginConsts {
     /**
@@ -106,10 +106,28 @@ class UnityBuildPluginConsts {
     static String EXPORT_METHOD_NAME_OPTION = "unityBuild.exportMethodName"
 
     /**
-     * Gradle property name to set the default value for {@code exportMethodName}.
+     * Environment variable to set the default value for {@code exportMethodName}.
      *
      * @value "UNITY_BUILD_EXPORT_METHOD_NAME"
      * @see UnityBuildPluginExtension#getExportMethodName()
      */
     static String EXPORT_METHOD_NAME_ENV_VAR = "UNITY_BUILD_EXPORT_METHOD_NAME"
+
+    /**
+     * Gradle property name to set the default value for {@code toolsVersion}.
+     *
+     * @value "unityBuild.toolsVersion"
+     * @see UnityBuildPluginExtension#getToolsVersion()
+     */
+    static String BUILD_TOOLS_VERSION_OPTION = "unityBuild.toolsVersion"
+
+    /**
+     * Environment variable to set the default value for {@code toolsVersion}.
+     *
+     * @value "unityBuild.toolsVersion"
+     * @see UnityBuildPluginExtension#getToolsVersion()
+     */
+    static String BUILD_TOOLS_VERSION_ENV_VAR = "UNITY_BUILD_TOOLS_VERSION"
+
+
 }

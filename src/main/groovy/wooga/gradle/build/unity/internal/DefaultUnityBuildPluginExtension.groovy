@@ -15,12 +15,12 @@
  *
  */
 
-package wooga.gradle.unity.build.internal
+package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
 import org.gradle.util.GUtil
-import wooga.gradle.unity.build.UnityBuildPluginConsts
-import wooga.gradle.unity.build.UnityBuildPluginExtension
+import wooga.gradle.build.unity.UnityBuildPluginConsts
+import wooga.gradle.build.unity.UnityBuildPluginExtension
 
 class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
@@ -30,6 +30,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     private String defaultPlatform
     private String defaultEnvironment
+    private String toolsVersion
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -170,5 +171,24 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     UnityBuildPluginExtension defaultEnvironment(String environment) {
         setDefaultEnvironment(environment)
         return this
+    }
+
+    @Override
+    String getToolsVersion() {
+        if(toolsVersion) {
+            return toolsVersion
+        }
+        return System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?: project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
+    }
+
+    @Override
+    void setToolsVersion(String version) {
+        toolsVersion = version
+    }
+
+    @Override
+    UnityBuildPluginExtension toolsVersion(String version) {
+        setToolsVersion(version)
+        this
     }
 }

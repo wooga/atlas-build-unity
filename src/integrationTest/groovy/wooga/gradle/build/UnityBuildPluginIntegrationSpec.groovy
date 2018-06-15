@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.unity.build
+package wooga.gradle.build
 
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
@@ -127,34 +127,48 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "exportWebGLProduction"   | "-CustomArgs:platform=webGL;environment=production"
     }
 
+    String convertPropertyToEnvName(String property) {
+        property.replaceAll(/([A-Z.])/, '_$1').replaceAll(/[.]/, '').toUpperCase()
+    }
+
+
     @Unroll
-    def "can override exportMethodName in #location with #value"() {
+    def "can override property #property in #location with #value"() {
         given: "execute on a default project"
         assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
 
-        def extensionKey = 'unityBuild.exportMethodName'
-        def propertiesKey = 'unityBuild.exportMethodName'
-        def envKey = 'UNITY_BUILD_EXPORT_METHOD_NAME'
+
+        def extensionKey = "unityBuild.$property"
+        def extensionSetter = "unityBuild.set${property.capitalize()}"
+        def propertiesKey = "unityBuild.$property"
+        def envKey = convertPropertyToEnvName(extensionKey)
 
         if (location == "environment") {
             envs.set(envKey, value)
         } else if (location == "properties") {
             createFile("gradle.properties") << "${propertiesKey}=${value}"
-        } else {
+        } else if (location == "extension") {
             buildFile << "${extensionKey}('${value}')"
+        } else {
+            buildFile << "${extensionSetter}('${value}')"
         }
 
         when:
         def result = runTasksSuccessfully("exportAndroidCi")
 
         then:
-        result.standardOutput.contains("-executeMethod ${value}")
+        result.standardOutput.contains("$expectedBuildParameterBase$value")
 
         where:
-        value   | location
-        "test1" | 'environment'
-        "test2" | 'properties'
-        "test3" | 'extension'
+        property           | value   | location          | expectedBuildParameterBase
+        "exportMethodName" | "test1" | 'environment'     | "-executeMethod "
+        "exportMethodName" | "test2" | 'properties'      | "-executeMethod "
+        "exportMethodName" | "test3" | 'extension'       | "-executeMethod "
+        "exportMethodName" | "test3" | 'extensionSetter' | "-executeMethod "
+        "toolsVersion"     | "1.2.3" | 'environment'     | "toolsVersion="
+        "toolsVersion"     | "3.2.1" | 'properties'      | "toolsVersion="
+        "toolsVersion"     | "2.1.3" | 'extension'       | "toolsVersion="
+        "toolsVersion"     | "3.1.2" | 'extensionSetter' | "toolsVersion="
     }
 
     @Unroll
