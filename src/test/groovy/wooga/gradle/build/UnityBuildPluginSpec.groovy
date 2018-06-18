@@ -75,6 +75,14 @@ class UnityBuildPluginSpec extends ProjectSpec {
         "exportIOS"                           | DefaultTask
         "exportAndroid"                       | DefaultTask
         "exportWebGL"                         | DefaultTask
+        "publish"                             | DefaultTask
+        "publishAndroidCi"                    | DefaultTask
+        "assemble"                            | DefaultTask
+        "assembleAndroidCi"                   | DefaultTask
+        "build"                               | DefaultTask
+        "buildAndroidCi"                      | DefaultTask
+        "check"                               | DefaultTask
+        "checkAndroidCi"                      | DefaultTask
     }
 
     @Unroll

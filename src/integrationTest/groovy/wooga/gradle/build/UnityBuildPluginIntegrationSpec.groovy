@@ -226,11 +226,17 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "check"    | "platform"    | "environment" | 'iOS'     | 'IOSCi'
         "check"    | "platform"    | "properties"  | 'iOS'     | 'IOSCi'
         "check"    | "platform"    | "extension"   | 'iOS'     | 'IOSCi'
+        "publish"  | "platform"    | "environment" | 'iOS'     | 'IOSCi'
+        "publish"  | "platform"    | "properties"  | 'iOS'     | 'IOSCi'
+        "publish"  | "platform"    | "extension"   | 'iOS'     | 'IOSCi'
         "assemble" | "environment" | "environment" | 'staging' | 'AndroidStaging'
         "assemble" | "environment" | "properties"  | 'staging' | 'AndroidStaging'
         "assemble" | "environment" | "extension"   | 'staging' | 'AndroidStaging'
         "check"    | "environment" | "environment" | 'staging' | 'AndroidStaging'
         "check"    | "environment" | "properties"  | 'staging' | 'AndroidStaging'
         "check"    | "environment" | "extension"   | 'staging' | 'AndroidStaging'
+        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
+        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
+        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
     }
 }

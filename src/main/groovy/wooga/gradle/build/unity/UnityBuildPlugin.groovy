@@ -21,6 +21,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
@@ -40,7 +41,10 @@ class UnityBuildPlugin implements Plugin<Project> {
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
         def exportLifecycleTask = project.tasks.create(EXPORT_ALL_TASK_NAME)
 
-        def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME, LifecycleBasePlugin.CHECK_TASK_NAME, LifecycleBasePlugin.BUILD_TASK_NAME]
+        def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME,
+                                      LifecycleBasePlugin.CHECK_TASK_NAME,
+                                      LifecycleBasePlugin.BUILD_TASK_NAME,
+                                      PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME]
 
         project.tasks.withType(UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
             @Override
@@ -52,6 +56,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("toolsVersion", {extension.getToolsVersion()})
             }
         })
+
+        project.tasks.maybeCreate(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
 
         project.afterEvaluate {
             extension.platforms.each { String platform ->
