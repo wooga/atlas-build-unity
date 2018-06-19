@@ -38,7 +38,7 @@ class UnityBuildPluginConsts {
     static String DEFAULT_EXPORT_METHOD_NAME = "Wooga.UnityBuild.NewAutomatedBuild.Export"
 
     /**
-     * Gradle property name to set the default value for {@code platforms}.
+     * Gradle property baseName to set the default value for {@code platforms}.
      *
      * @value "unityBuild.platforms"
      * @see UnityBuildPluginExtension#getPlatforms()
@@ -46,7 +46,7 @@ class UnityBuildPluginConsts {
     static String PLATFORMS_OPTION = "unityBuild.platforms"
 
     /**
-    * Environment variable name to set the default value for {@code platforms}.
+    * Environment variable baseName to set the default value for {@code platforms}.
     *
     * @value "UNITY_BUILD_PLATFORMS"
     * @see UnityBuildPluginExtension#getPlatforms()
@@ -54,21 +54,21 @@ class UnityBuildPluginConsts {
     static String PLATFORMS_ENV_VAR = "UNITY_BUILD_PLATFORMS"
 
     /**
-     * Gradle property name to set the default value for {@code buildPlatform}.
+     * Gradle property baseName to set the default value for {@code buildPlatform}.
      *
      * @value "unityBuild.platform"
      */
     static String PLATFORM_OPTION = "unityBuild.platform"
 
     /**
-     * Environment variable name to set the default value for {@code buildPlatform}.
+     * Environment variable baseName to set the default value for {@code buildPlatform}.
      *
      * @value "UNITY_BUILD_PLATFORM"
      */
     static String PLATFORM_ENV_VAR = "UNITY_BUILD_PLATFORM"
 
     /**
-     * Gradle property name to set the default value for {@code environments}.
+     * Gradle property baseName to set the default value for {@code environments}.
      *
      * @value "unityBuild.environments"
      * @see UnityBuildPluginExtension#getEnvironments()
@@ -76,7 +76,7 @@ class UnityBuildPluginConsts {
     static String ENVIRONMENTS_OPTION = "unityBuild.environments"
 
     /**
-     * Environment variable name to set the default value for {@code environments}.
+     * Environment variable baseName to set the default value for {@code environments}.
      *
      * @value "unityBuild.environments"
      * @see UnityBuildPluginExtension#getEnvironments()
@@ -84,21 +84,21 @@ class UnityBuildPluginConsts {
     static String ENVIRONMENTS_ENV_VAR = "UNITY_BUILD_ENVIRONMENTS"
 
     /**
-     * Gradle property name to set the default value for {@code buildEnvironment}.
+     * Gradle property baseName to set the default value for {@code buildEnvironment}.
      *
      * @value "unityBuild.environment"
      */
     static String ENVIRONMENT_OPTION = "unityBuild.environment"
 
     /**
-     * Environment variable name to set the default value for {@code buildEnvironment}.
+     * Environment variable baseName to set the default value for {@code buildEnvironment}.
      *
      * @value "UNITY_BUILD_ENVIRONMENT"
      */
     static String ENVIRONMENT_ENV_VAR = "UNITY_BUILD_ENVIRONMENT"
 
     /**
-     * Gradle property name to set the default value for {@code exportMethodName}.
+     * Gradle property baseName to set the default value for {@code exportMethodName}.
      *
      * @value "unityBuild.exportMethodName"
      * @see UnityBuildPluginExtension#getExportMethodName()
@@ -114,7 +114,7 @@ class UnityBuildPluginConsts {
     static String EXPORT_METHOD_NAME_ENV_VAR = "UNITY_BUILD_EXPORT_METHOD_NAME"
 
     /**
-     * Gradle property name to set the default value for {@code toolsVersion}.
+     * Gradle property baseName to set the default value for {@code toolsVersion}.
      *
      * @value "unityBuild.toolsVersion"
      * @see UnityBuildPluginExtension#getToolsVersion()

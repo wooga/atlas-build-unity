@@ -15,12 +15,11 @@
  *
  */
 
-package wooga.gradle.build
+package wooga.gradle.build.unity
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
 import spock.lang.Unroll
-import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 

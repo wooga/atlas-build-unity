@@ -111,6 +111,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         String customArgs = "-CustomArgs:platform=${getBuildPlatform()};"
         customArgs += "environment=${getBuildEnvironment()};"
         customArgs += "outputPath=${getOutputDirectory().getPath()};"
+        customArgs += "version=${project.version};"
 
         if(getToolsVersion()) {
             customArgs += "toolsVersion=${getToolsVersion()}"

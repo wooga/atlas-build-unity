@@ -15,12 +15,12 @@
  *
  */
 
-package wooga.gradle.build.ios
+package wooga.gradle.build.unity.base
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class IOSBuildPlugin implements Plugin<Project> {
+class BaseBuildPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {

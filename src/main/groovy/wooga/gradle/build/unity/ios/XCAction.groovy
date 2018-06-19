@@ -15,15 +15,16 @@
  *
  */
 
-package wooga.gradle.build.base
+package wooga.gradle.build.unity.ios
 
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-
-class BaseBuildPlugin implements Plugin<Project> {
-
-    @Override
-    void apply(Project project) {
-
-    }
+enum XCAction {
+    build,
+    buildForTesting,
+    analyze,
+    archive,
+    test,
+    testWithoutBuilding,
+    installSrc,
+    install,
+    clean
 }

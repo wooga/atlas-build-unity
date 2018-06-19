@@ -15,7 +15,7 @@
  *
  */
 
-package wooga.gradle.build
+package wooga.gradle.build.unity
 
 import nebula.test.PluginProjectSpec
 

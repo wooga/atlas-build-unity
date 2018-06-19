@@ -33,6 +33,12 @@ pluginBundle {
             displayName = 'Gradle Unity build plugin'
             description = 'This plugin provides tasks for exporting platform projects from Unity3D projects'
         }
+
+        ios {
+            id = 'net.wooga.build-unity-ios'
+            displayName = 'Gradle Unity iOS build plugin'
+            description = 'This plugin provides tasks for building exported iOS projects from Unity3D'
+        }
     }
 }
 
