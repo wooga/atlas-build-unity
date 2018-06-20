@@ -155,18 +155,20 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.provisioningProfile = importProvisioningProfiles
             it.projectPath = xcodeProject
             it.buildKeychain = buildKeychain
+            it.destinationDir = project.file("${project.buildDir}/archives")
         }
 
         def xcodeExport = tasks.create(maybeBaseName(baseName, "xcodeExport"), XCodeExportTask) {
             it.exportOptionsPlist project.file("exportOptions.plist")
             it.archivePath xcodeArchive
+            it.exportPath project.file("${project.buildDir}/exports")
         }
 
         def archiveDSYM = tasks.create(maybeBaseName(baseName, "archiveDSYM"), Zip) {
             it.dependsOn xcodeArchive
             it.archiveName = xcodeArchive.archiveName.replace(xcodeArchive.extension, 'zip')
             it.destinationDir = project.file("${project.buildDir}/outputs")
-            it.from(project.file("$xcodeArchive.outputs.files.singleFile/dSYMs"))
+            it.from({project.file("${xcodeArchive.getArchivePath()}/dSYMs")})
         }
 
         project.artifacts {

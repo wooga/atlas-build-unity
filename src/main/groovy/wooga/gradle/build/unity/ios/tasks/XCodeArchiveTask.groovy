@@ -252,9 +252,6 @@ class XCodeArchiveTask extends ConventionTask {
 
     @Internal("Represented as part of archivePath")
     File getDestinationDir() {
-        if(!destinationDir) {
-            return temporaryDir
-        }
         project.file(destinationDir)
     }
 
@@ -293,9 +290,11 @@ class XCodeArchiveTask extends ConventionTask {
         }
 
         arguments << "-archivePath" << getArchivePath().getPath()
+
         def derivedDataPath = new File(getTemporaryDir(),"derivedData")
         derivedDataPath.mkdirs()
-        arguments << "-derivedDataPath" << derivedDataPath
+
+        arguments << "-derivedDataPath" << derivedDataPath.getPath()
 
         project.exec {
             executable "/usr/bin/xcrun"

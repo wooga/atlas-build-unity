@@ -97,10 +97,6 @@ class XCodeExportTask extends DefaultTask {
 
     @OutputDirectory
     File getExportPath() {
-        if(!exportPath) {
-            return temporaryDir
-        }
-
         project.file(exportPath)
     }
 
@@ -127,7 +123,7 @@ class XCodeExportTask extends DefaultTask {
         }
 
         project.copy {
-            from temporaryDir
+            from getExportPath()
             include "*.ipa"
             into project.file("$project.buildDir/outputs")
             it.rename { filename ->
