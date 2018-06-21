@@ -291,7 +291,7 @@ class XCodeArchiveTask extends ConventionTask {
 
         arguments << "-archivePath" << getArchivePath().getPath()
 
-        def derivedDataPath = new File(getTemporaryDir(),"derivedData")
+        def derivedDataPath = new File(project.buildDir,"derivedData")
         derivedDataPath.mkdirs()
 
         arguments << "-derivedDataPath" << derivedDataPath.getPath()
