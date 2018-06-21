@@ -23,9 +23,9 @@ import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.tasks.bundling.Zip
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
+import wooga.gradle.build.unity.ios.tasks.ArchiveDsymTask
 import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
 import wooga.gradle.build.unity.ios.tasks.KeychainTask
 import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
@@ -66,6 +66,21 @@ class IOSBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("configuration", { extension.getConfiguration() })
             }
         })
+
+        project.tasks.withType(ArchiveDsymTask.class, new Action<ArchiveDsymTask>() {
+            @Override
+            void execute(ArchiveDsymTask task) {
+                def conventionMapping = task.getConventionMapping()
+                conventionMapping.map("version", { project.version })
+                conventionMapping.map("destinationDir", {
+                    project.file("${project.buildDir}/outputs")
+                })
+                conventionMapping.map("baseName", { project.name })
+                conventionMapping.map("classifier", { "dSYM"})
+                conventionMapping.map("extension", { "zip" })
+            }
+        })
+        //it.destinationDir = project.file("${project.buildDir}/outputs")
 
         project.tasks.withType(KeychainTask.class, new Action<KeychainTask>() {
             @Override
@@ -164,10 +179,8 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.exportPath project.file("${project.buildDir}/exports")
         }
 
-        def archiveDSYM = tasks.create(maybeBaseName(baseName, "archiveDSYM"), Zip) {
+        def archiveDSYM = tasks.create(maybeBaseName(baseName, "archiveDSYM"), ArchiveDsymTask) {
             it.dependsOn xcodeArchive
-            it.archiveName = xcodeArchive.archiveName.replace(xcodeArchive.extension, 'zip')
-            it.destinationDir = project.file("${project.buildDir}/outputs")
             it.from({project.file("${xcodeArchive.getArchivePath()}/dSYMs")})
         }
 
