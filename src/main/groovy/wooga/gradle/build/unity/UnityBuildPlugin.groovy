@@ -79,7 +79,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.with {
                             group = environment.capitalize()
                             dependsOn exportTask
-                            dir = exportTask.outputs.files.singleFile
+                            dir = exportTask.getOutputDirectory()
                             tasks = [taskName]
                         }
                     }

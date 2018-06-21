@@ -17,10 +17,14 @@
 
 package wooga.gradle.build.unity.tasks
 
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTreeElement
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFiles
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
@@ -31,13 +35,35 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         super(UnityBuildPlayerTask.class)
     }
 
-    @InputDirectory
-    getInputDirectory() {
-        new File(getProjectPath(), "Assets")
+    @InputFiles
+    FileCollection getInputFiles() {
+        def base = new File(getProjectPath(), "Assets")
+        logger.info(base.path)
+        def tree = project.fileTree(base)
+
+        tree.include(new Spec<FileTreeElement>() {
+            @Override
+            boolean isSatisfiedBy(FileTreeElement element) {
+                if(element.path.toLowerCase().contains("plugins") && element.name.toLowerCase() != "plugins") {
+                    return element.path.toLowerCase().contains("plugins" + File.separator + getBuildPlatform().toLowerCase())
+                }
+                return true
+            }
+        })
+
+        tree
     }
 
-    @OutputDirectory
-    getOutputDirectory() {
+    @OutputFiles
+    FileCollection getOutputFiles() {
+        project.fileTree(getOutputDirectory()) {
+            it.exclude("build", ".gradle")
+        }
+    }
+
+    //TODO: Manne: make this property configurable
+    @Internal("Base path of outputFiles")
+    File getOutputDirectory() {
         getTemporaryDir()
     }
 
@@ -60,7 +86,6 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
             logger.warn("build target ${platform} unknown")
             buildTarget = BuildTarget.undefined
         }
-
     }
 
     void buildPlatform(String platform) {
