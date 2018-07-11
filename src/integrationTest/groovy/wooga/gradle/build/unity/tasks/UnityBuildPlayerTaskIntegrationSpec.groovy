@@ -35,7 +35,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("exportCustom")
 
         then:
-        result.standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
+        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
         result.standardOutput.contains("platform=android")
         result.standardOutput.contains("environment=ci")
         !result.standardOutput.contains("toolsVersion=")
@@ -55,7 +55,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         result.standardOutput.contains("toolsVersion=${value}")
         //rest of the values are default
-        result.standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
+        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
         result.standardOutput.contains("platform=android")
         result.standardOutput.contains("environment=ci")
 
@@ -84,13 +84,13 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("environment=${expectedEnvironment}")
 
         where:
-        property           | value          | useSetter | expectedExportMethod                        | expectedEnvironment | expectedPlatform
-        "exportMethodName" | "method1"      | true      | "method1"                                   | 'ci'                | 'android'
-        "exportMethodName" | "method2"      | false     | "method2"                                   | 'ci'                | 'android'
-        "buildEnvironment" | "environment1" | true      | 'Wooga.UnityBuild.NewAutomatedBuild.Export' | "environment1"      | 'android'
-        "buildEnvironment" | "environment2" | false     | 'Wooga.UnityBuild.NewAutomatedBuild.Export' | "environment2"      | 'android'
-        "buildPlatform"    | "platform1"    | true      | 'Wooga.UnityBuild.NewAutomatedBuild.Export' | 'ci'                | "platform1"
-        "buildPlatform"    | "platform2"    | false     | 'Wooga.UnityBuild.NewAutomatedBuild.Export' | 'ci'                | "platform2"
+        property           | value          | useSetter | expectedExportMethod                    | expectedEnvironment | expectedPlatform
+        "exportMethodName" | "method1"      | true      | "method1"                               | 'ci'                | 'android'
+        "exportMethodName" | "method2"      | false     | "method2"                               | 'ci'                | 'android'
+        "buildEnvironment" | "environment1" | true      | 'Wooga.UnifiedBuildSystem.Build.Export' | "environment1"      | 'android'
+        "buildEnvironment" | "environment2" | false     | 'Wooga.UnifiedBuildSystem.Build.Export' | "environment2"      | 'android'
+        "buildPlatform"    | "platform1"    | true      | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "platform1"
+        "buildPlatform"    | "platform2"    | false     | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "platform2"
         methodName = (useSetter) ? "set${property.capitalize()}" : property
     }
 }

@@ -33,9 +33,9 @@ class UnityBuildPluginConsts {
     /**
      * Default value for {@code exportMethodname}.
      *
-     * @value "Wooga.UnityBuild.NewAutomatedBuild.Export"
+     * @value "Wooga.UnifiedBuildSystem.Build.Export"
      */
-    static String DEFAULT_EXPORT_METHOD_NAME = "Wooga.UnityBuild.NewAutomatedBuild.Export"
+    static String DEFAULT_EXPORT_METHOD_NAME = "Wooga.UnifiedBuildSystem.Build.Export"
 
     /**
      * Gradle property baseName to set the default value for {@code platforms}.

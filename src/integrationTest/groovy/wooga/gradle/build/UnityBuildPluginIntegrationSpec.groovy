@@ -111,7 +111,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
+        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
         result.standardOutput.contains(expectedParameters)
 
         where:
@@ -135,7 +135,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def "can override property #property in #location with #value"() {
         given: "execute on a default project"
-        assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnityBuild.NewAutomatedBuild.Export")
+        assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
 
 
         def extensionKey = "unityBuild.$property"
