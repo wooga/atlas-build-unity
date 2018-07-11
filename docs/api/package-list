@@ -1,2 +1,7 @@
-wooga.gradle.unity.build
-wooga.gradle.unity.build.internal
+wooga.gradle.build.unity
+wooga.gradle.build.unity.base
+wooga.gradle.build.unity.internal
+wooga.gradle.build.unity.ios
+wooga.gradle.build.unity.ios.internal
+wooga.gradle.build.unity.ios.tasks
+wooga.gradle.build.unity.tasks
