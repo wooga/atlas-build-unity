@@ -62,8 +62,12 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
     }
 
     boolean keychainIsAdded(File keychain) {
-        def lookupPlist = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
-        lookupPlist.text.contains(keychain.path)
+        def listOut = File.createTempFile("security", "list")
+        def p = new ProcessBuilder("security", "list-keychains", "-d", "user")
+        p.redirectOutput(listOut)
+        p.start().waitFor()
+
+        listOut.text.contains(keychain.path)
     }
 
     def removeKeychain(File keychain) {
