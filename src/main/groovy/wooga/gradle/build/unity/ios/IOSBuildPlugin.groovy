@@ -160,12 +160,14 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), ImportProvisioningProfile) {
             it.dependsOn addKeychain, unlockKeychain
+            it.finalizedBy removeKeychain, lockKeychain
             it.mobileProvisioningProfile = project.file("${maybeBaseName(baseName, 'ci')}.mobileprovision")
         }
 
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XCodeArchiveTask) {
-            it.dependsOn unlockKeychain
-            it.finalizedBy lockKeychain
+            it.dependsOn addKeychain, unlockKeychain
+            removeKeychain.mustRunAfter it
+            lockKeychain.mustRunAfter it
 
             it.provisioningProfile = importProvisioningProfiles
             it.projectPath = xcodeProject
@@ -190,6 +192,6 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         archiveDSYM.mustRunAfter xcodeExport // not to spend time archiving if export fails
-        project.tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn xcodeExport, archiveDSYM, removeKeychain
+        project.tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn xcodeExport, archiveDSYM
     }
 }
