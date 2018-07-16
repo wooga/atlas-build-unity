@@ -17,10 +17,12 @@
 
 package wooga.gradle.build.unity.ios
 
+import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 
+@Requires({os.macOs})
 class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
     @Shared
