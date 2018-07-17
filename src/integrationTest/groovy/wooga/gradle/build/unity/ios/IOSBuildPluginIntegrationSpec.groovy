@@ -21,6 +21,7 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
+import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
 
 @Requires({ os.macOs })
 class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
@@ -61,43 +62,6 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         certInfo.delete()
     }
 
-    boolean keychainIsAdded(File keychain) {
-        def listOut = File.createTempFile("security", "list")
-        def p = new ProcessBuilder("security", "list-keychains", "-d", "user")
-        p.redirectOutput(listOut)
-        p.start().waitFor()
-
-        listOut.text.contains(keychain.path)
-    }
-
-    def removeKeychain(File keychain) {
-        def listOut = File.createTempFile("security", "list")
-        def p = new ProcessBuilder("security", "list-keychains", "-d", "user")
-        p.redirectOutput(listOut)
-        p.start().waitFor()
-
-        List<String> command = ["security", "list-keychains", "-d", "user", "-s"]
-        def keychains = listOut.readLines().findAll({ !it.contains(keychain.path) })
-        keychains = keychains.collect { it.trim().replaceAll('"', '') }
-        if(keychains.empty) {
-            //if the user has no keychains (headless user) then delete the user security plist
-            //we could also use `security delete keychain ...` but this also deletes the keychain file
-            if(listOut.text.trim().empty) {
-                def keyChainList = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
-                if(keyChainList.exists()) {
-                    keyChainList.delete()
-                }
-            }
-        }
-        else {
-            command.addAll(keychains)
-            p = new ProcessBuilder(command)
-            p.start().waitFor()
-        }
-
-        assert !keychainIsAdded(keychain)
-    }
-
     def setup() {
         buildFile << """
             ${applyPlugin(IOSBuildPlugin)}
@@ -128,10 +92,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         then:
         !result.wasUpToDate("addKeychain")
         buildKeychain.exists()
-        keychainIsAdded(buildKeychain)
+        SecurityUtil.keychainIsAdded(buildKeychain)
 
         cleanup:
-        removeKeychain(buildKeychain)
+        SecurityUtil.removeKeychain(buildKeychain)
     }
 
     def "removes custom build keychain"() {
@@ -139,17 +103,17 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         def result = runTasksSuccessfully("addKeychain")
         assert !result.wasUpToDate("addKeychain")
         assert buildKeychain.exists()
-        assert keychainIsAdded(buildKeychain)
+        assert SecurityUtil.keychainIsAdded(buildKeychain)
 
         when:
         runTasksSuccessfully("removeKeychain")
 
         then:
         buildKeychain.exists()
-        !keychainIsAdded(buildKeychain)
+        !SecurityUtil.keychainIsAdded(buildKeychain)
 
         cleanup:
-        removeKeychain(buildKeychain)
+        SecurityUtil.removeKeychain(buildKeychain)
     }
 
     @Unroll
@@ -170,10 +134,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         result.wasExecuted("addKeychain")
         result.wasExecuted("removeKeychain")
         buildKeychain.exists()
-        !keychainIsAdded(buildKeychain)
+        !SecurityUtil.keychainIsAdded(buildKeychain)
 
         cleanup:
-        removeKeychain(buildKeychain)
+        SecurityUtil.removeKeychain(buildKeychain)
 
         where:
         message    || success
