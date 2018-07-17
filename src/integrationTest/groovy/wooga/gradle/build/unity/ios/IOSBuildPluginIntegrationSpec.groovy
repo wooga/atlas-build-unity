@@ -22,7 +22,7 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 
-@Requires({os.macOs})
+@Requires({ os.macOs })
 class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
     @Shared
@@ -79,9 +79,21 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         List<String> command = ["security", "list-keychains", "-d", "user", "-s"]
         def keychains = listOut.readLines().findAll({ !it.contains(keychain.path) })
         keychains = keychains.collect { it.trim().replaceAll('"', '') }
-        command.addAll(keychains)
-        p = new ProcessBuilder(command)
-        p.start().waitFor()
+        if(keychains.empty) {
+            //if the user has no keychains (headless user) then delete the user security plist
+            //we could also use `security delete keychain ...` but this also deletes the keychain file
+            if(listOut.text.trim().empty) {
+                def keyChainList = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
+                if(keyChainList.exists()) {
+                    keyChainList.delete()
+                }
+            }
+        }
+        else {
+            command.addAll(keychains)
+            p = new ProcessBuilder(command)
+            p.start().waitFor()
+        }
 
         assert !keychainIsAdded(keychain)
     }
