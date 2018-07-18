@@ -24,7 +24,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GUtil
-import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
+import wooga.gradle.build.unity.ios.KeychainLookupList
 
 class ListKeychainTask extends DefaultTask {
 
@@ -35,6 +35,7 @@ class ListKeychainTask extends DefaultTask {
 
     private Action action
     private List<Object> keychains = new ArrayList<Object>()
+    protected KeychainLookupList lookupList = new KeychainLookupList()
 
     @Input
     Action getAction() {
@@ -80,7 +81,7 @@ class ListKeychainTask extends DefaultTask {
         outputs.upToDateWhen(new Spec<ListKeychainTask>() {
             @Override
             boolean isSatisfiedBy(ListKeychainTask element) {
-                return SecurityUtil.allKeychainsAdded(getKeychains().getFiles()) == (getAction() == Action.add)
+                lookupList.containsAll(getKeychains().files) == (getAction() == Action.add)
             }
         })
     }
@@ -90,9 +91,9 @@ class ListKeychainTask extends DefaultTask {
         def keychains = getKeychains().files
 
         if (getAction() == Action.add) {
-            SecurityUtil.addKeychains(keychains)
+            lookupList.addAll(keychains)
         } else {
-            SecurityUtil.removeKeychains(keychains)
+            lookupList.removeAll(keychains)
         }
     }
 }

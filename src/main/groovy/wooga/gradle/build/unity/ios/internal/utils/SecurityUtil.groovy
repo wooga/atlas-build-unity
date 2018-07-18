@@ -34,19 +34,19 @@ import java.nio.file.Path
 
 class SecurityUtil {
 
-    private static File keychainConfigFile = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
+    static File keychainConfigFile = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
 
-    private static String DLDBSearchList = 'DLDBSearchList'
-    private static String DbName = 'DbName'
-    private static String GUID = 'GUID'
-    private static String SubserviceType = 'SubserviceType'
+    static String DLDBSearchList = 'DLDBSearchList'
+    static String DbName = 'DbName'
+    static String GUID = 'GUID'
+    static String SubserviceType = 'SubserviceType'
 
     static boolean keychainIsAdded(File keychain) {
-        findAllKeychains([keychain]).size() != 0
+        allKeychainsAdded([keychain])
     }
 
     static boolean allKeychainsAdded(Iterable<File> keychains) {
-        findAllKeychains(keychains).size() != 0
+        findAllKeychains(keychains).size() == keychains.size()
     }
 
     static void removeKeychain(File keychain) {
@@ -61,10 +61,9 @@ class SecurityUtil {
             List<HashMap> dbSearchList = config[DLDBSearchList] as List<HashMap>
             dbSearchList.removeAll(findAllKeychains(keychains))
 
-            if(dbSearchList.empty) {
+            if (dbSearchList.empty) {
                 keychainConfig.delete()
-            }
-            else {
+            } else {
                 keychainConfigFile.text = prettyXML(Plist.toPlist(config))
             }
         }
@@ -72,13 +71,13 @@ class SecurityUtil {
         assert !allKeychainsAdded(keychains)
     }
 
-    static void addKeychain(File keychain) {
+    static boolean addKeychain(File keychain) {
         addKeychains([keychain])
     }
 
-    static void addKeychains(Iterable<File> keychains) {
-        if(keychains.size() == 0 || allKeychainsAdded(keychains)) {
-            return
+    static boolean addKeychains(Iterable<File> keychains) {
+        if (keychains.size() == 0 || allKeychainsAdded(keychains)) {
+            return false
         }
 
         def keychainConfig = keychainConfigFile
@@ -90,6 +89,7 @@ class SecurityUtil {
             config[DLDBSearchList] = new ArrayList<HashMap>()
         }
 
+        def hasChanges = false
         keychains.each { keychain ->
             if (!keychainIsAdded(keychain)) {
                 def item = new HashMap(3)
@@ -98,11 +98,14 @@ class SecurityUtil {
                 item[SubserviceType] = 6
 
                 (config[DLDBSearchList] as List<HashMap>).add(item)
+                hasChanges = true
             }
         }
 
-        keychainConfigFile.text = prettyXML(Plist.toPlist(config))
-        assert allKeychainsAdded(keychains)
+        if(hasChanges) {
+            keychainConfigFile.text = prettyXML(Plist.toPlist(config))
+        }
+        hasChanges
     }
 
     private static List<Object> findAllKeychains(Iterable<File> keychains) {
@@ -113,7 +116,6 @@ class SecurityUtil {
             List<HashMap> dbSearchList = config[DLDBSearchList] as List<HashMap>
             result = dbSearchList.findAll { db ->
                 File dbName = new File((String) db[DbName])
-
                 dbName = expandPath(dbName)
                 keychains.find { keychain ->
                     keychain = expandPath(keychain)
@@ -121,8 +123,8 @@ class SecurityUtil {
                     Path k = keychain.toPath()
                     Path p = dbName.toPath()
 
-                    p = p.toAbsolutePath()
-                    k = k.toAbsolutePath()
+                    p = p.normalize().toAbsolutePath()
+                    k = k.normalize().toAbsolutePath()
                     p.equals(k)
                 } != null
             }
@@ -137,7 +139,7 @@ class SecurityUtil {
                 .parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))))
 
         XPath xPath = XPathFactory.newInstance().newXPath();
-        org.w3c.dom.NodeList  nodeList = (org.w3c.dom.NodeList ) xPath.evaluate("//text()[normalize-space()='']",
+        org.w3c.dom.NodeList nodeList = (org.w3c.dom.NodeList) xPath.evaluate("//text()[normalize-space()='']",
                 document,
                 XPathConstants.NODESET)
 

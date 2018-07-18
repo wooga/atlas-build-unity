@@ -17,6 +17,8 @@
 
 package wooga.gradle.build.unity.ios
 
+import org.junit.ClassRule
+import org.junit.contrib.java.lang.system.ProvideSystemProperty
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
@@ -34,6 +36,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
     @Shared
     File buildKeychain
+
+    @Shared
+    KeychainLookupList keychainLookupList = new KeychainLookupList()
+
 
     static String certPassword = "test password"
 
@@ -63,6 +69,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
     }
 
     def setup() {
+        SecurityUtil.getKeychainConfigFile().parentFile.mkdirs()
         buildFile << """
             ${applyPlugin(IOSBuildPlugin)}
 
@@ -92,10 +99,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         then:
         !result.wasUpToDate("addKeychain")
         buildKeychain.exists()
-        SecurityUtil.keychainIsAdded(buildKeychain)
+        keychainLookupList.contains(buildKeychain)
 
         cleanup:
-        SecurityUtil.removeKeychain(buildKeychain)
+        keychainLookupList.remove(buildKeychain)
     }
 
     def "removes custom build keychain"() {
@@ -110,10 +117,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         buildKeychain.exists()
-        !SecurityUtil.keychainIsAdded(buildKeychain)
+        !keychainLookupList.contains(buildKeychain)
 
         cleanup:
-        SecurityUtil.removeKeychain(buildKeychain)
+        keychainLookupList.remove(buildKeychain)
     }
 
     @Unroll
@@ -134,10 +141,10 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         result.wasExecuted("addKeychain")
         result.wasExecuted("removeKeychain")
         buildKeychain.exists()
-        !SecurityUtil.keychainIsAdded(buildKeychain)
+        !keychainLookupList.contains(buildKeychain)
 
         cleanup:
-        SecurityUtil.removeKeychain(buildKeychain)
+        keychainLookupList.remove(buildKeychain)
 
         where:
         message    || success
