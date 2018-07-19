@@ -142,15 +142,15 @@ class KeychainTask extends ConventionTask {
         }
 
         List<String> commands = new ArrayList()
-        commands << "create-keychain -p ${getPassword()} ${getTempKeychainPath()}"
-        commands << "unlock-keychain -p ${getPassword()} ${getTempKeychainPath()}"
+        commands << "create-keychain -p '${getPassword()}' ${getTempKeychainPath()}"
+        commands << "unlock-keychain -p '${getPassword()}' ${getTempKeychainPath()}"
         commands << "set-keychain-settings ${getTempKeychainPath()}"
 
         certificates.files.each { File file ->
             def keychain = getTempKeychainPath()
             def password = getCertificatePassword()
             commands << ""
-            commands << "import $file -k $keychain -P $password -f pkcs12 -t cert -T /usr/bin/codesign"
+            commands << "import $file -k $keychain -P '$password' -f pkcs12 -t cert -T /usr/bin/codesign"
             commands << ""
         }
 

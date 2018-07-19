@@ -24,6 +24,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GUtil
+import wooga.gradle.build.unity.ios.KeychainLookupList
 
 class ListKeychainTask extends DefaultTask {
 
@@ -33,8 +34,8 @@ class ListKeychainTask extends DefaultTask {
     }
 
     private Action action
-    private List<String> activeKeychains
     private List<Object> keychains = new ArrayList<Object>()
+    protected KeychainLookupList lookupList = new KeychainLookupList()
 
     @Input
     Action getAction() {
@@ -80,46 +81,19 @@ class ListKeychainTask extends DefaultTask {
         outputs.upToDateWhen(new Spec<ListKeychainTask>() {
             @Override
             boolean isSatisfiedBy(ListKeychainTask element) {
-                def activeKeychains = element.getActiveKeychains()
-                def contains = activeKeychains.containsAll(getKeychains().getFiles().collect { it.path })
-                return contains == (getAction() == Action.add)
+                lookupList.containsAll(getKeychains().files) == (getAction() == Action.add)
             }
         })
     }
 
-    protected List<String> getActiveKeychains() {
-        if (!activeKeychains) {
-            def listOutput = new ByteArrayOutputStream()
-            project.exec {
-                executable "security"
-                args "list-keychains"
-                args "-d", "user"
-                standardOutput = listOutput
-            }
-            activeKeychains = listOutput.toString().readLines().collect { it.replace('"', '').trim() }
-        }
-        activeKeychains
-    }
-
     @TaskAction
     protected list() {
-        def activeKeychains = getActiveKeychains().clone()
-        def keychains = getKeychains().files.collect { it.path }
+        def keychains = getKeychains().files
 
         if (getAction() == Action.add) {
-            activeKeychains.addAll(keychains)
+            lookupList.addAll(keychains)
         } else {
-            activeKeychains.removeAll(keychains)
-        }
-
-        project.exec {
-            executable "security"
-            args "list-keychains"
-            args "-d", "user"
-            args "-s"
-            activeKeychains.unique().each {
-                args it
-            }
+            lookupList.removeAll(keychains)
         }
     }
 }

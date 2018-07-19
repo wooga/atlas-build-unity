@@ -33,7 +33,7 @@ class XCodeExportTask extends DefaultTask {
         new AbstractPublishArtifact(this) {
             @Override
             String getName() {
-                return null
+                return getFile().getName()
             }
 
             @Override
