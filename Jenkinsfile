@@ -55,7 +55,7 @@ pipeline {
                     }
 
                     environment {
-                        COVERALLS_REPO_TOKEN                = credentials('atlas_plugins_coveralls_token')
+                        COVERALLS_REPO_TOKEN                = credentials('atlas_build_unity_coveralls_token')
                         TRAVIS_JOB_NUMBER                   = "${BUILD_NUMBER}.MACOS"
                     }
 
