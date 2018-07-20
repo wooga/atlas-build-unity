@@ -166,8 +166,6 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XCodeArchiveTask) {
             it.dependsOn addKeychain, unlockKeychain
-            removeKeychain.mustRunAfter it
-            lockKeychain.mustRunAfter it
 
             it.provisioningProfile = importProvisioningProfiles
             it.projectPath = xcodeProject
@@ -180,6 +178,9 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.archivePath xcodeArchive
             it.exportPath project.file("${project.buildDir}/exports")
         }
+
+        removeKeychain.mustRunAfter([xcodeArchive, xcodeExport])
+        lockKeychain.mustRunAfter([xcodeArchive, xcodeExport])
 
         def archiveDSYM = tasks.create(maybeBaseName(baseName, "archiveDSYM"), ArchiveDsymTask) {
             it.dependsOn xcodeArchive

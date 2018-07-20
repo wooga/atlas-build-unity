@@ -49,16 +49,21 @@ class SecurityUtil {
         findAllKeychains(keychains).size() == keychains.size()
     }
 
-    static void removeKeychain(File keychain) {
+    static boolean removeKeychain(File keychain) {
         removeKeychains([keychain])
     }
 
-    static void removeKeychains(Iterable<File> keychains) {
+    static boolean removeKeychains(Iterable<File> keychains) {
         def keychainConfig = keychainConfigFile
-
+        def madeChanges = false
         if (keychainConfig.exists()) {
             def config = Plist.load(keychainConfig)
             List<HashMap> dbSearchList = config[DLDBSearchList] as List<HashMap>
+            def keychainsToRemove = findAllKeychains(keychains)
+            if(keychainsToRemove.size() > 0) {
+                madeChanges = true
+            }
+
             dbSearchList.removeAll(findAllKeychains(keychains))
 
             if (dbSearchList.empty) {
@@ -66,9 +71,13 @@ class SecurityUtil {
             } else {
                 keychainConfigFile.text = prettyXML(Plist.toPlist(config))
             }
+
+            if(madeChanges && !System.getProperty("keychain.noflush")) {
+                new ProcessBuilder(["security", "list-keychains", "-d", "user", "-s"]).start().waitFor()
+            }
         }
 
-        assert !allKeychainsAdded(keychains)
+        madeChanges
     }
 
     static boolean addKeychain(File keychain) {
@@ -94,7 +103,7 @@ class SecurityUtil {
             if (!keychainIsAdded(keychain)) {
                 def item = new HashMap(3)
                 item[DbName] = keychain.path
-                item[GUID] = "{${UUID.randomUUID().toString()}}".toString()
+                item[GUID] = "{87191ca3-0fc9-11d4-849a-000502b52122}".toString()
                 item[SubserviceType] = 6
 
                 (config[DLDBSearchList] as List<HashMap>).add(item)
@@ -104,6 +113,10 @@ class SecurityUtil {
 
         if(hasChanges) {
             keychainConfigFile.text = prettyXML(Plist.toPlist(config))
+            // flush `security list-keychains -d user -s <list>`
+            if(!System.getProperty("keychain.noflush")) {
+                new ProcessBuilder(["security", "list-keychains", "-d", "user", "-s"]).start().waitFor()
+            }
         }
         hasChanges
     }

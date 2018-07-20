@@ -34,6 +34,7 @@ class KeychainLookupListSpec extends Specification {
     @Shared
     @ClassRule
     public ProvideSystemProperty myPropertyHasMyValue = new ProvideSystemProperty("user.home", newHome.path)
+            .and("keychain.noflush", "yes")
 
     @Shared
     KeychainLookupList subject = new KeychainLookupList()
