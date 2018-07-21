@@ -20,6 +20,7 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -29,7 +30,7 @@ class GradleBuild extends DefaultTask {
     private Object dir
     private final List<String> tasks = new ArrayList<>()
 
-    @InputDirectory
+    @Internal
     File getDir() {
         project.file(dir)
     }
