@@ -20,6 +20,7 @@ package wooga.gradle.build.unity
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -54,6 +55,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("buildEnvironment", {extension.getDefaultEnvironment()})
                 conventionMapping.map("buildPlatform", {extension.getDefaultPlatform()})
                 conventionMapping.map("toolsVersion", {extension.getToolsVersion()})
+                conventionMapping.map("outputDirectoryBase", {extension.getOutputDirectoryBase()})
             }
         })
 
@@ -74,13 +76,22 @@ class UnityBuildPlugin implements Plugin<Project> {
                         }
                     })
 
+                    File buildCacheBase = project.file("${project.buildDir}/buildCache/${platform}/${environment}")
+                    File buildDir = new File(buildCacheBase, "build")
+                    File cacheDir = new File(buildCacheBase, ".gradle")
+
                     baseLifecycleTaskNames.each { String taskName ->
                         def t = project.tasks.maybeCreate("${taskName}${platform.capitalize()}${environment.capitalize()}", GradleBuild)
                         t.with {
                             group = environment.capitalize()
                             dependsOn exportTask
                             dir = exportTask.getOutputDirectory()
+                            buildArguments = ["-PbuildDir=${buildDir.path}".toString(), "--project-cache-dir=${cacheDir.path}".toString()]
                             tasks = [taskName]
+                        }
+
+                        t.doFirst {
+                            buildCacheBase.mkdirs()
                         }
                     }
 

@@ -31,6 +31,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     private String defaultPlatform
     private String defaultEnvironment
     private String toolsVersion
+    private String exportMethodName
+
+    private File outputDirectoryBase
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -38,14 +41,16 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     @Override
     Set<String> getPlatforms() {
-        String platforms = System.getenv(UnityBuildPluginConsts.PLATFORMS_ENV_VAR) ?: project.properties.get(UnityBuildPluginConsts.PLATFORMS_OPTION)
+        String platforms = System.getenv(UnityBuildPluginConsts.PLATFORMS_ENV_VAR) ?:
+                project.properties.get(UnityBuildPluginConsts.PLATFORMS_OPTION)
+
         if (this.platforms.empty && platforms) {
             this.platforms(platforms.split(',').collect { it.trim() })
         } else {
             this.platforms(UnityBuildPluginConsts.DEFAULT_PLATFORMS)
         }
 
-        return this.platforms
+        this.platforms
     }
 
     @Override
@@ -57,7 +62,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension platforms(Iterable platforms) {
         GUtil.addToCollection(this.platforms, platforms)
-        return this
+        this
     }
 
     @Override
@@ -66,7 +71,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             throw new IllegalArgumentException("platforms == null!")
         }
         this.platforms.addAll(Arrays.asList(platforms))
-        return this
+        this
     }
 
     @Override
@@ -77,14 +82,16 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     @Override
     Set<String> getEnvironments() {
-        String environments = System.getenv(UnityBuildPluginConsts.ENVIRONMENTS_ENV_VAR) ?: project.properties.get(UnityBuildPluginConsts.ENVIRONMENTS_OPTION)
+        String environments = System.getenv(UnityBuildPluginConsts.ENVIRONMENTS_ENV_VAR) ?:
+                project.properties.get(UnityBuildPluginConsts.ENVIRONMENTS_OPTION)
+
         if (this.environments.empty && environments) {
             this.environments(environments.split(',').collect { it.trim() })
         } else {
             this.environments(UnityBuildPluginConsts.DEFAULT_ENVIRONMENTS)
         }
 
-        return this.environments
+        this.environments
     }
 
     @Override
@@ -96,7 +103,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension environments(Iterable environments) {
         GUtil.addToCollection(this.environments, environments)
-        return this
+        this
     }
 
     @Override
@@ -105,23 +112,22 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             throw new IllegalArgumentException("environments == null!")
         }
         this.environments.addAll(Arrays.asList(environments))
-        return this
+        this
     }
 
     @Override
     UnityBuildPluginExtension environment(String environment) {
         this.environments.add(environment)
-        return this
+        this
     }
-
-    private String exportMethodName
 
     @Override
     String getExportMethodName() {
         if(exportMethodName) {
             return exportMethodName
         }
-        return System.getenv().get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_ENV_VAR) ?: project.properties.get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_OPTION, UnityBuildPluginConsts.DEFAULT_EXPORT_METHOD_NAME)
+        System.getenv().get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_ENV_VAR) ?:
+                project.properties.get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_OPTION, UnityBuildPluginConsts.DEFAULT_EXPORT_METHOD_NAME)
     }
 
     @Override
@@ -132,7 +138,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension exportMethodName(String method) {
         setExportMethodName(method)
-        return this
+        this
     }
 
     @Override
@@ -140,7 +146,8 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         if(defaultPlatform) {
             return defaultPlatform
         }
-        System.getenv()[UnityBuildPluginConsts.PLATFORM_ENV_VAR] ?: project.properties.get(UnityBuildPluginConsts.PLATFORM_OPTION, getPlatforms().first())
+        System.getenv()[UnityBuildPluginConsts.PLATFORM_ENV_VAR] ?:
+                project.properties.get(UnityBuildPluginConsts.PLATFORM_OPTION, getPlatforms().first())
     }
 
     @Override
@@ -151,7 +158,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension defaultPlatform(String platform) {
         setDefaultPlatform(platform)
-        return this
+        this
     }
 
     @Override
@@ -159,7 +166,8 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         if(defaultEnvironment) {
             return defaultEnvironment
         }
-        System.getenv()[UnityBuildPluginConsts.ENVIRONMENT_ENV_VAR] ?: project.properties.get(UnityBuildPluginConsts.ENVIRONMENT_OPTION, getEnvironments().first())
+        System.getenv()[UnityBuildPluginConsts.ENVIRONMENT_ENV_VAR] ?:
+                project.properties.get(UnityBuildPluginConsts.ENVIRONMENT_OPTION, getEnvironments().first())
     }
 
     @Override
@@ -170,7 +178,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension defaultEnvironment(String environment) {
         setDefaultEnvironment(environment)
-        return this
+        this
     }
 
     @Override
@@ -178,7 +186,8 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         if(toolsVersion) {
             return toolsVersion
         }
-        return System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?: project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
+        System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?:
+                project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
     }
 
     @Override
@@ -189,6 +198,26 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     @Override
     UnityBuildPluginExtension toolsVersion(String version) {
         setToolsVersion(version)
+        this
+    }
+
+    @Override
+    File getOutputDirectoryBase() {
+        if(outputDirectoryBase) {
+           return outputDirectoryBase
+        }
+
+        project.file("${project.buildDir}/${UnityBuildPluginConsts.DEFAULT_EXPORT_DIRECTORY_NAME}")
+    }
+
+    @Override
+    void setOutputDirectoryBase(File outputDirectoryBase) {
+        this.outputDirectoryBase = outputDirectoryBase
+    }
+
+    @Override
+    UnityBuildPluginExtension OutputDirectoryBase(File outputDirectoryBase) {
+        setOutputDirectoryBase(outputDirectoryBase)
         this
     }
 }

@@ -129,5 +129,11 @@ class UnityBuildPluginConsts {
      */
     static String BUILD_TOOLS_VERSION_ENV_VAR = "UNITY_BUILD_TOOLS_VERSION"
 
-
+    /**
+     * Default name for the base export location.
+     *
+     * @value "export"
+     * @see UnityBuildPluginExtension#getOutputDirectoryBase()
+     */
+    static String DEFAULT_EXPORT_DIRECTORY_NAME = "export"
 }

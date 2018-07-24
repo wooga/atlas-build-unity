@@ -167,7 +167,7 @@ class KeychainLookupListSpec extends Specification {
     }
 
     // need to unroll these cases by hand because `invokeMethod` calls them with:
-    // - non null default arguments
+    // - non null default buildArguments
     // or
     // - doesn't know which overload to call
 

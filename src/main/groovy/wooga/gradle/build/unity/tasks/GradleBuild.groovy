@@ -19,7 +19,6 @@ package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
@@ -28,7 +27,8 @@ import org.gradle.tooling.ProjectConnection
 class GradleBuild extends DefaultTask {
 
     private Object dir
-    private final List<String> tasks = new ArrayList<>()
+    private final List<String> tasks = new ArrayList<String>()
+    private final List<String> buildArguments = new ArrayList<String>()
 
     @Internal
     File getDir() {
@@ -58,6 +58,19 @@ class GradleBuild extends DefaultTask {
         setTasks(tasks.toList())
     }
 
+    @Input
+    List<String> getBuildArguments() {
+        this.buildArguments
+    }
+
+    void setBuildArguments(List<String> arguments) {
+        this.buildArguments.clear()
+        this.buildArguments.addAll(arguments)
+    }
+
+    void setBuildArguments(Iterable<String> arguments) {
+        setBuildArguments(arguments.toList())
+    }
 
     @TaskAction
     protected exec() {
@@ -66,7 +79,9 @@ class GradleBuild extends DefaultTask {
                 .connect()
 
         try {
-            connection.newBuild().forTasks(*getTasks().toArray(new String[0]))
+            connection.newBuild()
+                    .forTasks(*getTasks().toArray(new String[0]))
+                    .withArguments(getBuildArguments())
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
                     .setStandardError(System.out)

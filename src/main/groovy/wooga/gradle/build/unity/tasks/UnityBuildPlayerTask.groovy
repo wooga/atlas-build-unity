@@ -24,6 +24,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
@@ -54,23 +55,39 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         tree
     }
 
-    @OutputFiles
-    FileCollection getOutputFiles() {
-        project.fileTree(getOutputDirectory()) {
-            it.exclude("build", ".gradle")
-        }
-    }
+//    @OutputFiles
+//    FileCollection getOutputFiles() {
+//        project.fileTree(getOutputDirectory()) {
+//            it.exclude("build", ".gradle", "**/*.meta")
+//        }
+//    }
 
-    //TODO: Manne: make this property configurable
-    @Internal("Base path of outputFiles")
+    //@Internal("Base path of outputFiles")
+    @OutputDirectory
     File getOutputDirectory() {
-        getTemporaryDir()
+        project.file("${getOutputDirectoryBase()}/${getBuildPlatform()}/${getBuildEnvironment()}/project")
     }
 
     private String buildPlatform
     private String buildEnvironment
     private String exportMethodName
     private String toolsVersion
+    private String outputDirectoryBase
+
+    @Internal("Base path of outputFiles")
+    File getOutputDirectoryBase() {
+        outputDirectoryBase
+    }
+
+    void setOutputDirectoryBase(File outputDirectoryBase) {
+        this.outputDirectoryBase = outputDirectoryBase
+    }
+
+    UnityBuildPlayerTask outputDirectoryBase(File outputDirectoryBase) {
+        setOutputDirectoryBase(outputDirectoryBase)
+        this
+    }
+
 
     @Input
     String getBuildPlatform() {
@@ -133,9 +150,11 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @Override
     protected void exec() {
+        File out = getOutputDirectory()
+        out.mkdirs()
         String customArgs = "-CustomArgs:platform=${getBuildPlatform()};"
         customArgs += "environment=${getBuildEnvironment()};"
-        customArgs += "outputPath=${getOutputDirectory().getPath()};"
+        customArgs += "outputPath=${out.getPath()};"
         customArgs += "version=${project.version};"
 
         if(getToolsVersion()) {

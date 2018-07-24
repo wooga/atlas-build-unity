@@ -46,4 +46,8 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     String getToolsVersion()
     void setToolsVersion(String version)
     T toolsVersion(String version)
+
+    File getOutputDirectoryBase()
+    void setOutputDirectoryBase(File outputDirectoryBase)
+    T OutputDirectoryBase(File outputDirectoryBase)
 }
