@@ -21,6 +21,7 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -76,9 +77,13 @@ class UnityBuildPlugin implements Plugin<Project> {
                         }
                     })
 
-                    File buildCacheBase = project.file("${project.buildDir}/buildCache/${platform}/${environment}")
-                    File buildDir = new File(buildCacheBase, "build")
-                    File cacheDir = new File(buildCacheBase, ".gradle")
+                    FileCollection exportInitScripts = project.fileTree(project.projectDir) { it.include('exportInit.gradle') }
+                    List<String> args = []
+                    args << "-Pexport.buildDirBase=../buildCache" << "--project-cache-dir=../buildCache/.gradle"
+
+                    if(exportInitScripts.size() > 0) {
+                        args << "--init-script=${exportInitScripts.files.first().path}".toString()
+                    }
 
                     baseLifecycleTaskNames.each { String taskName ->
                         def t = project.tasks.maybeCreate("${taskName}${platform.capitalize()}${environment.capitalize()}", GradleBuild)
@@ -86,12 +91,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                             group = environment.capitalize()
                             dependsOn exportTask
                             dir = exportTask.getOutputDirectory()
-                            buildArguments = ["-PbuildDir=${buildDir.path}".toString(), "--project-cache-dir=${cacheDir.path}".toString()]
+                            buildArguments = args
                             tasks = [taskName]
-                        }
-
-                        t.doFirst {
-                            buildCacheBase.mkdirs()
                         }
                     }
 
@@ -107,6 +108,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 project.tasks[it].dependsOn project.tasks[getDefaultTaskNameFor(extension, it)]
             }
         }
+
+
     }
 
     private static String getDefaultTaskNameFor(final UnityBuildPluginExtension extension, final String taskName) {
