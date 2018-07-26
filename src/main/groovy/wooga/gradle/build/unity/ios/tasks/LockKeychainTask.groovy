@@ -77,7 +77,6 @@ class LockKeychainTask extends DefaultTask {
         project.files(keychain)
     }
 
-    @InputFile
     File getKeychain() {
         project.files(keychain).getSingleFile()
     }

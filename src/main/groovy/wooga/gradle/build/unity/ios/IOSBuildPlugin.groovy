@@ -80,7 +80,6 @@ class IOSBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("extension", { "zip" })
             }
         })
-        //it.destinationDir = project.file("${project.buildDir}/outputs")
 
         project.tasks.withType(KeychainTask.class, new Action<KeychainTask>() {
             @Override
@@ -104,6 +103,8 @@ class IOSBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("password", { extension.fastlaneCredentials.password })
                 conventionMapping.map("teamId", { extension.getTeamId() })
                 conventionMapping.map("appIdentifier", { extension.getAppIdentifier() })
+                conventionMapping.map("destinationDir", { task.getTemporaryDir() })
+                conventionMapping.map("profileName", { 'signing.mobileprovision' })
             }
         })
 
@@ -161,7 +162,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), ImportProvisioningProfile) {
             it.dependsOn addKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.mobileProvisioningProfile = project.file("${maybeBaseName(baseName, 'ci')}.mobileprovision")
+            it.profileName = "${maybeBaseName(baseName, 'signing')}.mobileprovision"
         }
 
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XCodeArchiveTask) {
