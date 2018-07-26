@@ -81,6 +81,19 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
+        project.tasks.withType(XCodeExportTask.class, new Action<XCodeExportTask>() {
+            @Override
+            void execute(XCodeExportTask task) {
+                def conventionMapping = task.getConventionMapping()
+                conventionMapping.map("version", { project.version })
+                conventionMapping.map("destinationDir", {
+                    project.file("${project.buildDir}/outputs")
+                })
+                conventionMapping.map("baseName", { project.name })
+                conventionMapping.map("extension", { "ipa" })
+            }
+        })
+
         project.tasks.withType(KeychainTask.class, new Action<KeychainTask>() {
             @Override
             void execute(KeychainTask task) {

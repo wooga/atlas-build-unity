@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.ios.tasks
 
+import org.apache.commons.io.FilenameUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.copy.CopyAction
@@ -103,16 +104,13 @@ class XCodeExportAction implements CopyAction {
             return new DefaultWorkResult(false, null)
         }
 
-//        project.copy {
-//            from getExportPath()
-//            include "*.ipa"
-//            into project.file("$project.buildDir/outputs")
-//            it.rename { filename ->
-//                FilenameUtils.getBaseName(getArchivePath().getPath()) + '.ipa'
-//            }
-//        }
-
-
-        return new DefaultWorkResult(true, null)
+        project.copy {
+            from getExportPath()
+            include "*.ipa"
+            into outputPath.parent
+            it.rename { filename ->
+                FilenameUtils.getBaseName(getOutputPath().getPath()) + '.ipa'
+            }
+        }
     }
 }
