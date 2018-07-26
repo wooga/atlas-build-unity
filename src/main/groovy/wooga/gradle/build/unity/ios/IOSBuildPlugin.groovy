@@ -176,8 +176,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def xcodeExport = tasks.create(maybeBaseName(baseName, "xcodeExport"), XCodeExportTask) {
             it.exportOptionsPlist project.file("exportOptions.plist")
-            it.archivePath xcodeArchive
-            it.exportPath project.file("${project.buildDir}/exports")
+            it.xcarchivePath xcodeArchive
         }
 
         removeKeychain.mustRunAfter([xcodeArchive, xcodeExport])
@@ -189,7 +188,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         project.artifacts {
-            archives(xcodeExport.artifact)
+            archives(xcodeExport)
             archives(archiveDSYM)
         }
 
