@@ -310,10 +310,5 @@ class XCodeArchiveTask extends ConventionTask {
             executable "/usr/bin/xcrun"
             args = arguments
         }
-
-        project.copy {
-            from getArchivePath()
-            into project.file("${project.buildDir}/intermediate/${getArchiveName()}")
-        }
     }
 }

@@ -57,9 +57,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("version", { project.version })
                 conventionMapping.map("clean", { false })
-                conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/outputs/archives")
-                })
+                conventionMapping.map("destinationDir", { task.temporaryDir })
                 conventionMapping.map("baseName", { project.name })
                 conventionMapping.map("extension", { "xcarchive" })
                 conventionMapping.map("scheme", { extension.getScheme() })
