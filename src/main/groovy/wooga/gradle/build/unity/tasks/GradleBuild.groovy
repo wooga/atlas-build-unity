@@ -18,6 +18,7 @@
 package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
@@ -74,6 +75,22 @@ class GradleBuild extends DefaultTask {
 
     @TaskAction
     protected exec() {
+        def args = []
+        args.addAll(getBuildArguments())
+
+        def startParameter = this.project.gradle.startParameter
+        switch (startParameter.logLevel) {
+            case LogLevel.DEBUG:
+                args << '--debug'
+                break
+            case LogLevel.INFO:
+                args << '--info'
+                break
+            case LogLevel.QUIET:
+                args << '--quiet'
+                break
+        }
+
         ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(getDir())
                 .connect()
@@ -81,7 +98,7 @@ class GradleBuild extends DefaultTask {
         try {
             connection.newBuild()
                     .forTasks(*getTasks().toArray(new String[0]))
-                    .withArguments(getBuildArguments())
+                    .withArguments(args)
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
                     .setStandardError(System.out)
