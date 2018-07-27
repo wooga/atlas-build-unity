@@ -257,7 +257,7 @@ class XCodeArchiveTask extends ConventionTask {
 
     @OutputDirectory
     File getArchivePath() {
-        return new File(getDestinationDir(), getArchiveName())
+        new File(getDestinationDir(), getArchiveName())
     }
 
     @Internal("Represented as part of archivePath")

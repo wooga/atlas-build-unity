@@ -23,6 +23,7 @@ import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.ArchiveDsymTask
@@ -57,7 +58,9 @@ class IOSBuildPlugin implements Plugin<Project> {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("version", { project.version })
                 conventionMapping.map("clean", { false })
-                conventionMapping.map("destinationDir", { task.temporaryDir })
+                conventionMapping.map("destinationDir", {
+                    project.file("${project.buildDir}/archives")
+                })
                 conventionMapping.map("baseName", { project.name })
                 conventionMapping.map("extension", { "xcarchive" })
                 conventionMapping.map("scheme", { extension.getScheme() })
@@ -71,7 +74,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("version", { project.version })
                 conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/outputs")
+                    project.file("${project.buildDir}/symbols")
                 })
                 conventionMapping.map("baseName", { project.name })
                 conventionMapping.map("classifier", { "dSYM"})
@@ -85,7 +88,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("version", { project.version })
                 conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/outputs")
+                    project.file("${project.buildDir}/ipas")
                 })
                 conventionMapping.map("baseName", { project.name })
                 conventionMapping.map("extension", { "ipa" })
@@ -198,12 +201,21 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.from({project.file("${xcodeArchive.getArchivePath()}/dSYMs")})
         }
 
+        def collectOutputs = tasks.create(maybeBaseName(baseName, "collectOutputs"), Sync) {
+            it.from(xcodeExport, archiveDSYM)
+            into(project.file("${project.buildDir}/outputs"))
+        }
+
         project.artifacts {
-            archives(xcodeExport)
-            archives(archiveDSYM)
+            archives(xcodeExport) {
+                it.type = "iOS application archive"
+            }
+            archives(archiveDSYM) {
+                it.type = "iOS application symbols"
+            }
         }
 
         archiveDSYM.mustRunAfter xcodeExport // not to spend time archiving if export fails
-        project.tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn xcodeExport, archiveDSYM
+        project.tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn xcodeExport, archiveDSYM, collectOutputs
     }
 }
