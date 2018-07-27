@@ -18,10 +18,12 @@
 package wooga.gradle.build.unity.ios.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.KeychainLookupList
@@ -51,6 +53,7 @@ class ListKeychainTask extends DefaultTask {
         this
     }
 
+    @SkipWhenEmpty
     @InputFiles
     FileCollection getKeychains() {
         project.files(*keychains.toArray())
@@ -78,10 +81,17 @@ class ListKeychainTask extends DefaultTask {
 
     ListKeychainTask() {
         super()
+
         outputs.upToDateWhen(new Spec<ListKeychainTask>() {
             @Override
             boolean isSatisfiedBy(ListKeychainTask element) {
-                lookupList.containsAll(getKeychains().files) == (getAction() == Action.add)
+                if(getAction() == Action.add) {
+                    def filesToCheck = getKeychains().files.findAll {it.exists()}
+                    return lookupList.containsAll(filesToCheck)
+                }
+                else if (getAction() == Action.remove) {
+                    return !getKeychains().any {lookupList.contains(it)}
+                }
             }
         })
     }

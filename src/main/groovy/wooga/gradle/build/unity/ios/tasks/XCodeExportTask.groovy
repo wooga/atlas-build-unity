@@ -18,58 +18,25 @@
 package wooga.gradle.build.unity.ios.tasks
 
 import org.apache.commons.io.FilenameUtils
-import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.PublishArtifact
+import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
-import org.gradle.api.internal.artifacts.publish.AbstractPublishArtifact
+import org.gradle.api.internal.file.copy.CopyAction
+import org.gradle.api.internal.file.copy.CopyActionProcessingStream
 import org.gradle.api.tasks.*
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.workers.internal.DefaultWorkResult
 
-class XCodeExportTask extends DefaultTask {
-    private Object archivePath
-    private Object exportPath
-    private Object exportOptionsPlist
+class XCodeExportTask extends AbstractArchiveTask {
 
-    PublishArtifact getArtifact() {
-        new AbstractPublishArtifact(this) {
-            @Override
-            String getName() {
-                return getFile().getName()
-            }
-
-            @Override
-            String getExtension() {
-                return "ipa"
-            }
-
-            @Override
-            String getType() {
-                return "iOS application archive"
-            }
-
-            @Override
-            String getClassifier() {
-                return null
-            }
-
-            @Override
-            File getFile() {
-                return project.fileTree("${project.buildDir}/outputs"){ it.include "*.ipa"}.singleFile
-            }
-
-            @Override
-            Date getDate() {
-                return null
-            }
-        }
-    }
+    private Object exportOptionsPlist;
+    private Object xcarchivePath;
 
     @SkipWhenEmpty
     @InputFiles
     protected FileCollection getInputFiles() {
-        project.files(this.archivePath, this.exportOptionsPlist)
+        project.files(xcarchivePath, exportOptionsPlist)
     }
 
-    @InputFile
     File getExportOptionsPlist() {
         project.files(exportOptionsPlist).getSingleFile()
     }
@@ -82,34 +49,44 @@ class XCodeExportTask extends DefaultTask {
         setExportOptionsPlist(path)
     }
 
-    @InputDirectory
-    File getArchivePath() {
-        project.files(archivePath).getSingleFile()
+    File getXcarchivePath() {
+        project.files(xcarchivePath).getSingleFile()
     }
 
-    void setArchivePath(Object path) {
-        archivePath = path
+    void setXcarchivePath(Object path) {
+        xcarchivePath = path
     }
 
-    XCodeExportTask archivePath(Object path) {
-        setArchivePath(path)
+    XCodeExportTask xcarchivePath(Object path) {
+        setXcarchivePath(path)
     }
 
-    @OutputDirectory
-    File getExportPath() {
-        project.file(exportPath)
+    @Override
+    protected CopyAction createCopyAction() {
+        def outputPath = new File(this.getDestinationDir(), this.getArchiveName())
+        new XCodeExportAction(getTemporaryDir(), outputPath, getExportOptionsPlist(), getXcarchivePath(), project)
+    }
+}
+
+class XCodeExportAction implements CopyAction {
+
+    File exportPath
+    File exportOptionsPlist
+    File archivePath
+    File outputPath
+    Project project
+
+    XCodeExportAction(File exportPath, File outputPath, File exportOptionsPlist, File archivePath, Project project) {
+        this.exportPath = exportPath
+        this.outputPath = outputPath
+        this.exportOptionsPlist = exportOptionsPlist
+        this.archivePath = archivePath
+        this.project = project
     }
 
-    void setExportPath(Object path) {
-        exportPath = path
-    }
+    @Override
+    WorkResult execute(CopyActionProcessingStream copyActionProcessingStream) {
 
-    XCodeExportTask exportPath(Object path) {
-        setExportPath(path)
-    }
-
-    @TaskAction
-    protected void export() {
         List<String> arguments = new ArrayList<String>()
         arguments << "xcodebuild"
         arguments << "-exportArchive"
@@ -117,17 +94,22 @@ class XCodeExportTask extends DefaultTask {
         arguments << "-exportOptionsPlist" << getExportOptionsPlist().getPath()
         arguments << "-archivePath" << getArchivePath().getPath()
 
-        project.exec {
+        def result = project.exec {
             executable "/usr/bin/xcrun"
             args = arguments
+            ignoreExitValue = true
+        }
+
+        if (result.getExitValue() != 0) {
+            return new DefaultWorkResult(false, null)
         }
 
         project.copy {
             from getExportPath()
             include "*.ipa"
-            into project.file("$project.buildDir/outputs")
+            into outputPath.parent
             it.rename { filename ->
-                FilenameUtils.getBaseName(getArchivePath().getPath()) + '.ipa'
+                FilenameUtils.getBaseName(getOutputPath().getPath()) + '.ipa'
             }
         }
     }

@@ -115,9 +115,13 @@ class KeychainTask extends ConventionTask {
         this
     }
 
-    @OutputFile
+    @OutputFiles
+    protected FileCollection getOutputFiles() {
+        project.fileTree(getDestinationDir()) {it.include(getKeychainName())}
+    }
+
     File getOutputPath() {
-        new File(getDestinationDir(), getKeychainName())
+        getOutputFiles().singleFile
     }
 
     @Internal

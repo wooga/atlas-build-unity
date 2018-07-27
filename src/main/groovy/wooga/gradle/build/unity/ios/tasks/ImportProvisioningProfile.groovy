@@ -19,66 +19,173 @@ package wooga.gradle.build.unity.ios.tasks
 
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.ConventionTask
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.TaskAction
 
+import java.util.concurrent.Callable
+
 class ImportProvisioningProfile extends ConventionTask {
 
-    @Input
-    String appIdentifier
-
-    @Input
-    String teamId
+    private Object appIdentifier
 
     @Optional
     @Input
-    String username
-
-    @Optional
-    @Input
-    String password
-
-    private Object mobileProvisioningProfile
-
-    @OutputFile
-    File getMobileProvisioningProfile() {
-        project.files(mobileProvisioningProfile).singleFile
+    String getAppIdentifier() {
+        convertToString(appIdentifier)
     }
 
-    @OutputFiles
-    FileCollection getOutputFiles() {
-        project.files(mobileProvisioningProfile)
+    void setAppIdentifier(Object value) {
+        appIdentifier = value
     }
 
-    void setMobileProvisioningProfile(Object profile) {
-        mobileProvisioningProfile = profile
-    }
-
-    ImportProvisioningProfile mobileProvisioningProfile(Object profile) {
-        mobileProvisioningProfile = profile
+    ImportProvisioningProfile appIdentifier(Object appIdentifier) {
+        setAppIdentifier(appIdentifier)
         this
     }
 
+
+    private Object teamId
+
+    @Optional
+    @Input
+    String getTeamId() {
+        convertToString(teamId)
+    }
+
+    void setTeamId(Object value) {
+        teamId = value
+    }
+
+    ImportProvisioningProfile teamId(Object teamId) {
+        setTeamId(teamId)
+        this
+    }
+
+    private Object username
+
+    @Optional
+    @Input
+    String getUsername() {
+        convertToString(username)
+    }
+
+    void setUsername(Object value) {
+        username = value
+    }
+
+    ImportProvisioningProfile username(Object username) {
+        setUsername(username)
+        this
+    }
+
+    private Object password
+
+    @Optional
+    @Input
+    String getPassword() {
+        convertToString(password)
+    }
+
+    void setPassword(Object value) {
+        password = value
+    }
+
+    ImportProvisioningProfile password(Object password) {
+        setPassword(password)
+        this
+    }
+
+    private String profileName
+
+    @Input
+    String getProfileName() {
+        profileName
+    }
+
+    void setProfileName(String value) {
+        profileName = value
+    }
+
+    ImportProvisioningProfile profileName(String profileName) {
+        setProfileName(profileName)
+        this
+    }
+
+    private Object destinationDir
+
+    @Input
+    File getDestinationDir() {
+        if(!destinationDir) {
+            return null
+        }
+
+        project.file(destinationDir)
+    }
+
+    void setDestinationDir(Object value) {
+        destinationDir = value
+    }
+
+    ImportProvisioningProfile destinationDir(Object destinationDir) {
+        setDestinationDir(destinationDir)
+        this
+    }
+
+    File getMobileProvisioningProfile() {
+        new File(getDestinationDir(), getProfileName())
+    }
+
+    @OutputFiles
+    protected FileCollection getOutputFiles() {
+        project.fileTree(getDestinationDir()) { it.include getProfileName()}
+    }
+
+    ImportProvisioningProfile() {
+        super()
+
+        onlyIf(new Spec<ImportProvisioningProfile>() {
+            @Override
+            boolean isSatisfiedBy(ImportProvisioningProfile task) {
+                return task.getTeamId() && task.getAppIdentifier()
+            }
+        })
+    }
+
     @TaskAction
-    protected void importProfilesl() {
+    protected void importProfiles() {
         project.exec {
             executable "fastlane"
             args "sigh"
-            if (password) {
-                environment('FASTLANE_PASSWORD', password)
+
+            def pw = getPassword()
+
+            if (pw) {
+                environment('FASTLANE_PASSWORD', pw)
             }
 
-            if (username) {
-                args "--username", username
+            if (getUsername()) {
+                args "--username", getUsername()
             }
 
-            args "--team_id", teamId
-            args "--app_identifier", appIdentifier
-            args "--filename", getMobileProvisioningProfile().getName()
-            args "--output_path", getMobileProvisioningProfile().parentFile
+            args "--team_id", getTeamId()
+            args "--app_identifier", getAppIdentifier()
+            args "--filename", getProfileName()
+            args "--output_path", getDestinationDir()
         }
+    }
+
+    private static String convertToString(Object value) {
+        if (!value) {
+            return null
+        }
+
+        if (value instanceof Callable) {
+            value = ((Callable) value).call()
+        }
+
+        value.toString()
     }
 }

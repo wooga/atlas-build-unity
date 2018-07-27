@@ -51,7 +51,7 @@ class XCodeArchiveTask extends ConventionTask {
     @Optional
     @InputFiles
     protected FileCollection getInputFiles() {
-        def files = [projectPath, buildKeychain, provisioningProfile].findAll {it != null}
+        def files = [projectPath, buildKeychain, provisioningProfile].findAll { it != null }
         project.files(*files.toArray())
     }
 
@@ -61,7 +61,7 @@ class XCodeArchiveTask extends ConventionTask {
         def s = new HashSet<XCAction>()
         s << XCAction.archive
 
-        if(getClean()) {
+        if (getClean()) {
             s << XCAction.clean
         }
         s
@@ -84,7 +84,12 @@ class XCodeArchiveTask extends ConventionTask {
     @Optional
     @InputFile
     File getBuildKeychain() {
-        project.files(buildKeychain).getSingleFile()
+        def files = project.files(buildKeychain)
+        def fileList = files.files
+        if (fileList) {
+            return files.getSingleFile()
+        }
+        null
     }
 
     void setBuildKeychain(Object keyChain) {
@@ -98,7 +103,12 @@ class XCodeArchiveTask extends ConventionTask {
     @Optional
     @InputFile
     File getProvisioningProfile() {
-        project.files(provisioningProfile).getSingleFile()
+        def files = project.files(provisioningProfile)
+        def fileList = files.files
+        if (fileList) {
+            return files.getSingleFile()
+        }
+        null
     }
 
     void setProvisioningProfile(Object profile) {
@@ -247,7 +257,7 @@ class XCodeArchiveTask extends ConventionTask {
 
     @OutputDirectory
     File getArchivePath() {
-        return new File(getDestinationDir(), getArchiveName())
+        new File(getDestinationDir(), getArchiveName())
     }
 
     @Internal("Represented as part of archivePath")
@@ -273,25 +283,25 @@ class XCodeArchiveTask extends ConventionTask {
             arguments << it.toString()
         }
 
-        if(getProjectPath()) {
+        if (getProjectPath()) {
             arguments << "-project" << getProjectPath().getPath()
         }
 
-        if(getScheme()) {
+        if (getScheme()) {
             arguments << "-scheme" << getScheme()
         }
 
-        if(getConfiguration()) {
+        if (getConfiguration()) {
             arguments << "-configuration" << getConfiguration()
         }
 
-        if(getBuildKeychain()) {
+        if (getBuildKeychain()) {
             arguments << "OTHER_CODE_SIGN_FLAGS=--keychain ${getBuildKeychain()}"
         }
 
         arguments << "-archivePath" << getArchivePath().getPath()
 
-        def derivedDataPath = new File(project.buildDir,"derivedData")
+        def derivedDataPath = new File(project.buildDir, "derivedData")
         derivedDataPath.mkdirs()
 
         arguments << "-derivedDataPath" << derivedDataPath.getPath()
@@ -299,11 +309,6 @@ class XCodeArchiveTask extends ConventionTask {
         project.exec {
             executable "/usr/bin/xcrun"
             args = arguments
-        }
-
-        project.copy {
-            from getArchivePath()
-            into project.file("${project.buildDir}/intermediate/${getArchiveName()}")
         }
     }
 }
