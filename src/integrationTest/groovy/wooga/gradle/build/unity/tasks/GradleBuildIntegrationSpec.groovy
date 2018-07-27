@@ -18,6 +18,7 @@
 package wooga.gradle.build.unity.tasks
 
 import spock.lang.Shared
+import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.UnityBuildPlugin
 
@@ -88,5 +89,43 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         then:
         result.standardOutput.contains("foo executed")
         result.standardOutput.contains("bar executed")
+    }
+
+    @Unroll
+    def "passes current loglevel #level down to external build"() {
+        given: "build script with exernal execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir "${escapedPath(externalDir.path)}"
+                tasks = ['foo']
+            }
+        """.stripIndent()
+
+        and: "print custom log messages"
+        externalGradle << """
+            foo {
+                doLast {
+                    logger.debug('foo debug message')
+                    logger.error('foo error message')
+                    logger.info('foo info message')
+                    logger.lifecycle('foo lifecycle message')
+                    logger.quiet('foo quiet message')
+                    logger.warn('foo warn message')
+                }
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully('externalGradle', "--$level")
+
+        then:
+        contains.every { logLevel -> result.standardOutput.contains("foo $logLevel message") }
+        containsNot.every { logLevel -> !result.standardOutput.contains("foo $logLevel message") }
+
+        where:
+        level   | contains                                                 | containsNot
+        'debug' | ['debug', 'error', 'info', 'lifecycle', 'quiet', 'warn'] | []
+        'info'  | ['error', 'info', 'lifecycle', 'quiet', 'warn']          | ['debug']
+        'quiet' | ['error', 'quiet']                                       | ['debug', 'info', 'lifecycle', 'warn']
     }
 }
