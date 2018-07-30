@@ -140,7 +140,7 @@ class ImportProvisioningProfile extends ConventionTask {
 
     @OutputFiles
     protected FileCollection getOutputFiles() {
-        project.fileTree(getDestinationDir()) { it.include getProfileName()}
+        project.files(new File(getDestinationDir(), getProfileName()))
     }
 
     ImportProvisioningProfile() {
