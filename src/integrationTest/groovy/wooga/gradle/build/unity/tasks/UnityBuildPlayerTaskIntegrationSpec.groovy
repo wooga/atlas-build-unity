@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.tasks
 
+import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 
@@ -126,5 +127,70 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         "version"          | "1.0.1"        | true
         "version"          | "1.1.0"        | false
         methodName = (useSetter) ? "set${property.capitalize()}" : property
+    }
+
+    def "task skips with no-source when input files are empty"() {
+        given: "a task with empty input source"
+        buildFile << """
+            exportCustom.inputFiles = files()
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.standardOutput.contains(":exportCustom NO-SOURCE")
+    }
+
+    @Shared
+    def mockProjectFiles = [
+            new File("Assets/Source.cs"),
+            new File("Assets/Plugins/iOS/somefile.m"),
+            new File("Assets/Nested/Plugins/iOS/somefile.m"),
+            new File("Assets/Plugins/WebGL/somefile.ts"),
+            new File("Assets/Nested/Plugins/WebGL/somefile.ts"),
+            new File("Assets/Editor/somefile.cs"),
+            new File("Assets/Nested/Editor/somefile.cs"),
+            new File("Assets/Plugins/Android/somefile.java"),
+            new File("Assets/Nested/Plugins/Android/somefile.java"),
+            new File("ProjectSettings/SomeSettings.asset"),
+            new File("Library/SomeCache.asset"),
+            new File("UnityPackageManager/manifest.json")
+    ]
+
+    @Unroll
+    def "task #statusMessage up-to-date when file change at location #file with default inputFiles"() {
+        given: "a mocked unity project"
+
+        //need to convert the relative files to absolute files
+        files = files.collect { new File(projectDir, it.path) }
+        file = new File(projectDir, file.path)
+
+        //create directory structure
+        files.each { f ->
+            f.parentFile.mkdirs()
+            f.text = "some content"
+        }
+
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully("exportCustom")
+        assert !result.wasUpToDate('exportCustom')
+
+        result = runTasksSuccessfully("exportCustom")
+        assert result.wasUpToDate('exportCustom')
+
+        when: "change content of one source file"
+        file.text = "new content"
+
+        result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.wasUpToDate('exportCustom') == status
+
+        where:
+        files = mockProjectFiles
+        file << mockProjectFiles
+        status << [false, true, true, true, true, true, true, false, false, false, true, false]
+        statusMessage = (status) ? "is" : "is not"
     }
 }
