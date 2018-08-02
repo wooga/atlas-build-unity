@@ -30,6 +30,8 @@ import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
 
+import java.util.concurrent.Callable
+
 class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     UnityBuildPlayerTask() {
@@ -148,6 +150,22 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         setToolsVersion(version)
     }
 
+    private Object version
+
+    @Input
+    String getVersion() {
+        convertToString(version)
+    }
+
+    void setVersion(String value) {
+        version = value
+    }
+
+    UnityBuildPlayerTask version(String version) {
+        setVersion(version)
+        this
+    }
+
     @Override
     protected void exec() {
         File out = getOutputDirectory()
@@ -155,7 +173,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         String customArgs = "-CustomArgs:platform=${getBuildPlatform()};"
         customArgs += "environment=${getBuildEnvironment()};"
         customArgs += "outputPath=${out.getPath()};"
-        customArgs += "version=${project.version};"
+        customArgs += "version=${getVersion()};"
 
         if(getToolsVersion()) {
             customArgs += "toolsVersion=${getToolsVersion()}"
@@ -168,5 +186,18 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
             args BatchModeFlags.BUILD_TARGET, getBuildPlatform()
         }
         super.exec()
+    }
+
+    //TODO: move duplicate code
+    private static String convertToString(Object value) {
+        if (!value) {
+            return null
+        }
+
+        if (value instanceof Callable) {
+            value = ((Callable) value).call()
+        }
+
+        value.toString()
     }
 }
