@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.tasks
 
+import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 
@@ -126,5 +127,90 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         "version"          | "1.0.1"        | true
         "version"          | "1.1.0"        | false
         methodName = (useSetter) ? "set${property.capitalize()}" : property
+    }
+
+    def "task skips with no-source when input files are empty"() {
+        given: "a task with empty input source"
+        buildFile << """
+            exportCustom.inputFiles = files()
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.standardOutput.contains(":exportCustom NO-SOURCE")
+    }
+
+    @Shared
+    def mockProjectFiles = [
+            [new File("Assets/Plugins.meta"), false],
+            [new File("Library/SomeCache.asset"), true],
+            [new File("ProjectSettings/SomeSettings.asset"), false],
+            [new File("UnityPackageManager/manifest.json"), false],
+            [new File("Assets/Plugins/iOS.meta"), true],
+            [new File("Assets/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Nested.meta"), false],
+            [new File("Assets/Nested/Plugins.meta"), false],
+            [new File("Assets/Nested/Plugins/iOS.meta"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Plugins/WebGL.meta"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Editor.meta"), false],
+            [new File("Assets/Editor/somefile.cs"), false],
+            [new File("Assets/Editor/somefile.cs.meta"), false],
+            [new File("Assets/Nested/Editor/somefile.cs"), false],
+            [new File("Assets/Source.cs"), false],
+            [new File("Assets/Source.cs.meta"), false],
+            [new File("Assets/Nested/LevelEditor.meta"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs.meta"), false],
+            [new File("Assets/Plugins/Android.meta"), false],
+            [new File("Assets/Plugins/Android/somefile.java"), false],
+            [new File("Assets/Plugins/Android/somefile.java.meta"), false],
+            [new File("Assets/Nested/Plugins/Android.meta"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java.meta"), false],
+    ]
+
+    @Unroll
+    def "task #statusMessage up-to-date when file change at location #file with default inputFiles"() {
+        given: "a mocked unity project"
+
+        //need to convert the relative files to absolute files
+        files = files.collect { new File(projectDir, it.path) }
+        file = new File(projectDir, file.path)
+
+        //create directory structure
+        files.each { f ->
+            f.parentFile.mkdirs()
+            f.text = "some content"
+        }
+
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully("exportCustom")
+        assert !result.wasUpToDate('exportCustom')
+
+        result = runTasksSuccessfully("exportCustom")
+        assert result.wasUpToDate('exportCustom')
+
+        when: "change content of one source file"
+        file.text = "new content"
+
+        result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.wasUpToDate('exportCustom') == status
+
+        where:
+        files = mockProjectFiles.collect { it[0] }
+        [file, status] << mockProjectFiles
+        statusMessage = (status) ? "is" : "is not"
     }
 }

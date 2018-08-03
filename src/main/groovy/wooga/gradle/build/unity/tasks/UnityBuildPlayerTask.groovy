@@ -26,6 +26,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
+import org.gradle.api.tasks.SkipWhenEmpty
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
@@ -38,33 +39,22 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         super(UnityBuildPlayerTask.class)
     }
 
+    private FileCollection inputFiles
+
+    @SkipWhenEmpty
     @InputFiles
     FileCollection getInputFiles() {
-        def base = new File(getProjectPath(), "Assets")
-        logger.info(base.path)
-        def tree = project.fileTree(base)
-
-        tree.include(new Spec<FileTreeElement>() {
-            @Override
-            boolean isSatisfiedBy(FileTreeElement element) {
-                if(element.path.toLowerCase().contains("plugins") && element.name.toLowerCase() != "plugins") {
-                    return element.path.toLowerCase().contains("plugins" + File.separator + getBuildPlatform().toLowerCase())
-                }
-                return true
-            }
-        })
-
-        tree
+        inputFiles
     }
 
-//    @OutputFiles
-//    FileCollection getOutputFiles() {
-//        project.fileTree(getOutputDirectory()) {
-//            it.exclude("build", ".gradle", "**/*.meta")
-//        }
-//    }
+    void setInputFiles(FileCollection files) {
+        this.inputFiles = files
+    }
 
-    //@Internal("Base path of outputFiles")
+    void inputFiles(FileCollection files) {
+        setInputFiles(files)
+    }
+
     @OutputDirectory
     File getOutputDirectory() {
         project.file("${getOutputDirectoryBase()}/${getBuildPlatform()}/${getBuildEnvironment()}/project")

@@ -22,8 +22,10 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
+import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
@@ -58,6 +60,44 @@ class UnityBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("buildPlatform", {extension.getDefaultPlatform()})
                 conventionMapping.map("toolsVersion", {extension.getToolsVersion()})
                 conventionMapping.map("outputDirectoryBase", {extension.getOutputDirectoryBase()})
+                conventionMapping.map("inputFiles", {
+
+                    def assetsDir = new File(task.getProjectPath(), "Assets")
+                    def assetsFileTree = project.fileTree(assetsDir)
+
+                    assetsFileTree.include(new Spec<FileTreeElement>() {
+                        @Override
+                        boolean isSatisfiedBy(FileTreeElement element) {
+                            def path = element.path.toLowerCase()
+                            def name = element.name.toLowerCase()
+                            def status = true
+                            if (path.contains("plugins")
+                                    && !((name == "plugins") || (name == "plugins.meta"))) {
+                                /*
+                                 Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
+                                 The getPath() method is not the same as {@code File.getPath()}
+                                 From the docs:
+
+                                 * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
+                                 * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
+                                 *
+                                 * @return The path. Never returns null.
+                                 */
+                                status = path.contains("plugins/" + task.getBuildPlatform().toLowerCase())
+                            }
+
+                            status
+                        }
+                    })
+
+                    def projectSettingsDir = new File(task.getProjectPath(), "ProjectSettings")
+                    def projectSettingsFileTree = project.fileTree(projectSettingsDir)
+
+                    def packageManagerDir = new File(task.getProjectPath(), "UnityPackageManager")
+                    def packageManagerDirFileTree = project.fileTree(packageManagerDir)
+
+                    project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
+                })
             }
         })
 
