@@ -175,8 +175,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
             [new File("Assets/Plugins/Android/somefile.java"), false],
             [new File("Assets/Plugins/Android/somefile.java.meta"), false],
             [new File("Assets/Nested/Plugins/Android.meta"), false],
-            [new File("Assets/Nested/Plugins/Android/somefile.java"), false],
-            [new File("Assets/Nested/Plugins/Android/somefile.java.meta"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java.meta"), false],
     ]
 
     @Unroll
