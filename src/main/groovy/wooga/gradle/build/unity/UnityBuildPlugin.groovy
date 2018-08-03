@@ -62,13 +62,17 @@ class UnityBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("outputDirectoryBase", {extension.getOutputDirectoryBase()})
                 conventionMapping.map("inputFiles", {
 
-                    def assetsDir = new File(task.getProjectPath(),"Assets")
+                    def assetsDir = new File(task.getProjectPath(), "Assets")
                     def assetsFileTree = project.fileTree(assetsDir)
 
                     assetsFileTree.include(new Spec<FileTreeElement>() {
                         @Override
                         boolean isSatisfiedBy(FileTreeElement element) {
-                            if(element.path.toLowerCase().contains("plugins") && element.name.toLowerCase() != "plugins") {
+                            def path = element.path.toLowerCase()
+                            def name = element.name.toLowerCase()
+                            def status = true
+                            if (path.contains("plugins")
+                                    && !((name == "plugins") || (name == "plugins.meta"))) {
                                 /*
                                  Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
                                  The getPath() method is not the same as {@code File.getPath()}
@@ -79,10 +83,10 @@ class UnityBuildPlugin implements Plugin<Project> {
                                  *
                                  * @return The path. Never returns null.
                                  */
-                                return element.path.toLowerCase().contains("plugins/" + task.getBuildPlatform().toLowerCase())
+                                status = path.contains("plugins/" + task.getBuildPlatform().toLowerCase())
                             }
 
-                            return !element.path.toLowerCase().contains("editor/")
+                            status
                         }
                     })
 

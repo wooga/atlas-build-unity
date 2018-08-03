@@ -144,18 +144,39 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
     @Shared
     def mockProjectFiles = [
-            new File("Assets/Source.cs"),
-            new File("Assets/Plugins/iOS/somefile.m"),
-            new File("Assets/Nested/Plugins/iOS/somefile.m"),
-            new File("Assets/Plugins/WebGL/somefile.ts"),
-            new File("Assets/Nested/Plugins/WebGL/somefile.ts"),
-            new File("Assets/Editor/somefile.cs"),
-            new File("Assets/Nested/Editor/somefile.cs"),
-            new File("Assets/Plugins/Android/somefile.java"),
-            new File("Assets/Nested/Plugins/Android/somefile.java"),
-            new File("ProjectSettings/SomeSettings.asset"),
-            new File("Library/SomeCache.asset"),
-            new File("UnityPackageManager/manifest.json")
+            [new File("Assets/Plugins.meta"), false],
+            [new File("Library/SomeCache.asset"), true],
+            [new File("ProjectSettings/SomeSettings.asset"), false],
+            [new File("UnityPackageManager/manifest.json"), false],
+            [new File("Assets/Plugins/iOS.meta"), true],
+            [new File("Assets/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Nested.meta"), false],
+            [new File("Assets/Nested/Plugins.meta"), false],
+            [new File("Assets/Nested/Plugins/iOS.meta"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Plugins/WebGL.meta"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Editor.meta"), false],
+            [new File("Assets/Editor/somefile.cs"), false],
+            [new File("Assets/Editor/somefile.cs.meta"), false],
+            [new File("Assets/Nested/Editor/somefile.cs"), false],
+            [new File("Assets/Source.cs"), false],
+            [new File("Assets/Source.cs.meta"), false],
+            [new File("Assets/Nested/LevelEditor.meta"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs.meta"), false],
+            [new File("Assets/Plugins/Android.meta"), false],
+            [new File("Assets/Plugins/Android/somefile.java"), false],
+            [new File("Assets/Plugins/Android/somefile.java.meta"), false],
+            [new File("Assets/Nested/Plugins/Android.meta"), false],
+            [new File("Assets/Nested/Plugins/Android/somefile.java"), false],
+            [new File("Assets/Nested/Plugins/Android/somefile.java.meta"), false],
     ]
 
     @Unroll
@@ -188,9 +209,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.wasUpToDate('exportCustom') == status
 
         where:
-        files = mockProjectFiles
-        file << mockProjectFiles
-        status << [false, true, true, true, true, true, true, false, false, false, true, false]
+        files = mockProjectFiles.collect { it[0] }
+        [file, status] << mockProjectFiles
         statusMessage = (status) ? "is" : "is not"
     }
 }
