@@ -31,7 +31,6 @@ pipeline {
 
                     post {
                         success {
-                            gradleWrapper "jacocoTestReport coveralls"
                             publishHTML([
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
