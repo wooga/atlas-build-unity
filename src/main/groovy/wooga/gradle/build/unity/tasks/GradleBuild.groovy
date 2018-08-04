@@ -24,6 +24,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
+import org.gradle.util.CollectionUtils
 
 class GradleBuild extends DefaultTask {
 
@@ -59,6 +60,22 @@ class GradleBuild extends DefaultTask {
         setTasks(tasks.toList())
     }
 
+    GradleBuild tasks(List<String> tasks) {
+        setTasks(tasks)
+        this
+    }
+
+    GradleBuild tasks(Iterable<String> tasks) {
+        setTasks(tasks)
+        this
+    }
+
+    GradleBuild tasks(String... tasks) {
+        List<String> taskList = CollectionUtils.flattenCollections(tasks) as List<String>
+        setTasks(taskList)
+        this
+    }
+
     @Input
     List<String> getBuildArguments() {
         this.buildArguments
@@ -73,22 +90,39 @@ class GradleBuild extends DefaultTask {
         setBuildArguments(arguments.toList())
     }
 
+    GradleBuild buildArguments(List<String> arguments) {
+        setBuildArguments(arguments)
+        this
+    }
+
+    GradleBuild buildArguments(Iterable<String> arguments) {
+        setBuildArguments(arguments)
+        this
+    }
+
+    GradleBuild buildArguments(String... args) {
+        List<String> arguments = CollectionUtils.flattenCollections(args)
+        buildArguments(arguments)
+    }
+
     @TaskAction
     protected exec() {
         def args = []
         args.addAll(getBuildArguments())
 
-        def startParameter = this.project.gradle.startParameter
-        switch (startParameter.logLevel) {
-            case LogLevel.DEBUG:
-                args << '--debug'
-                break
-            case LogLevel.INFO:
-                args << '--info'
-                break
-            case LogLevel.QUIET:
-                args << '--quiet'
-                break
+        if (!['--debug', '--info', '--quiet'].any { args.contains(it) }) {
+            def startParameter = this.project.gradle.startParameter
+            switch (startParameter.logLevel) {
+                case LogLevel.DEBUG:
+                    args << '--debug'
+                    break
+                case LogLevel.INFO:
+                    args << '--info'
+                    break
+                case LogLevel.QUIET:
+                    args << '--quiet'
+                    break
+            }
         }
 
         ProjectConnection connection = GradleConnector.newConnector()
@@ -101,7 +135,7 @@ class GradleBuild extends DefaultTask {
                     .withArguments(args)
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
-                    .setStandardError(System.out)
+                    .setStandardError(System.err)
                     .run()
         } finally {
             connection.close()
