@@ -28,6 +28,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
 import wooga.gradle.unity.batchMode.BatchModeFlags
+import wooga.gradle.unity.batchMode.BatchModeSpec
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
 
@@ -37,6 +38,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     UnityBuildPlayerTask() {
         super(UnityBuildPlayerTask.class)
+        super.setBuildTarget(BuildTarget.undefined)
     }
 
     private FileCollection inputFiles
@@ -60,98 +62,95 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         project.file("${getOutputDirectoryBase()}/${getBuildPlatform()}/${getBuildEnvironment()}/project")
     }
 
-    private String buildPlatform
-    private String buildEnvironment
-    private String exportMethodName
-    private String toolsVersion
-    private String outputDirectoryBase
+    private Object buildPlatform
+    private Object buildEnvironment
+    private Object exportMethodName
+    private Object version
+    private Object toolsVersion
+    private Object outputDirectoryBase
 
     @Internal("Base path of outputFiles")
     File getOutputDirectoryBase() {
-        outputDirectoryBase
+        if(outputDirectoryBase)
+        {
+            return project.file(outputDirectoryBase)
+        }
+        null
     }
 
-    void setOutputDirectoryBase(File outputDirectoryBase) {
+    void setOutputDirectoryBase(Object outputDirectoryBase) {
         this.outputDirectoryBase = outputDirectoryBase
     }
 
-    UnityBuildPlayerTask outputDirectoryBase(File outputDirectoryBase) {
+    UnityBuildPlayerTask outputDirectoryBase(Object outputDirectoryBase) {
         setOutputDirectoryBase(outputDirectoryBase)
         this
     }
 
-
     @Input
     String getBuildPlatform() {
-        buildPlatform
+        def platform = convertToString(buildPlatform)
+        platform
     }
 
-    void setBuildPlatform(String platform) {
+    void setBuildPlatform(Object platform) {
         buildPlatform = platform
-        try {
-            buildTarget = platform as BuildTarget
-        }
-        catch(IllegalArgumentException ignored) {
-            logger.warn("build target ${platform} unknown")
-            buildTarget = BuildTarget.undefined
-        }
     }
 
-    void buildPlatform(String platform) {
+    void buildPlatform(Object platform) {
         setBuildPlatform(platform)
     }
 
     @Input
     String getBuildEnvironment() {
-        buildEnvironment
+        convertToString(buildEnvironment)
     }
 
-    void setBuildEnvironment(String environment) {
+    void setBuildEnvironment(Object environment) {
         buildEnvironment = environment
     }
 
-    void buildEnvironment(String environment) {
+    void buildEnvironment(Object environment) {
         setBuildEnvironment(environment)
     }
 
     @Input
     String getExportMethodName() {
-        exportMethodName
+        convertToString(exportMethodName)
     }
 
-    void setExportMethodName(String method) {
+    void setExportMethodName(Object method) {
         exportMethodName = method
     }
-    void exportMethodName(String method) {
+
+    void exportMethodName(Object method) {
         setExportMethodName(method)
     }
 
     @Optional
     @Input
     String getToolsVersion() {
-        toolsVersion
+        convertToString(toolsVersion)
     }
 
-    void setToolsVersion(String version) {
+    void setToolsVersion(Object version) {
         toolsVersion = version
     }
 
-    void toolsVersion(String version) {
+    void toolsVersion(Object version) {
         setToolsVersion(version)
     }
-
-    private Object version
 
     @Input
     String getVersion() {
         convertToString(version)
     }
 
-    void setVersion(String value) {
+    void setVersion(Object value) {
         version = value
     }
 
-    UnityBuildPlayerTask version(String version) {
+    UnityBuildPlayerTask version(Object version) {
         setVersion(version)
         this
     }
@@ -165,17 +164,30 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         customArgs += "outputPath=${out.getPath()};"
         customArgs += "version=${getVersion()};"
 
-        if(getToolsVersion()) {
+        if (getToolsVersion()) {
             customArgs += "toolsVersion=${getToolsVersion()}"
         }
 
         args "-executeMethod", getExportMethodName()
         args customArgs
 
-        if (buildTarget == BuildTarget.undefined) {
-            args BatchModeFlags.BUILD_TARGET, getBuildPlatform()
+        if (getBuildTarget() == BuildTarget.undefined) {
+            args BatchModeFlags.BUILD_TARGET, convertBuildPlatformToBuildTarget(getBuildPlatform())
         }
         super.exec()
+    }
+
+    BuildTarget convertBuildPlatformToBuildTarget(Object platform) {
+        BuildTarget buildTarget
+        try {
+            buildTarget = convertToString(platform).toLowerCase() as BuildTarget
+        }
+        catch (IllegalArgumentException ignored) {
+            logger.warn("build target ${platform} unknown")
+            buildTarget = BuildTarget.undefined
+        }
+
+        buildTarget
     }
 
     //TODO: move duplicate code

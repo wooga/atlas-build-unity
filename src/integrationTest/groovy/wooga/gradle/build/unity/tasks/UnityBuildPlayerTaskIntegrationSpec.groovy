@@ -20,6 +20,7 @@ package wooga.gradle.build.unity.tasks
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.unity.batchMode.BuildTarget
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
@@ -40,63 +41,98 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("platform=android")
         result.standardOutput.contains("environment=ci")
         result.standardOutput.contains("version=unspecified")
+        result.standardOutput.contains("outputPath=${new File(projectDir, '/build/export/android/ci/project').path}")
         !result.standardOutput.contains("toolsVersion=")
     }
 
     @Unroll
-    def "can override optional property #property with #methodName with value: #value"() {
-        given: "a export task with toolsVersion configuration"
-        buildFile << """
-            exportCustom.${methodName}('${value}')
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("exportCustom")
-
-        then:
-
-        result.standardOutput.contains("toolsVersion=${value}")
-        //rest of the values are default
-        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
-        result.standardOutput.contains("platform=android")
-        result.standardOutput.contains("environment=ci")
-
-        where:
-        property       | value   | useSetter
-        "toolsVersion" | "1.2.3" | true
-        "toolsVersion" | "3.2.1" | false
-        methodName = (useSetter) ? "set${property.capitalize()}" : property
-    }
-
-    @Unroll
-    def "can override #property with #methodName with value: #value"() {
+    def "can override #methodIsOptional property #property with #methodName(#type)"() {
         given: "a export task with custom configuration"
         buildFile << """
-            exportCustom.${methodName}('${value}')
+            exportCustom.${methodName}(${value})
         """.stripIndent()
 
         when:
         def result = runTasksSuccessfully("exportCustom")
 
         then:
+
+        if (expectedToolsVersion) {
+            result.standardOutput.contains("toolsVersion=${expectedToolsVersion}")
+        }
 
         result.standardOutput.contains("-executeMethod ${expectedExportMethod}")
         result.standardOutput.contains("platform=${expectedPlatform}")
-        result.standardOutput.contains("-buildTarget ${expectedPlatform}")
+        result.standardOutput.contains("-buildTarget ${expectedTarget}")
         result.standardOutput.contains("environment=${expectedEnvironment}")
         result.standardOutput.contains("version=${expectedVersion}")
+        result.standardOutput.contains("outputPath=${new File(projectDir, expectedOutputPath).path}")
 
         where:
-        property           | value          | useSetter | expectedExportMethod                    | expectedEnvironment | expectedPlatform | expectedVersion
-        "exportMethodName" | "method1"      | true      | "method1"                               | 'ci'                | 'android'        | 'unspecified'
-        "exportMethodName" | "method2"      | false     | "method2"                               | 'ci'                | 'android'        | 'unspecified'
-        "buildEnvironment" | "environment1" | true      | 'Wooga.UnifiedBuildSystem.Build.Export' | "environment1"      | 'android'        | 'unspecified'
-        "buildEnvironment" | "environment2" | false     | 'Wooga.UnifiedBuildSystem.Build.Export' | "environment2"      | 'android'        | 'unspecified'
-        "buildPlatform"    | "platform1"    | true      | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "platform1"      | 'unspecified'
-        "buildPlatform"    | "platform2"    | false     | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "platform2"      | 'unspecified'
-        "version"          | "2.4.5"        | true      | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "android"        | '2.4.5'
-        "version"          | "3.5.6"        | false     | 'Wooga.UnifiedBuildSystem.Build.Export' | 'ci'                | "android"        | '3.5.6'
+        property              | rawValue              | type       | useSetter
+        "exportMethodName"    | "method1"             | 'String'   | true
+        "exportMethodName"    | "method2"             | 'String'   | false
+        "exportMethodName"    | "method3"             | 'Callable' | false
+        "exportMethodName"    | "method4"             | 'Callable' | false
+        "exportMethodName"    | "method5"             | 'Closure'  | true
+        "exportMethodName"    | "method6"             | 'Closure'  | false
+        "exportMethodName"    | "method7"             | 'Object'   | false
+        "exportMethodName"    | "method8"             | 'Object'   | false
+        "buildEnvironment"    | "environment1"        | 'String'   | true
+        "buildEnvironment"    | "environment2"        | 'String'   | false
+        "buildEnvironment"    | "environment3"        | 'Callable' | true
+        "buildEnvironment"    | "environment4"        | 'Callable' | false
+        "buildEnvironment"    | "environment5"        | 'Closure'  | true
+        "buildEnvironment"    | "environment6"        | 'Closure'  | false
+        "buildEnvironment"    | "environment7"        | 'Object'   | true
+        "buildEnvironment"    | "environment8"        | 'Object'   | false
+        "buildPlatform"       | "platform1"           | 'String'   | true
+        "buildPlatform"       | "platform2"           | 'String'   | false
+        "buildPlatform"       | "platform3"           | 'Callable' | true
+        "buildPlatform"       | "platform4"           | 'Callable' | false
+        "buildPlatform"       | "platform5"           | 'Closure'  | true
+        "buildPlatform"       | "platform6"           | 'Closure'  | false
+        "buildPlatform"       | "platform7"           | 'Object'   | true
+        "buildPlatform"       | "platform8"           | 'Object'   | false
+        "version"             | "1.0.0"               | 'String'   | true
+        "version"             | "1.0.1"               | 'String'   | false
+        "version"             | "2.0.0"               | 'Callable' | true
+        "version"             | "2.0.1"               | 'Callable' | false
+        "version"             | "3.0.0"               | 'Closure'  | true
+        "version"             | "3.0.1"               | 'Closure'  | false
+        "version"             | "4.0.0"               | 'Object'   | true
+        "version"             | "4.0.1"               | 'Object'   | false
+        "toolsVersion"        | "1.2.3"               | 'String'   | true
+        "toolsVersion"        | "3.2.1"               | 'String'   | false
+        "toolsVersion"        | "1.2.3"               | 'Callable' | true
+        "toolsVersion"        | "3.2.1"               | 'Callable' | false
+        "toolsVersion"        | "1.2.3"               | 'Closure'  | true
+        "toolsVersion"        | "3.2.1"               | 'Closure'  | false
+        "toolsVersion"        | "1.2.3"               | 'Object'   | true
+        "toolsVersion"        | "3.2.1"               | 'Object'   | false
+        "outputDirectoryBase" | "build/customExport"  | 'String'   | true
+        "outputDirectoryBase" | "build/customExport2" | 'String'   | false
+        "outputDirectoryBase" | "build/customExport3" | 'File'     | true
+        "outputDirectoryBase" | "build/customExport4" | 'File'     | false
+        "outputDirectoryBase" | "build/customExport5" | 'Closure'  | true
+        "outputDirectoryBase" | "build/customExport6" | 'Closure'  | false
+        "outputDirectoryBase" | "build/customExport5" | 'Callable' | true
+        "outputDirectoryBase" | "build/customExport6" | 'Callable' | false
+
+        expectedExportMethod = (property == "exportMethodName") ? rawValue : 'Wooga.UnifiedBuildSystem.Build.Export'
+        expectedEnvironment = (property == "buildEnvironment") ? rawValue : 'ci'
+        expectedPlatform = (property == "buildPlatform") ? rawValue : 'android'
+        expectedTarget = (property == "buildPlatform") ? BuildTarget.undefined : 'android'
+
+        expectedVersion = (property == "version") ? rawValue : 'unspecified'
+        expectedToolsVersion = (property == "toolsVersion") ? rawValue : null
+
+        expectedOutputDirectoryBase = (property == 'outputDirectoryBase') ? rawValue : "/build/export"
+        expectedOutputPath = "$expectedOutputDirectoryBase/$expectedPlatform/$expectedEnvironment/project"
+
+        methodIsOptional = (property == "toolsVersion") ? 'optional' : ''
         methodName = (useSetter) ? "set${property.capitalize()}" : property
+        value = wrapValueBasedOnType(rawValue, type)
     }
 
     @Unroll
@@ -182,16 +218,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def "task #statusMessage up-to-date when file change at location #file with default inputFiles"() {
         given: "a mocked unity project"
-
         //need to convert the relative files to absolute files
-        files = files.collect { new File(projectDir, it.path) }
-        file = new File(projectDir, file.path)
-
-        //create directory structure
-        files.each { f ->
-            f.parentFile.mkdirs()
-            f.text = "some content"
-        }
+        def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
 
         and: "a up-to-date project state"
         def result = runTasksSuccessfully("exportCustom")
@@ -201,16 +229,93 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         assert result.wasUpToDate('exportCustom')
 
         when: "change content of one source file"
-        file.text = "new content"
+        testFile.text = "new content"
 
         result = runTasksSuccessfully("exportCustom")
 
         then:
-        result.wasUpToDate('exportCustom') == status
+        result.wasUpToDate('exportCustom') == upToDate
 
         where:
         files = mockProjectFiles.collect { it[0] }
-        [file, status] << mockProjectFiles
-        statusMessage = (status) ? "is" : "is not"
+        [file, upToDate] << mockProjectFiles
+        statusMessage = (upToDate) ? "is" : "is not"
+    }
+
+    @Unroll
+    def "can set custom inputFiles for up-to-date check with #methodName(#type)"() {
+        given: "a mocked unity project"
+        //need to convert the relative files to absolute files
+        def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
+
+        and: "a custom inputCollection"
+        buildFile << """
+            exportCustom.${methodName}(${value})
+        """.stripIndent()
+
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully("exportCustom")
+        assert !result.wasUpToDate('exportCustom')
+
+        result = runTasksSuccessfully("exportCustom")
+        assert result.wasUpToDate('exportCustom')
+
+        when: "change content of one source file"
+        testFile.text = "new content"
+
+        result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.wasUpToDate('exportCustom') == upToDate
+
+        where:
+        file                                      | upToDate | type             | value                                                                                          | useGetter
+        new File("Assets/Plugins/iOS/somefile.m") | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
+        new File("Assets/Source.cs")              | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
+        new File("Assets/Plugins/iOS/somefile.m") | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
+        new File("Assets/Source.cs")              | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | true
+        new File("Assets/Editor/somefile.cs")     | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
+        new File("Assets/Source.cs")              | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
+
+        files = mockProjectFiles.collect { it[0] }
+
+        statusMessage = (upToDate) ? "is" : "is not"
+        methodName = (useGetter) ? "setInputFiles" : "inputFiles"
+    }
+
+    def wrapValueBasedOnType(Object rawValue, String type) {
+        def value
+        switch (type) {
+            case "Closure":
+                value = "{'$rawValue'}"
+                break
+            case "Callable":
+                value = "new java.util.concurrent.Callable<String>() {@Override String call() throws Exception { '$rawValue' }}"
+                break
+            case "Object":
+                value = "new Object() {@Override String toString() { '$rawValue' }}"
+                break
+            case "String":
+                value = "'$rawValue'"
+                break
+            case "File":
+                value = "new File('$rawValue')"
+                break
+            default:
+                value = rawValue
+        }
+        value
+    }
+
+    Tuple prepareMockedProject(File projectDir, Iterable<File> files, File testFile) {
+        files = files.collect { new File(projectDir, it.path) }
+        testFile = new File(projectDir, testFile.path)
+
+        //create directory structure
+        files.each { f ->
+            f.parentFile.mkdirs()
+            f.text = "some content"
+        }
+        new Tuple(files, testFile)
     }
 }
