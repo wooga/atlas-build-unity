@@ -48,6 +48,6 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     T toolsVersion(String version)
 
     File getOutputDirectoryBase()
-    void setOutputDirectoryBase(File outputDirectoryBase)
-    T OutputDirectoryBase(File outputDirectoryBase)
+    void setOutputDirectoryBase(Object outputDirectoryBase)
+    T outputDirectoryBase(Object outputDirectoryBase)
 }

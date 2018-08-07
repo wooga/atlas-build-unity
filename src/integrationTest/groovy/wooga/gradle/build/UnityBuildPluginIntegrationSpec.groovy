@@ -148,9 +148,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         } else if (location == "properties") {
             createFile("gradle.properties") << "${propertiesKey}=${value}"
         } else if (location == "extension") {
-            buildFile << "${extensionKey}('${value}')"
+            buildFile << "${extensionKey}('${escapedPath(value)}')"
         } else {
-            buildFile << "${extensionSetter}('${value}')"
+            buildFile << "${extensionSetter}('${escapedPath(value)}')"
         }
 
         when:
@@ -160,15 +160,17 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("$expectedBuildParameterBase$value")
 
         where:
-        property           | value   | location          | expectedBuildParameterBase
-        "exportMethodName" | "test1" | 'environment'     | "-executeMethod "
-        "exportMethodName" | "test2" | 'properties'      | "-executeMethod "
-        "exportMethodName" | "test3" | 'extension'       | "-executeMethod "
-        "exportMethodName" | "test3" | 'extensionSetter' | "-executeMethod "
-        "toolsVersion"     | "1.2.3" | 'environment'     | "toolsVersion="
-        "toolsVersion"     | "3.2.1" | 'properties'      | "toolsVersion="
-        "toolsVersion"     | "2.1.3" | 'extension'       | "toolsVersion="
-        "toolsVersion"     | "3.1.2" | 'extensionSetter' | "toolsVersion="
+        property              | value                                       | location          | expectedBuildParameterBase
+        "exportMethodName"    | "test1"                                     | 'environment'     | "-executeMethod "
+        "exportMethodName"    | "test2"                                     | 'properties'      | "-executeMethod "
+        "exportMethodName"    | "test3"                                     | 'extension'       | "-executeMethod "
+        "exportMethodName"    | "test3"                                     | 'extensionSetter' | "-executeMethod "
+        "toolsVersion"        | "1.2.3"                                     | 'environment'     | "toolsVersion="
+        "toolsVersion"        | "3.2.1"                                     | 'properties'      | "toolsVersion="
+        "toolsVersion"        | "2.1.3"                                     | 'extension'       | "toolsVersion="
+        "toolsVersion"        | "3.1.2"                                     | 'extensionSetter' | "toolsVersion="
+        "outputDirectoryBase" | File.createTempDir("build", "export1").path | 'extension'       | "outputPath="
+        "outputDirectoryBase" | File.createTempDir("build", "export2").path | 'extensionSetter' | "outputPath="
     }
 
     @Unroll

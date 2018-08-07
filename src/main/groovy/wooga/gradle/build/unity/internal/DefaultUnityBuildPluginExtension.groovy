@@ -33,7 +33,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     private String toolsVersion
     private String exportMethodName
 
-    private File outputDirectoryBase
+    private Object outputDirectoryBase
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -203,20 +203,20 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     @Override
     File getOutputDirectoryBase() {
-        if(outputDirectoryBase) {
-           return outputDirectoryBase
+        if (outputDirectoryBase) {
+            return project.file(outputDirectoryBase)
         }
 
         project.file("${project.buildDir}/${UnityBuildPluginConsts.DEFAULT_EXPORT_DIRECTORY_NAME}")
     }
 
     @Override
-    void setOutputDirectoryBase(File outputDirectoryBase) {
+    void setOutputDirectoryBase(Object outputDirectoryBase) {
         this.outputDirectoryBase = outputDirectoryBase
     }
 
     @Override
-    UnityBuildPluginExtension OutputDirectoryBase(File outputDirectoryBase) {
+    UnityBuildPluginExtension outputDirectoryBase(Object outputDirectoryBase) {
         setOutputDirectoryBase(outputDirectoryBase)
         this
     }
