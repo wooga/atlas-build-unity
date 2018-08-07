@@ -174,28 +174,6 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def ":export tasks run #withMessage initScript if exportInitScript.gradle is #foundMessage in projectDir"() {
-        given: "a simple init script with print message"
-        if (useInit) {
-            createFile("exportInitScript.gradle", projectDir) << """
-            println("$initMessage")
-            """.stripIndent()
-        }
-
-        when:
-        def result = runTasksSuccessfully('exportAndroidCi')
-
-        then:
-        result.standardOutput.contains("")
-
-        where:
-        useInit << [true, false]
-        withMessage = (useInit) ? "with" : "without"
-        foundMessage = (useInit) ? "found" : "not found"
-        initMessage = "START CUSTOM INIT"
-    }
-
-    @Unroll
     def ":#taskToRun executes default export task"() {
         given: "a default gradle project"
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
