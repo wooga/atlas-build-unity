@@ -269,13 +269,17 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.wasUpToDate('exportCustom') == upToDate
 
         where:
-        file                                      | upToDate | type             | value                                                                                          | useGetter
-        new File("Assets/Plugins/iOS/somefile.m") | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
-        new File("Assets/Source.cs")              | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
-        new File("Assets/Plugins/iOS/somefile.m") | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
-        new File("Assets/Source.cs")              | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | true
-        new File("Assets/Editor/somefile.cs")     | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
-        new File("Assets/Source.cs")              | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
+        file                                          | upToDate | type             | value                                                                                          | useGetter
+        new File("Assets/Plugins/iOS/somefile.m")     | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
+        new File("Assets/Plugins/Android/somefile.m") | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
+        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
+        new File("Assets/Plugins/iOS/somefile.m")     | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
+        new File("Assets/Plugins/Android/somefile.m") | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
+        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
+        new File("Assets/Editor/somefile.cs")         | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
+        new File("Assets/Editor/somefile.cs")         | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
+        new File("Assets/Source.cs")                  | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
+        new File("Assets/Source.cs")                  | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
 
         files = mockProjectFiles.collect { it[0] }
 
