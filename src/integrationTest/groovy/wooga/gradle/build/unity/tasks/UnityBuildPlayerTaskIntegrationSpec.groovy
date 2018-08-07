@@ -72,11 +72,11 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         property              | rawValue              | type       | useSetter
         "exportMethodName"    | "method1"             | 'String'   | true
         "exportMethodName"    | "method2"             | 'String'   | false
-        "exportMethodName"    | "method3"             | 'Callable' | false
+        "exportMethodName"    | "method3"             | 'Callable' | true
         "exportMethodName"    | "method4"             | 'Callable' | false
         "exportMethodName"    | "method5"             | 'Closure'  | true
         "exportMethodName"    | "method6"             | 'Closure'  | false
-        "exportMethodName"    | "method7"             | 'Object'   | false
+        "exportMethodName"    | "method7"             | 'Object'   | true
         "exportMethodName"    | "method8"             | 'Object'   | false
         "buildEnvironment"    | "environment1"        | 'String'   | true
         "buildEnvironment"    | "environment2"        | 'String'   | false
@@ -102,14 +102,14 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         "version"             | "3.0.1"               | 'Closure'  | false
         "version"             | "4.0.0"               | 'Object'   | true
         "version"             | "4.0.1"               | 'Object'   | false
-        "toolsVersion"        | "1.2.3"               | 'String'   | true
-        "toolsVersion"        | "3.2.1"               | 'String'   | false
-        "toolsVersion"        | "1.2.3"               | 'Callable' | true
-        "toolsVersion"        | "3.2.1"               | 'Callable' | false
-        "toolsVersion"        | "1.2.3"               | 'Closure'  | true
-        "toolsVersion"        | "3.2.1"               | 'Closure'  | false
-        "toolsVersion"        | "1.2.3"               | 'Object'   | true
-        "toolsVersion"        | "3.2.1"               | 'Object'   | false
+        "toolsVersion"        | "1.0.0"               | 'String'   | true
+        "toolsVersion"        | "1.0.1"               | 'String'   | false
+        "toolsVersion"        | "2.0.0"               | 'Callable' | true
+        "toolsVersion"        | "2.0.1"               | 'Callable' | false
+        "toolsVersion"        | "3.0.0"               | 'Closure'  | true
+        "toolsVersion"        | "3.0.1"               | 'Closure'  | false
+        "toolsVersion"        | "4.0.0"               | 'Object'   | true
+        "toolsVersion"        | "4.0.1"               | 'Object'   | false
         "outputDirectoryBase" | "build/customExport"  | 'String'   | true
         "outputDirectoryBase" | "build/customExport2" | 'String'   | false
         "outputDirectoryBase" | "build/customExport3" | 'File'     | true
