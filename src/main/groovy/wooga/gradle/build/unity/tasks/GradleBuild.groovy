@@ -51,18 +51,9 @@ class GradleBuild extends DefaultTask {
         this.tasks
     }
 
-    void setTasks(List<String> tasks) {
-        this.tasks.clear()
-        this.tasks.addAll(tasks)
-    }
-
     void setTasks(Iterable<String> tasks) {
-        setTasks(tasks.toList())
-    }
-
-    GradleBuild tasks(List<String> tasks) {
-        setTasks(tasks)
-        this
+        this.tasks.clear()
+        this.tasks.addAll(tasks.toList())
     }
 
     GradleBuild tasks(Iterable<String> tasks) {
