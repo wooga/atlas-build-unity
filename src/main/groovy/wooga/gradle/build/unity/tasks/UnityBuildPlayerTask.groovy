@@ -27,6 +27,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BatchModeSpec
 import wooga.gradle.unity.batchMode.BuildTarget
@@ -89,7 +90,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @Input
     String getBuildPlatform() {
-        def platform = convertToString(buildPlatform)
+        def platform = PropertyUtils.convertToString(buildPlatform)
         platform
     }
 
@@ -103,7 +104,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @Input
     String getBuildEnvironment() {
-        convertToString(buildEnvironment)
+        PropertyUtils.convertToString(buildEnvironment)
     }
 
     void setBuildEnvironment(Object environment) {
@@ -116,7 +117,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @Input
     String getExportMethodName() {
-        convertToString(exportMethodName)
+        PropertyUtils.convertToString(exportMethodName)
     }
 
     void setExportMethodName(Object method) {
@@ -130,7 +131,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     @Optional
     @Input
     String getToolsVersion() {
-        convertToString(toolsVersion)
+        PropertyUtils.convertToString(toolsVersion)
     }
 
     void setToolsVersion(Object version) {
@@ -143,7 +144,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
     @Input
     String getVersion() {
-        convertToString(version)
+        PropertyUtils.convertToString(version)
     }
 
     void setVersion(Object value) {
@@ -180,7 +181,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     BuildTarget convertBuildPlatformToBuildTarget(Object platform) {
         BuildTarget buildTarget
         try {
-            buildTarget = convertToString(platform).toLowerCase() as BuildTarget
+            buildTarget = PropertyUtils.convertToString(platform).toLowerCase() as BuildTarget
         }
         catch (IllegalArgumentException ignored) {
             logger.warn("build target ${platform} unknown")
@@ -188,18 +189,5 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         }
 
         buildTarget
-    }
-
-    //TODO: move duplicate code
-    private static String convertToString(Object value) {
-        if (!value) {
-            return null
-        }
-
-        if (value instanceof Callable) {
-            value = ((Callable) value).call()
-        }
-
-        value.toString()
     }
 }

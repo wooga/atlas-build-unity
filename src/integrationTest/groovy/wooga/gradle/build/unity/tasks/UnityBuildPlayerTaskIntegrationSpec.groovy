@@ -287,30 +287,6 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         methodName = (useGetter) ? "setInputFiles" : "inputFiles"
     }
 
-    def wrapValueBasedOnType(Object rawValue, String type) {
-        def value
-        switch (type) {
-            case "Closure":
-                value = "{'$rawValue'}"
-                break
-            case "Callable":
-                value = "new java.util.concurrent.Callable<String>() {@Override String call() throws Exception { '$rawValue' }}"
-                break
-            case "Object":
-                value = "new Object() {@Override String toString() { '$rawValue' }}"
-                break
-            case "String":
-                value = "'$rawValue'"
-                break
-            case "File":
-                value = "new File('$rawValue')"
-                break
-            default:
-                value = rawValue
-        }
-        value
-    }
-
     Tuple prepareMockedProject(File projectDir, Iterable<File> files, File testFile) {
         files = files.collect { new File(projectDir, it.path) }
         testFile = new File(projectDir, testFile.path)
