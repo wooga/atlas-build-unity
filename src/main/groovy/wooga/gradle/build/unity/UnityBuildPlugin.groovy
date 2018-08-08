@@ -27,6 +27,7 @@ import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.tasks.GradleBuild
@@ -54,12 +55,12 @@ class UnityBuildPlugin implements Plugin<Project> {
             @Override
             void execute(UnityBuildPlayerTask task) {
                 def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", {project.version})
                 conventionMapping.map("exportMethodName", {extension.getExportMethodName()})
                 conventionMapping.map("buildEnvironment", {extension.getDefaultEnvironment()})
                 conventionMapping.map("buildPlatform", {extension.getDefaultPlatform()})
                 conventionMapping.map("toolsVersion", {extension.getToolsVersion()})
                 conventionMapping.map("outputDirectoryBase", {extension.getOutputDirectoryBase()})
+                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
                 conventionMapping.map("inputFiles", {
 
                     def assetsDir = new File(task.getProjectPath(), "Assets")

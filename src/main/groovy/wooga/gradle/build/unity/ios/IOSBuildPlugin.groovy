@@ -26,6 +26,7 @@ import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.ios.tasks.ArchiveDsymTask
 import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
 import wooga.gradle.build.unity.ios.tasks.KeychainTask
@@ -56,7 +57,7 @@ class IOSBuildPlugin implements Plugin<Project> {
             @Override
             void execute(XCodeArchiveTask task) {
                 def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { project.version })
+                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
                 conventionMapping.map("clean", { false })
                 conventionMapping.map("destinationDir", {
                     project.file("${project.buildDir}/archives")
@@ -72,12 +73,12 @@ class IOSBuildPlugin implements Plugin<Project> {
             @Override
             void execute(ArchiveDsymTask task) {
                 def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { project.version })
+                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
                 conventionMapping.map("destinationDir", {
                     project.file("${project.buildDir}/symbols")
                 })
                 conventionMapping.map("baseName", { project.name })
-                conventionMapping.map("classifier", { "dSYM"})
+                conventionMapping.map("classifier", { "dSYM" })
                 conventionMapping.map("extension", { "zip" })
             }
         })
@@ -86,7 +87,7 @@ class IOSBuildPlugin implements Plugin<Project> {
             @Override
             void execute(XCodeExportTask task) {
                 def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { project.version })
+                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
                 conventionMapping.map("destinationDir", {
                     project.file("${project.buildDir}/ipas")
                 })

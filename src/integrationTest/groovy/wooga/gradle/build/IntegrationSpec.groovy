@@ -36,4 +36,31 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
             fork = true
         }
     }
+
+    def wrapValueBasedOnType(Object rawValue, String type) {
+        def value
+        switch (type) {
+            case "Closure":
+                value = "{'$rawValue'}"
+                break
+            case "Callable":
+                value = "new java.util.concurrent.Callable<String>() {@Override String call() throws Exception { '$rawValue' }}"
+                break
+            case "Object":
+                value = "new Object() {@Override String toString() { '$rawValue' }}"
+                break
+            case "String":
+                value = "'$rawValue'"
+                break
+            case "File":
+                value = "new File('$rawValue')"
+                break
+            case "List<String>":
+                value = "['$rawValue']"
+                break
+            default:
+                value = $rawValue
+        }
+        value
+    }
 }

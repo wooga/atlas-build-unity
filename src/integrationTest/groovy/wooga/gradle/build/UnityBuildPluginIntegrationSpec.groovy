@@ -241,4 +241,29 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
         "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
     }
+
+    @Unroll
+    def "default version is converted to String from #type"() {
+        given: "A custom project.version property"
+        buildFile << """
+            version = $value
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportAndroidCi")
+
+        then:
+        //the batchmode task will be called with version
+        result.standardOutput.contains("version=$expectedValue;")
+
+        where:
+        rawValue | type           | expectedValue
+        "1.0.0"  | "String"       | "1.0.0"
+        "1.1.0"  | "Closure"      | "1.1.0"
+        "1.1.1"  | "Callable"     | "1.1.1"
+        "2.0.0"  | "Object"       | "2.0.0"
+        "2.0.0"  | "List<String>" | "[2.0.0]"
+
+        value = wrapValueBasedOnType(rawValue, type)
+    }
 }
