@@ -22,6 +22,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables
 import org.yaml.snakeyaml.Yaml
 import spock.genesis.Gen
 import spock.genesis.transform.Iterations
+import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.unity.batchMode.BatchModeFlags
@@ -223,6 +224,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Shared
     def characterPattern = ':_\\-<>|*\\\\? '
 
+    @IgnoreIf({ os.windows })
     @Iterations(100)
     @Unroll
     def "generates task :#expectedTaskName from app config name #appConfigName"() {
