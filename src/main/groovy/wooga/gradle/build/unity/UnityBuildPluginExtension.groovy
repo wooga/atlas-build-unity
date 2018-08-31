@@ -17,31 +17,23 @@
 
 package wooga.gradle.build.unity
 
+import org.gradle.api.file.FileCollection
+
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
-    Set<String> getPlatforms()
-    void setPlatforms(Iterable<String> platforms)
-    T platforms(Iterable<String> platforms)
-    T platforms(String ... platforms)
-    T platform(String platform)
+    File getAppConfigsDirectory()
+    void setAppConfigsDirectory(Object appConfigsDirectory)
+    T appConfigsDirectory(Object appConfigsDirectory)
 
-    Set<String> getEnvironments()
-    void setEnvironments(Iterable<String> environments)
-    T environments(Iterable<String> environments)
-    T environments(String ... environments)
-    T environment(String environment)
+    FileCollection getAppConfigs()
 
     String getExportMethodName()
     void setExportMethodName(String method)
     T exportMethodName(String method)
 
-    String getDefaultPlatform()
-    void setDefaultPlatform(String platform)
-    T defaultPlatform(String platform)
-
-    String getDefaultEnvironment()
-    void setDefaultEnvironment(String environment)
-    T defaultEnvironment(String environment)
+    String getDefaultAppConfigName()
+    void setDefaultAppConfigName(String name)
+    T defaultAppConfigName(String name)
 
     String getToolsVersion()
     void setToolsVersion(String version)

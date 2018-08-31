@@ -53,7 +53,10 @@ repositories {
 
 dependencies {
     compile "org.gradle:gradle-tooling-api:+"
-    compile 'gradle.plugin.net.wooga.gradle:atlas-unity:1.3.0'
+    compile 'gradle.plugin.net.wooga.gradle:atlas-unity:1.+'
     compile 'xmlwise:xmlwise:1.2.11'
     testCompile 'org.apache.commons:commons-text:1.3'
+    testCompile('com.nagternal:spock-genesis:0.6.0') {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
 }

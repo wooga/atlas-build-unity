@@ -17,32 +17,31 @@
 
 package wooga.gradle.build.unity.tasks
 
+import org.apache.commons.io.FilenameUtils
 import org.gradle.api.file.FileCollection
-import org.gradle.api.file.FileTreeElement
-import org.gradle.api.specs.Spec
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.OutputFiles
-import org.gradle.api.tasks.SkipWhenEmpty
+import org.gradle.api.tasks.*
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.batchMode.BatchModeFlags
-import wooga.gradle.unity.batchMode.BatchModeSpec
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
-
-import java.util.concurrent.Callable
+import wooga.gradle.unity.utils.GenericUnityAsset
 
 class UnityBuildPlayerTask extends AbstractUnityProjectTask {
+
+    static String BUILD_TARGET_KEY = "buildTarget"
 
     UnityBuildPlayerTask() {
         super(UnityBuildPlayerTask.class)
         super.setBuildTarget(BuildTarget.undefined)
     }
 
+    private GenericUnityAsset appConfig
     private FileCollection inputFiles
+    private Object appConfigFile
+    private Object exportMethodName
+    private Object version
+    private Object toolsVersion
+    private Object outputDirectoryBase
 
     @SkipWhenEmpty
     @InputFiles
@@ -58,17 +57,39 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         setInputFiles(files)
     }
 
-    @OutputDirectory
-    File getOutputDirectory() {
-        project.file("${getOutputDirectoryBase()}/${getBuildPlatform()}/${getBuildEnvironment()}/project")
+    @InputFile
+    File getAppConfigFile() {
+        if(!appConfigFile) {
+            return null
+        }
+
+        project.file(appConfigFile)
     }
 
-    private Object buildPlatform
-    private Object buildEnvironment
-    private Object exportMethodName
-    private Object version
-    private Object toolsVersion
-    private Object outputDirectoryBase
+    String getAppConfigName() {
+        if(getAppConfigFile()) {
+            return FilenameUtils.removeExtension(getAppConfigFile().name)
+        }
+        null
+    }
+
+    void setAppConfigFile(Object appConfigFile) {
+        this.appConfigFile = appConfigFile
+        this.appConfig = null
+    }
+
+    void appConfigFile(Object appConfigFile) {
+        this.setAppConfigFile(appConfigFile)
+    }
+
+    @OutputDirectory
+    File getOutputDirectory() {
+        if(getOutputDirectoryBase() && getAppConfigName()) {
+            return project.file("${getOutputDirectoryBase()}/${getAppConfigName()}/project")
+        }
+
+        null
+    }
 
     @Internal("Base path of outputFiles")
     File getOutputDirectoryBase() {
@@ -88,31 +109,21 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         this
     }
 
-    @Input
+    @Internal("loaded app config asset")
+    protected GenericUnityAsset getAppConfig() {
+        if(!appConfig) {
+            appConfig = new GenericUnityAsset(getAppConfigFile())
+            if(!appConfig.isValid()) {
+                throw new StopExecutionException('provided appConfig is invalid')
+            }
+        }
+
+        appConfig
+    }
+
+    @Internal("read from appConfig file")
     String getBuildPlatform() {
-        def platform = PropertyUtils.convertToString(buildPlatform)
-        platform
-    }
-
-    void setBuildPlatform(Object platform) {
-        buildPlatform = platform
-    }
-
-    void buildPlatform(Object platform) {
-        setBuildPlatform(platform)
-    }
-
-    @Input
-    String getBuildEnvironment() {
-        PropertyUtils.convertToString(buildEnvironment)
-    }
-
-    void setBuildEnvironment(Object environment) {
-        buildEnvironment = environment
-    }
-
-    void buildEnvironment(Object environment) {
-        setBuildEnvironment(environment)
+        getAppConfig()[BUILD_TARGET_KEY]
     }
 
     @Input
@@ -160,10 +171,13 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     protected void exec() {
         File out = getOutputDirectory()
         out.mkdirs()
-        String customArgs = "-CustomArgs:platform=${getBuildPlatform()};"
-        customArgs += "environment=${getBuildEnvironment()};"
+        String customArgs = "-CustomArgs:appConfig=${getAppConfigFile()};"
         customArgs += "outputPath=${out.getPath()};"
         customArgs += "version=${getVersion()};"
+
+        if (getBuildPlatform()) {
+            args BatchModeFlags.BUILD_TARGET, getBuildPlatform()
+        }
 
         if (getToolsVersion()) {
             customArgs += "toolsVersion=${getToolsVersion()}"
@@ -172,22 +186,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         args "-executeMethod", getExportMethodName()
         args customArgs
 
-        if (getBuildTarget() == BuildTarget.undefined) {
-            args BatchModeFlags.BUILD_TARGET, convertBuildPlatformToBuildTarget(getBuildPlatform())
-        }
         super.exec()
     }
 
-    BuildTarget convertBuildPlatformToBuildTarget(Object platform) {
-        BuildTarget buildTarget
-        try {
-            buildTarget = PropertyUtils.convertToString(platform).toLowerCase() as BuildTarget
-        }
-        catch (IllegalArgumentException ignored) {
-            logger.warn("build target ${platform} unknown")
-            buildTarget = BuildTarget.undefined
-        }
-
-        buildTarget
-    }
 }

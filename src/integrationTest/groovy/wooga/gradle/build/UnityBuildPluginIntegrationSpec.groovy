@@ -19,93 +19,39 @@ package wooga.gradle.build
 
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
+import org.yaml.snakeyaml.Yaml
+import spock.genesis.Gen
+import spock.genesis.transform.Iterations
+import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.unity.batchMode.BatchModeFlags
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
-
-    @Unroll
-    def "can override default platforms/environments in extension with #propertyInstruction"() {
-        given: "a default gradle project"
-
-        assert runTasksWithFailure(taskName, "--dry-run")
-
-        when: "change default platforms"
-        buildFile << """
-            ${propertyInstruction}
-        """.stripIndent()
-
-        then:
-        runTasksSuccessfully(taskName, "--dry-run")
-
-        where:
-        taskName             | propertyInstruction
-        "exportAlphaCi"      | "unityBuild.platforms = ['alpha']"
-        "exportBetaCi"       | "unityBuild.platforms(['beta'])"
-        "exportGammaCi"      | "unityBuild.platform('gamma')"
-        "exportDeltaCi"      | "unityBuild.platforms('delta', 'epsilon')"
-        "exportAndroidAlpha" | "unityBuild.environments = ['alpha']"
-        "exportAndroidBeta"  | "unityBuild.environments(['beta'])"
-        "exportAndroidGamma" | "unityBuild.environment('gamma')"
-        "exportAndroidDelta" | "unityBuild.environments('delta', 'epsilon')"
-        "exportZetaAlpha"    | "unityBuild.environments = ['alpha']\n unityBuild.platforms = ['zeta']"
-        "exportEtaBeta"      | "unityBuild.environments(['beta'])\n unityBuild.platforms(['eta'])"
-        "exportThetaGamma"   | "unityBuild.environment('gamma')\n unityBuild.platform('theta')"
-        "exportIotaDelta"    | "unityBuild.environments('delta', 'epsilon')\n unityBuild.platforms('iota', 'kappa')"
-    }
-
-    @Unroll
-    def "can override default platforms/environments in properties with #propertyInstruction"() {
-        given: "a default gradle project"
-
-        assert runTasksWithFailure(taskName, "--dry-run")
-        when: "change default platforms"
-        createFile("gradle.properties") << """
-            ${propertyInstruction}
-        """.stripIndent()
-
-        then:
-        runTasksSuccessfully(taskName, "--dry-run")
-
-        where:
-        taskName             | propertyInstruction
-        "exportAlphaCi"      | "unityBuild.platforms=alpha,beta"
-        "exportBetaCi"       | "unityBuild.platforms=alpha,beta"
-        "exportAndroidAlpha" | "unityBuild.environments=alpha,beta"
-        "exportAndroidBeta"  | "unityBuild.environments=alpha,beta"
-        "exportZetaAlpha"    | "unityBuild.environments=alpha,beta\nunityBuild.platforms=zeta,kappa"
-        "exportKappaBeta"    | "unityBuild.environments=alpha,beta\nunityBuild.platforms=zeta,kappa"
-    }
 
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
-    @Unroll
-    def "can override default platforms/environments in environment with #propertyInstruction"() {
-        given: "a default gradle project"
+    def setup() {
+        //create the default location for app configs
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
+        appConfigsDir.mkdirs()
 
-        assert runTasksWithFailure(taskName, "--dry-run")
-
-        when: "change default platforms"
-        propertyInstruction.each { k, v ->
-            environmentVariables.set(k, v)
+        ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            Yaml yaml = new Yaml()
+            def buildTarget = it.name.split(/_/, 1).first()
+            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'buildTarget': buildTarget]]
+            it << yaml.dump(appConfig)
         }
 
-        then:
-        runTasksSuccessfully(taskName, "--dry-run")
-
-        where:
-        taskName             | propertyInstruction
-        "exportAlphaCi"      | ['UNITY_BUILD_PLATFORMS': "alpha,beta"]
-        "exportBetaCi"       | ['UNITY_BUILD_PLATFORMS': "alpha,beta"]
-        "exportAndroidAlpha" | ['UNITY_BUILD_ENVIRONMENTS': "alpha,beta"]
-        "exportAndroidBeta"  | ['UNITY_BUILD_ENVIRONMENTS': "alpha,beta"]
-        "exportZetaAlpha"    | ['UNITY_BUILD_ENVIRONMENTS': "alpha,beta", 'UNITY_BUILD_PLATFORMS': "zeta,kappa"]
-        "exportKappaBeta"    | ['UNITY_BUILD_ENVIRONMENTS': "alpha,beta", 'UNITY_BUILD_PLATFORMS': "zeta,kappa"]
+        Yaml yaml = new Yaml()
+        createFile("custom.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
     }
 
     @Unroll
-    def ":#taskToRun calls Untity export method with correct arguments"() {
-        given: "a default gradle project"
+    def ":#taskToRun calls Untity export method with buildType fetched from appConfig"() {
+        given: "a project with multiple appConfigs"
+        and: "a custom appConfig without buildTarget"
 
         when:
         def result = runTasksSuccessfully(taskToRun)
@@ -115,16 +61,27 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains(expectedParameters)
 
         where:
-        taskToRun                 | expectedParameters
-        "exportAndroidCi"         | "-CustomArgs:platform=android;environment=ci"
-        "exportAndroidStaging"    | "-CustomArgs:platform=android;environment=staging"
-        "exportAndroidProduction" | "-CustomArgs:platform=android;environment=production"
-        "exportIOSCi"             | "-CustomArgs:platform=iOS;environment=ci"
-        "exportIOSStaging"        | "-CustomArgs:platform=iOS;environment=staging"
-        "exportIOSProduction"     | "-CustomArgs:platform=iOS;environment=production"
-        "exportWebGLCi"           | "-CustomArgs:platform=webGL;environment=ci"
-        "exportWebGLStaging"      | "-CustomArgs:platform=webGL;environment=staging"
-        "exportWebGLProduction"   | "-CustomArgs:platform=webGL;environment=production"
+        taskToRun         | expectedParameters
+        "exportAndroidCi" | "${BatchModeFlags.BUILD_TARGET} android"
+        "exportIosCi"     | "${BatchModeFlags.BUILD_TARGET} ios"
+        "exportWebGLCi"   | "${BatchModeFlags.BUILD_TARGET} webGL"
+    }
+
+    @Unroll
+    def ":#taskToRun calls Untity export method without buildType when not contained in appConfig"() {
+        given: "a project with multiple appConfigs"
+        and: "a custom appConfig without buildTarget"
+
+        when:
+        def result = runTasksSuccessfully(taskToRun)
+
+        then:
+        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
+        !result.standardOutput.contains(expectedParameters)
+
+        where:
+        taskToRun      | expectedParameters
+        "exportCustom" | "${BatchModeFlags.BUILD_TARGET}"
     }
 
     String convertPropertyToEnvName(String property) {
@@ -179,6 +136,10 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
 
+        buildFile << """
+        unityBuild.defaultAppConfigName 'android_ci'
+        """.stripIndent()
+
         when:
         def result = runTasks(taskToRun)
 
@@ -190,6 +151,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         taskToRun  | expectedDefaultHandlerTask
         "assemble" | "AndroidCi"
         "check"    | "AndroidCi"
+        "publish"  | "AndroidCi"
     }
 
     @Rule
@@ -198,9 +160,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def ":#taskToRun executes override default #override in #location with #value task"() {
         given: "a default gradle project with adjusted default platform/environment settings"
-        def extensionKey = override == 'platform' ? 'unityBuild.defaultPlatform' : 'unityBuild.defaultEnvironment'
-        def propertiesKey = override == 'platform' ? 'unityBuild.platform' : 'unityBuild.environment'
-        def envKey = override == 'platform' ? 'UNITY_BUILD_PLATFORM' : 'UNITY_BUILD_ENVIRONMENT'
+        def extensionKey = 'unityBuild.defaultAppConfigName'
+        def propertiesKey = 'unityBuild.defaultAppConfigName'
+        def envKey = 'UNITY_BUILD_DEFAULT_APP_CONFIG_NAME'
 
         if (location == "environment") {
             envs.set(envKey, value)
@@ -221,25 +183,16 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.wasExecuted(handleTaskName)
 
         where:
-        taskToRun  | override      | location      | value     | expectedDefaultHandlerTask
-        "assemble" | "platform"    | "environment" | 'iOS'     | 'IOSCi'
-        "assemble" | "platform"    | "properties"  | 'iOS'     | 'IOSCi'
-        "assemble" | "platform"    | "extension"   | 'iOS'     | 'IOSCi'
-        "check"    | "platform"    | "environment" | 'iOS'     | 'IOSCi'
-        "check"    | "platform"    | "properties"  | 'iOS'     | 'IOSCi'
-        "check"    | "platform"    | "extension"   | 'iOS'     | 'IOSCi'
-        "publish"  | "platform"    | "environment" | 'iOS'     | 'IOSCi'
-        "publish"  | "platform"    | "properties"  | 'iOS'     | 'IOSCi'
-        "publish"  | "platform"    | "extension"   | 'iOS'     | 'IOSCi'
-        "assemble" | "environment" | "environment" | 'staging' | 'AndroidStaging'
-        "assemble" | "environment" | "properties"  | 'staging' | 'AndroidStaging'
-        "assemble" | "environment" | "extension"   | 'staging' | 'AndroidStaging'
-        "check"    | "environment" | "environment" | 'staging' | 'AndroidStaging'
-        "check"    | "environment" | "properties"  | 'staging' | 'AndroidStaging'
-        "check"    | "environment" | "extension"   | 'staging' | 'AndroidStaging'
-        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
-        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
-        "publish"  | "environment" | "extension"   | 'staging' | 'AndroidStaging'
+        taskToRun  | override               | location      | value        | expectedDefaultHandlerTask
+        "assemble" | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "assemble" | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "assemble" | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "check"    | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "check"    | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "check"    | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "publish"  | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "publish"  | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "publish"  | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
     }
 
     @Unroll
@@ -265,5 +218,34 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "2.0.0"  | "List<String>" | "[2.0.0]"
 
         value = wrapValueBasedOnType(rawValue, type)
+    }
+
+    @Shared
+    def characterPattern = ':_\\-<>|*\\\\? '
+
+    @Iterations(100)
+    @Unroll
+    def "generates task :#expectedTaskName from app config name #appConfigName"() {
+        given: "a project with custom app config directory"
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigsCustom")
+        appConfigsDir.mkdirs()
+
+        buildFile << """
+        unityBuild.appConfigsDirectory = "${escapedPath(appConfigsDir.path)}"
+        """.stripIndent()
+
+        and: "app config with delimiter in names"
+        Yaml yaml = new Yaml()
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test']]
+        createFile("${appConfigName}.asset", appConfigsDir) << yaml.dump(appConfig)
+
+        expect:
+        runTasksSuccessfully(expectedTaskName, '--dry-run')
+
+        where:
+        appConfigName << Gen.these('test-config-file','test_config_file','test config file')
+                .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
+        expectedTaskName << Gen.any("assemble", "export", "check", "publish").map { "${it}TestConfigFile" }
     }
 }
