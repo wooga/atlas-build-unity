@@ -58,30 +58,10 @@ class UnityBuildPluginSpec extends ProjectSpec {
 
         where:
         taskName                              | taskType
-        UnityBuildPlugin.EXPORT_ALL_TASK_NAME | DefaultTask
-        "exportIOSCi"                         | UnityBuildPlayerTask
-        "exportAndroidCi"                     | UnityBuildPlayerTask
-        "exportWebGLCi"                       | UnityBuildPlayerTask
-        "exportIOSStaging"                    | UnityBuildPlayerTask
-        "exportAndroidStaging"                | UnityBuildPlayerTask
-        "exportWebGLStaging"                  | UnityBuildPlayerTask
-        "exportIOSProduction"                 | UnityBuildPlayerTask
-        "exportAndroidProduction"             | UnityBuildPlayerTask
-        "exportWebGLProduction"               | UnityBuildPlayerTask
-        "exportCi"                            | DefaultTask
-        "exportStaging"                       | DefaultTask
-        "exportProduction"                    | DefaultTask
-        "exportIOS"                           | DefaultTask
-        "exportAndroid"                       | DefaultTask
-        "exportWebGL"                         | DefaultTask
         "publish"                             | DefaultTask
-        "publishAndroidCi"                    | DefaultTask
         "assemble"                            | DefaultTask
-        "assembleAndroidCi"                   | DefaultTask
         "build"                               | DefaultTask
-        "buildAndroidCi"                      | DefaultTask
         "check"                               | DefaultTask
-        "checkAndroidCi"                      | DefaultTask
     }
 
     @Unroll

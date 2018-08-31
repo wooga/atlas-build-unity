@@ -18,17 +18,6 @@
 package wooga.gradle.build.unity
 
 class UnityBuildPluginConsts {
-    /**
-     * Default build environments.
-     * @value ["ci", "staging", "production"]
-     */
-    static List<String> DEFAULT_ENVIRONMENTS = ["ci", "staging", "production"]
-
-    /**
-     * Default build platforms.
-     * @value ["android", "iOS", "webGL"]
-     */
-    static List<String> DEFAULT_PLATFORMS = ["android", "iOS", "webGL"]
 
     /**
      * Default value for {@code exportMethodname}.
@@ -36,66 +25,6 @@ class UnityBuildPluginConsts {
      * @value "Wooga.UnifiedBuildSystem.Build.Export"
      */
     static String DEFAULT_EXPORT_METHOD_NAME = "Wooga.UnifiedBuildSystem.Build.Export"
-
-    /**
-     * Gradle property baseName to set the default value for {@code platforms}.
-     *
-     * @value "unityBuild.platforms"
-     * @see UnityBuildPluginExtension#getPlatforms()
-     */
-    static String PLATFORMS_OPTION = "unityBuild.platforms"
-
-    /**
-    * Environment variable baseName to set the default value for {@code platforms}.
-    *
-    * @value "UNITY_BUILD_PLATFORMS"
-    * @see UnityBuildPluginExtension#getPlatforms()
-    */
-    static String PLATFORMS_ENV_VAR = "UNITY_BUILD_PLATFORMS"
-
-    /**
-     * Gradle property baseName to set the default value for {@code buildPlatform}.
-     *
-     * @value "unityBuild.platform"
-     */
-    static String PLATFORM_OPTION = "unityBuild.platform"
-
-    /**
-     * Environment variable baseName to set the default value for {@code buildPlatform}.
-     *
-     * @value "UNITY_BUILD_PLATFORM"
-     */
-    static String PLATFORM_ENV_VAR = "UNITY_BUILD_PLATFORM"
-
-    /**
-     * Gradle property baseName to set the default value for {@code environments}.
-     *
-     * @value "unityBuild.environments"
-     * @see UnityBuildPluginExtension#getEnvironments()
-     */
-    static String ENVIRONMENTS_OPTION = "unityBuild.environments"
-
-    /**
-     * Environment variable baseName to set the default value for {@code environments}.
-     *
-     * @value "unityBuild.environments"
-     * @see UnityBuildPluginExtension#getEnvironments()
-     */
-    static String ENVIRONMENTS_ENV_VAR = "UNITY_BUILD_ENVIRONMENTS"
-
-    /**
-     * Gradle property baseName to set the default value for {@code buildEnvironment}.
-     *
-     * @value "unityBuild.environment"
-     */
-    static String ENVIRONMENT_OPTION = "unityBuild.environment"
-
-    /**
-     * Environment variable baseName to set the default value for {@code buildEnvironment}.
-     *
-     * @value "UNITY_BUILD_ENVIRONMENT"
-     */
-    static String ENVIRONMENT_ENV_VAR = "UNITY_BUILD_ENVIRONMENT"
 
     /**
      * Gradle property baseName to set the default value for {@code exportMethodName}.
@@ -112,6 +41,23 @@ class UnityBuildPluginConsts {
      * @see UnityBuildPluginExtension#getExportMethodName()
      */
     static String EXPORT_METHOD_NAME_ENV_VAR = "UNITY_BUILD_EXPORT_METHOD_NAME"
+
+    /**
+     * Gradle property baseName to set the default value for {@code defaultAppConfigName}.
+     *
+     * @value "unityBuild.defaultAppConfigName"
+     * @see UnityBuildPluginExtension#getDefaultAppConfigName()
+     */
+    static String DEFAULT_APP_CONFIG_NAME_OPTION = "unityBuild.defaultAppConfigName"
+
+    /**
+     * Environment variable to set the default value for {@code exportMethodName}.
+     *
+     * @value "UNITY_BUILD_DEFAULT_APP_CONFIG_NAME"
+     * @see UnityBuildPluginExtension#getDefaultAppConfigName()
+     */
+    static String DEFAULT_APP_CONFIG_NAME_ENV_VAR = "UNITY_BUILD_DEFAULT_APP_CONFIG_NAME"
+
 
     /**
      * Gradle property baseName to set the default value for {@code toolsVersion}.
@@ -136,4 +82,28 @@ class UnityBuildPluginConsts {
      * @see UnityBuildPluginExtension#getOutputDirectoryBase()
      */
     static String DEFAULT_EXPORT_DIRECTORY_NAME = "export"
+
+    /**
+     * Default path to app configs in Assets dir.
+     *
+     * @value "export"
+     * @see UnityBuildPluginExtension#getAppConfigsDirectory()
+     */
+    static String DEFAULT_APP_CONFIGS_DIRECTORY = "UnifiedBuildSystem-Assets/AppConfigs"
+
+    /**
+     * Default include pattern for app configs.
+     *
+     * @value "unityBuild.toolsVersion"
+     * @see UnityBuildPluginExtension#getAppConfigs()
+     */
+    static String DEFAULT_APP_CONFIGS_INCLUDE_PATTERN = "*.asset"
+
+    /**
+     * Default exclude pattern for app configs.
+     *
+     * @value "unityBuild.toolsVersion"
+     * @see UnityBuildPluginExtension#getAppConfigs()
+     */
+    static String DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN = "*.meta"
 }

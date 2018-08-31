@@ -17,16 +17,30 @@
 
 package wooga.gradle.build.unity.tasks
 
+import org.apache.commons.io.FilenameUtils
+import org.yaml.snakeyaml.Yaml
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
-import wooga.gradle.unity.batchMode.BuildTarget
+import wooga.gradle.unity.batchMode.BatchModeFlags
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
     def setup() {
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "CustomConfigs")
+        appConfigsDir.mkdirs()
+
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
+        ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            Yaml yaml = new Yaml()
+            it << yaml.dump(appConfig)
+        }
+
         buildFile << """
-            task("exportCustom", type: wooga.gradle.build.unity.tasks.UnityBuildPlayerTask)
+            task("exportCustom", type: wooga.gradle.build.unity.tasks.UnityBuildPlayerTask) {
+                appConfigFile file('Assets/CustomConfigs/custom.asset')
+            }
         """.stripIndent()
     }
 
@@ -38,10 +52,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         then:
         result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
-        result.standardOutput.contains("platform=android")
-        result.standardOutput.contains("environment=ci")
         result.standardOutput.contains("version=unspecified")
-        result.standardOutput.contains("outputPath=${new File(projectDir, '/build/export/android/ci/project').path}")
+        result.standardOutput.contains("outputPath=${new File(projectDir, '/build/export/custom/project').path}")
         !result.standardOutput.contains("toolsVersion=")
     }
 
@@ -62,77 +74,98 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         }
 
         result.standardOutput.contains("-executeMethod ${expectedExportMethod}")
-        result.standardOutput.contains("platform=${expectedPlatform}")
-        result.standardOutput.contains("-buildTarget ${expectedTarget}")
-        result.standardOutput.contains("environment=${expectedEnvironment}")
         result.standardOutput.contains("version=${expectedVersion}")
         result.standardOutput.contains("outputPath=${new File(projectDir, expectedOutputPath).path}")
 
         where:
-        property              | rawValue              | type       | useSetter
-        "exportMethodName"    | "method1"             | 'String'   | true
-        "exportMethodName"    | "method2"             | 'String'   | false
-        "exportMethodName"    | "method3"             | 'Callable' | true
-        "exportMethodName"    | "method4"             | 'Callable' | false
-        "exportMethodName"    | "method5"             | 'Closure'  | true
-        "exportMethodName"    | "method6"             | 'Closure'  | false
-        "exportMethodName"    | "method7"             | 'Object'   | true
-        "exportMethodName"    | "method8"             | 'Object'   | false
-        "buildEnvironment"    | "environment1"        | 'String'   | true
-        "buildEnvironment"    | "environment2"        | 'String'   | false
-        "buildEnvironment"    | "environment3"        | 'Callable' | true
-        "buildEnvironment"    | "environment4"        | 'Callable' | false
-        "buildEnvironment"    | "environment5"        | 'Closure'  | true
-        "buildEnvironment"    | "environment6"        | 'Closure'  | false
-        "buildEnvironment"    | "environment7"        | 'Object'   | true
-        "buildEnvironment"    | "environment8"        | 'Object'   | false
-        "buildPlatform"       | "platform1"           | 'String'   | true
-        "buildPlatform"       | "platform2"           | 'String'   | false
-        "buildPlatform"       | "platform3"           | 'Callable' | true
-        "buildPlatform"       | "platform4"           | 'Callable' | false
-        "buildPlatform"       | "platform5"           | 'Closure'  | true
-        "buildPlatform"       | "platform6"           | 'Closure'  | false
-        "buildPlatform"       | "platform7"           | 'Object'   | true
-        "buildPlatform"       | "platform8"           | 'Object'   | false
-        "version"             | "1.0.0"               | 'String'   | true
-        "version"             | "1.0.1"               | 'String'   | false
-        "version"             | "2.0.0"               | 'Callable' | true
-        "version"             | "2.0.1"               | 'Callable' | false
-        "version"             | "3.0.0"               | 'Closure'  | true
-        "version"             | "3.0.1"               | 'Closure'  | false
-        "version"             | "4.0.0"               | 'Object'   | true
-        "version"             | "4.0.1"               | 'Object'   | false
-        "toolsVersion"        | "1.0.0"               | 'String'   | true
-        "toolsVersion"        | "1.0.1"               | 'String'   | false
-        "toolsVersion"        | "2.0.0"               | 'Callable' | true
-        "toolsVersion"        | "2.0.1"               | 'Callable' | false
-        "toolsVersion"        | "3.0.0"               | 'Closure'  | true
-        "toolsVersion"        | "3.0.1"               | 'Closure'  | false
-        "toolsVersion"        | "4.0.0"               | 'Object'   | true
-        "toolsVersion"        | "4.0.1"               | 'Object'   | false
-        "outputDirectoryBase" | "build/customExport"  | 'String'   | true
-        "outputDirectoryBase" | "build/customExport2" | 'String'   | false
-        "outputDirectoryBase" | "build/customExport3" | 'File'     | true
-        "outputDirectoryBase" | "build/customExport4" | 'File'     | false
-        "outputDirectoryBase" | "build/customExport5" | 'Closure'  | true
-        "outputDirectoryBase" | "build/customExport6" | 'Closure'  | false
-        "outputDirectoryBase" | "build/customExport5" | 'Callable' | true
-        "outputDirectoryBase" | "build/customExport6" | 'Callable' | false
+        property              | rawValue                          | type       | useSetter
+        "exportMethodName"    | "method1"                         | 'String'   | true
+        "exportMethodName"    | "method2"                         | 'String'   | false
+        "exportMethodName"    | "method3"                         | 'Callable' | true
+        "exportMethodName"    | "method4"                         | 'Callable' | false
+        "exportMethodName"    | "method5"                         | 'Closure'  | true
+        "exportMethodName"    | "method6"                         | 'Closure'  | false
+        "exportMethodName"    | "method7"                         | 'Object'   | true
+        "exportMethodName"    | "method8"                         | 'Object'   | false
+        "version"             | "1.0.0"                           | 'String'   | true
+        "version"             | "1.0.1"                           | 'String'   | false
+        "version"             | "2.0.0"                           | 'Callable' | true
+        "version"             | "2.0.1"                           | 'Callable' | false
+        "version"             | "3.0.0"                           | 'Closure'  | true
+        "version"             | "3.0.1"                           | 'Closure'  | false
+        "version"             | "4.0.0"                           | 'Object'   | true
+        "version"             | "4.0.1"                           | 'Object'   | false
+        "toolsVersion"        | "1.0.0"                           | 'String'   | true
+        "toolsVersion"        | "1.0.1"                           | 'String'   | false
+        "toolsVersion"        | "2.0.0"                           | 'Callable' | true
+        "toolsVersion"        | "2.0.1"                           | 'Callable' | false
+        "toolsVersion"        | "3.0.0"                           | 'Closure'  | true
+        "toolsVersion"        | "3.0.1"                           | 'Closure'  | false
+        "toolsVersion"        | "4.0.0"                           | 'Object'   | true
+        "toolsVersion"        | "4.0.1"                           | 'Object'   | false
+        "outputDirectoryBase" | "build/customExport"              | 'String'   | true
+        "outputDirectoryBase" | "build/customExport2"             | 'String'   | false
+        "outputDirectoryBase" | "build/customExport3"             | 'File'     | true
+        "outputDirectoryBase" | "build/customExport4"             | 'File'     | false
+        "outputDirectoryBase" | "build/customExport5"             | 'Closure'  | true
+        "outputDirectoryBase" | "build/customExport6"             | 'Closure'  | false
+        "outputDirectoryBase" | "build/customExport5"             | 'Callable' | true
+        "outputDirectoryBase" | "build/customExport6"             | 'Callable' | false
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'String'   | true
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'String'   | false
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'     | true
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'     | false
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Closure'  | true
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Closure'  | false
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Callable' | true
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Callable' | false
 
         expectedExportMethod = (property == "exportMethodName") ? rawValue : 'Wooga.UnifiedBuildSystem.Build.Export'
-        expectedEnvironment = (property == "buildEnvironment") ? rawValue : 'ci'
-        expectedPlatform = (property == "buildPlatform") ? rawValue : 'android'
-        expectedTarget = (property == "buildPlatform") ? BuildTarget.undefined : 'android'
 
         expectedVersion = (property == "version") ? rawValue : 'unspecified'
         expectedToolsVersion = (property == "toolsVersion") ? rawValue : null
 
         expectedOutputDirectoryBase = (property == 'outputDirectoryBase') ? rawValue : "/build/export"
-        expectedOutputPath = "$expectedOutputDirectoryBase/$expectedPlatform/$expectedEnvironment/project"
+        expectedAppConfigFile = (property == 'appConfigFile') ? new File(rawValue) : new File("Assets/CustomConfigs/custom.asset")
+
+        expectedOutputPath = "$expectedOutputDirectoryBase/${FilenameUtils.removeExtension(expectedAppConfigFile.name)}/project"
 
         methodIsOptional = (property == "toolsVersion") ? 'optional' : ''
         methodName = (useSetter) ? "set${property.capitalize()}" : property
         value = wrapValueBasedOnType(rawValue, type)
+    }
+
+    @Unroll
+    def "#message buildTarget from appConfig when value is #valueType"() {
+        given: "a custom app config"
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "CustomConfigs")
+
+        def appConfigFile = createFile('buildTarget_config.asset', appConfigsDir)
+        appConfigFile.text = "MonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
+
+        and: "the app config configured"
+        buildFile << """
+            exportCustom.appConfigFile = file('${escapedPath(appConfigFile.path)}')
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET}") == shouldContainBuildTargetFlag
+        if (shouldContainBuildTargetFlag) {
+            result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET} ${batchModeBuildTarget}")
+        }
+
+        where:
+        batchModeBuildTarget | valueType             | shouldContainBuildTargetFlag
+        'value'              | 'string'              | true
+        "'value'"            | 'quoted string'       | true
+        ''                   | 'empty'               | false
+        "''"                 | 'quoted empty string' | false
+        null                 | 'null'                | false
+        message = shouldContainBuildTargetFlag ? 'use' : 'skip'
     }
 
     @Unroll
@@ -153,15 +186,13 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         !result.wasUpToDate('exportCustom')
 
         where:
-        property           | value          | useSetter
-        "exportMethodName" | "method1"      | true
-        "exportMethodName" | "method2"      | false
-        "buildEnvironment" | "environment1" | true
-        "buildEnvironment" | "environment2" | false
-        "buildPlatform"    | "platform1"    | true
-        "buildPlatform"    | "platform2"    | false
-        "version"          | "1.0.1"        | true
-        "version"          | "1.1.0"        | false
+        property           | value                             | useSetter
+        "exportMethodName" | "method1"                         | true
+        "exportMethodName" | "method2"                         | false
+        "appConfigFile"    | "Assets/CustomConfigs/test.asset" | true
+        "appConfigFile"    | "Assets/CustomConfigs/test.asset" | false
+        "version"          | "1.0.1"                           | true
+        "version"          | "1.1.0"                           | false
         methodName = (useSetter) ? "set${property.capitalize()}" : property
     }
 

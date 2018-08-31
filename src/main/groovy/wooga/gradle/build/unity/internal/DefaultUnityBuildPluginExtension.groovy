@@ -18,112 +18,32 @@
 package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
-import org.gradle.util.GUtil
+import org.gradle.api.file.FileCollection
 import wooga.gradle.build.unity.UnityBuildPluginConsts
 import wooga.gradle.build.unity.UnityBuildPluginExtension
+import wooga.gradle.unity.UnityPluginExtension
 
 class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
-    private final Set<String> environments = new ArrayList<String>()
-    private final Set<String> platforms = new ArrayList<String>()
     private final Project project
 
-    private String defaultPlatform
-    private String defaultEnvironment
     private String toolsVersion
     private String exportMethodName
 
     private Object outputDirectoryBase
+    private Object appConfigsDirectory
+    private String appConfigIncludePattern
+    private String appConfigExcludePattern
+    private String defaultAppConfigName
+    private FileCollection appConfigs
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
     }
 
     @Override
-    Set<String> getPlatforms() {
-        String platforms = System.getenv(UnityBuildPluginConsts.PLATFORMS_ENV_VAR) ?:
-                project.properties.get(UnityBuildPluginConsts.PLATFORMS_OPTION)
-
-        if (this.platforms.empty && platforms) {
-            this.platforms(platforms.split(',').collect { it.trim() })
-        } else {
-            this.platforms(UnityBuildPluginConsts.DEFAULT_PLATFORMS)
-        }
-
-        this.platforms
-    }
-
-    @Override
-    void setPlatforms(Iterable platforms) {
-        this.platforms.clear()
-        this.platforms.addAll(platforms)
-    }
-
-    @Override
-    UnityBuildPluginExtension platforms(Iterable platforms) {
-        GUtil.addToCollection(this.platforms, platforms)
-        this
-    }
-
-    @Override
-    UnityBuildPluginExtension platforms(String[] platforms) {
-        if (environments == null) {
-            throw new IllegalArgumentException("platforms == null!")
-        }
-        this.platforms.addAll(Arrays.asList(platforms))
-        this
-    }
-
-    @Override
-    UnityBuildPluginExtension platform(String platform) {
-        this.platforms.add(platform)
-        return this
-    }
-
-    @Override
-    Set<String> getEnvironments() {
-        String environments = System.getenv(UnityBuildPluginConsts.ENVIRONMENTS_ENV_VAR) ?:
-                project.properties.get(UnityBuildPluginConsts.ENVIRONMENTS_OPTION)
-
-        if (this.environments.empty && environments) {
-            this.environments(environments.split(',').collect { it.trim() })
-        } else {
-            this.environments(UnityBuildPluginConsts.DEFAULT_ENVIRONMENTS)
-        }
-
-        this.environments
-    }
-
-    @Override
-    void setEnvironments(Iterable environments) {
-        this.environments.clear()
-        this.environments.addAll(environments)
-    }
-
-    @Override
-    UnityBuildPluginExtension environments(Iterable environments) {
-        GUtil.addToCollection(this.environments, environments)
-        this
-    }
-
-    @Override
-    UnityBuildPluginExtension environments(String[] environments) {
-        if (environments == null) {
-            throw new IllegalArgumentException("environments == null!")
-        }
-        this.environments.addAll(Arrays.asList(environments))
-        this
-    }
-
-    @Override
-    UnityBuildPluginExtension environment(String environment) {
-        this.environments.add(environment)
-        this
-    }
-
-    @Override
     String getExportMethodName() {
-        if(exportMethodName) {
+        if (exportMethodName) {
             return exportMethodName
         }
         System.getenv().get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_ENV_VAR) ?:
@@ -142,48 +62,28 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     }
 
     @Override
-    String getDefaultPlatform() {
-        if(defaultPlatform) {
-            return defaultPlatform
+    String getDefaultAppConfigName() {
+        if (defaultAppConfigName) {
+            return defaultAppConfigName
         }
-        System.getenv()[UnityBuildPluginConsts.PLATFORM_ENV_VAR] ?:
-                project.properties.get(UnityBuildPluginConsts.PLATFORM_OPTION, getPlatforms().first())
+        System.getenv()[UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_ENV_VAR] ?:
+                project.properties.get(UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_OPTION)
     }
 
     @Override
-    void setDefaultPlatform(String platform) {
-        defaultPlatform = platform
+    void setDefaultAppConfigName(String name) {
+        defaultAppConfigName = name
     }
 
     @Override
-    UnityBuildPluginExtension defaultPlatform(String platform) {
-        setDefaultPlatform(platform)
-        this
-    }
-
-    @Override
-    String getDefaultEnvironment() {
-        if(defaultEnvironment) {
-            return defaultEnvironment
-        }
-        System.getenv()[UnityBuildPluginConsts.ENVIRONMENT_ENV_VAR] ?:
-                project.properties.get(UnityBuildPluginConsts.ENVIRONMENT_OPTION, getEnvironments().first())
-    }
-
-    @Override
-    void setDefaultEnvironment(String environment) {
-        defaultEnvironment = environment
-    }
-
-    @Override
-    UnityBuildPluginExtension defaultEnvironment(String environment) {
-        setDefaultEnvironment(environment)
-        this
+    UnityBuildPluginExtension defaultAppConfigName(String name) {
+        setDefaultAppConfigName(name)
+        return this
     }
 
     @Override
     String getToolsVersion() {
-        if(toolsVersion) {
+        if (toolsVersion) {
             return toolsVersion
         }
         System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?:
@@ -219,5 +119,39 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     UnityBuildPluginExtension outputDirectoryBase(Object outputDirectoryBase) {
         setOutputDirectoryBase(outputDirectoryBase)
         this
+    }
+
+
+    File getAppConfigsDirectory() {
+        if (appConfigsDirectory) {
+            return project.file(appConfigsDirectory)
+        }
+
+        UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
+
+        project.file("${unity.assetsDir}/${UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_DIRECTORY}")
+    }
+
+
+    void setAppConfigsDirectory(Object appConfigsDirectory) {
+        this.appConfigsDirectory = appConfigsDirectory
+        appConfigs = null
+    }
+
+    @Override
+    UnityBuildPluginExtension appConfigsDirectory(Object appConfigsDirectory) {
+        setAppConfigsDirectory(appConfigsDirectory)
+        return this
+    }
+
+    @Override
+    FileCollection getAppConfigs() {
+        if(!appConfigs) {
+            appConfigs = project.fileTree(getAppConfigsDirectory()) {
+                it.include UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_INCLUDE_PATTERN
+                it.exclude UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN
+            }
+        }
+        appConfigs
     }
 }

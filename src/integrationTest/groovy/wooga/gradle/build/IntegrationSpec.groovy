@@ -59,7 +59,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
                 value = "['$rawValue']"
                 break
             default:
-                value = $rawValue
+                value = rawValue
         }
         value
     }
