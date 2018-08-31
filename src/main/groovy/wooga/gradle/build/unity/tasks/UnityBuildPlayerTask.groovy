@@ -28,7 +28,7 @@ import wooga.gradle.unity.utils.GenericUnityAsset
 
 class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
-    static String BUILD_TARGET_KEY = "buildTarget"
+    static String BUILD_TARGET_KEY = "batchModeBuildTarget"
 
     UnityBuildPlayerTask() {
         super(UnityBuildPlayerTask.class)

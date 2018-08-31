@@ -41,7 +41,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
             Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 1).first()
-            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'buildTarget': buildTarget]]
+            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
             it << yaml.dump(appConfig)
         }
 
