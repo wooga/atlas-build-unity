@@ -22,6 +22,7 @@ import org.yaml.snakeyaml.Yaml
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.unity.batchMode.BatchModeFlags
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
@@ -132,6 +133,39 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         methodIsOptional = (property == "toolsVersion") ? 'optional' : ''
         methodName = (useSetter) ? "set${property.capitalize()}" : property
         value = wrapValueBasedOnType(rawValue, type)
+    }
+
+    @Unroll
+    def "#message buildTarget from appConfig when value is #valueType"() {
+        given: "a custom app config"
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "CustomConfigs")
+
+        def appConfigFile = createFile('buildTarget_config.asset', appConfigsDir)
+        appConfigFile.text = "MonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
+
+        and: "the app config configured"
+        buildFile << """
+            exportCustom.appConfigFile = file('${escapedPath(appConfigFile.path)}')
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET}") == shouldContainBuildTargetFlag
+        if (shouldContainBuildTargetFlag) {
+            result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET} ${batchModeBuildTarget}")
+        }
+
+        where:
+        batchModeBuildTarget | valueType             | shouldContainBuildTargetFlag
+        'value'              | 'string'              | true
+        "'value'"            | 'quoted string'       | true
+        ''                   | 'empty'               | false
+        "''"                 | 'quoted empty string' | false
+        null                 | 'null'                | false
+        message = shouldContainBuildTargetFlag ? 'use' : 'skip'
     }
 
     @Unroll
