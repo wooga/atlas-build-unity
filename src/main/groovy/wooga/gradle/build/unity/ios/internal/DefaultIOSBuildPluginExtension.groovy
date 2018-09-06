@@ -18,6 +18,7 @@
 package wooga.gradle.build.unity.ios.internal
 
 import org.gradle.api.Action
+import org.gradle.api.credentials.PasswordCredentials
 import wooga.gradle.build.unity.ios.IOSBuildPluginExtension
 import static org.gradle.util.ConfigureUtil.configureUsing
 
@@ -158,20 +159,15 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     }
 
     DefaultIOSBuildPluginExtension() {
-        fastlaneCredentials = new PasswordCredentials()
+        fastlaneCredentials = new DefaultPasswordCredentials()
     }
 
-    class PasswordCredentials implements org.gradle.api.credentials.PasswordCredentials {
+    class DefaultPasswordCredentials implements PasswordCredentials {
 
         String username
         String password
 
-        PasswordCredentials() {
-        }
-
-        PasswordCredentials(String username, String password) {
-            this.username = username
-            this.password = password
+        DefaultPasswordCredentials() {
         }
 
         String toString() {
