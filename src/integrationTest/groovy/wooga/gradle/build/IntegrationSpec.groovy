@@ -17,6 +17,7 @@
 
 package wooga.gradle.build
 
+import nebula.test.functional.ExecutionResult
 import org.apache.commons.text.StringEscapeUtils
 
 class IntegrationSpec extends nebula.test.IntegrationSpec{
@@ -35,6 +36,10 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
             this.gradleVersion = gradleVersion
             fork = true
         }
+    }
+
+    Boolean outputContains(ExecutionResult result, String message) {
+        result.standardOutput.contains(message) || result.standardError.contains(message)
     }
 
     def wrapValueBasedOnType(Object rawValue, String type) {

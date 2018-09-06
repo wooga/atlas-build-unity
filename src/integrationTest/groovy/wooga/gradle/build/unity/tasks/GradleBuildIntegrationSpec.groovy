@@ -104,7 +104,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         def result = runTasksWithFailure('externalGradle')
 
         then:
-        result.standardError.contains("Task 'foo' not found")
+        outputContains(result,"Task 'foo' not found")
     }
 
     def "task fails when task is not part of external build"() {
@@ -120,7 +120,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         def result = runTasksWithFailure('externalGradle')
 
         then:
-        result.standardError.contains("Task 'baz' not found")
+        outputContains(result,"Task 'baz' not found")
     }
 
     @Unroll

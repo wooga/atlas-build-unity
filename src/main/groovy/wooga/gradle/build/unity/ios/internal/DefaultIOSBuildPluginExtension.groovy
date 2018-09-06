@@ -19,14 +19,12 @@ package wooga.gradle.build.unity.ios.internal
 
 import org.gradle.api.Action
 import org.gradle.api.credentials.PasswordCredentials
-import org.gradle.api.internal.artifacts.repositories.DefaultPasswordCredentials
-
 import wooga.gradle.build.unity.ios.IOSBuildPluginExtension
 import static org.gradle.util.ConfigureUtil.configureUsing
 
 class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
 
-    private final PasswordCredentials fastlaneCredentials
+    private final org.gradle.api.credentials.PasswordCredentials fastlaneCredentials
     private String keychainPassword
     private String certificatePassphrase
     private String applicationIdentifier
@@ -35,12 +33,12 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     private String configuration
 
     @Override
-    PasswordCredentials getFastlaneCredentials() {
+    org.gradle.api.credentials.PasswordCredentials getFastlaneCredentials() {
         fastlaneCredentials
     }
 
     @Override
-    void setFastlaneCredentials(PasswordCredentials cred) {
+    void setFastlaneCredentials(org.gradle.api.credentials.PasswordCredentials cred) {
         fastlaneCredentials.setUsername(cred.username)
         fastlaneCredentials.setPassword(cred.password)
         this
@@ -53,13 +51,13 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     }
 
     @Override
-    IOSBuildPluginExtension fastlaneCredentials(Action<PasswordCredentials> action) {
+    IOSBuildPluginExtension fastlaneCredentials(Action<org.gradle.api.credentials.PasswordCredentials> action) {
         action.execute(fastlaneCredentials)
         this
     }
 
     @Override
-    IOSBuildPluginExtension fastlaneCredentials(PasswordCredentials cred) {
+    IOSBuildPluginExtension fastlaneCredentials(org.gradle.api.credentials.PasswordCredentials cred) {
         setFastlaneCredentials(cred)
         this
     }
@@ -162,5 +160,18 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
 
     DefaultIOSBuildPluginExtension() {
         fastlaneCredentials = new DefaultPasswordCredentials()
+    }
+
+    class DefaultPasswordCredentials implements PasswordCredentials {
+
+        String username
+        String password
+
+        DefaultPasswordCredentials() {
+        }
+
+        String toString() {
+            String.format("Credentials [username: %s]", this.username)
+        }
     }
 }
