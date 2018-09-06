@@ -72,7 +72,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     assetsFileTree.include(new Spec<FileTreeElement>() {
                         @Override
                         boolean isSatisfiedBy(FileTreeElement element) {
-                            def path = element.path.toLowerCase()
+                            def path = element.getRelativePath().getPathString().toLowerCase()
                             def name = element.name.toLowerCase()
                             def status = true
                             if (path.contains("plugins")
