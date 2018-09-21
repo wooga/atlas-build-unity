@@ -18,7 +18,9 @@
 package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
@@ -28,78 +30,19 @@ import org.gradle.util.CollectionUtils
 
 class GradleBuild extends DefaultTask {
 
-    private Object dir
-    private final List<String> tasks = new ArrayList<String>()
-    private final List<String> buildArguments = new ArrayList<String>()
-
     @Internal
-    File getDir() {
-        project.file(dir)
-    }
-
-    void setDir(Object dir) {
-        this.dir = dir
-    }
-
-    GradleBuild dir(Object dir) {
-        setDir(dir)
-        this
-    }
+    final DirectoryProperty dir = project.layout.directoryProperty()
 
     @Input
-    List<String> getTasks() {
-        this.tasks
-    }
-
-    void setTasks(Iterable<String> tasks) {
-        this.tasks.clear()
-        this.tasks.addAll(tasks.toList())
-    }
-
-    GradleBuild tasks(Iterable<String> tasks) {
-        setTasks(tasks)
-        this
-    }
-
-    GradleBuild tasks(String... tasks) {
-        List<String> taskList = CollectionUtils.flattenCollections(tasks) as List<String>
-        setTasks(taskList)
-        this
-    }
+    final ListProperty<String> tasks = project.objects.listProperty(String.class)
 
     @Input
-    List<String> getBuildArguments() {
-        this.buildArguments
-    }
-
-    void setBuildArguments(List<String> arguments) {
-        this.buildArguments.clear()
-        this.buildArguments.addAll(arguments)
-    }
-
-    void setBuildArguments(Iterable<String> arguments) {
-        setBuildArguments(arguments.toList())
-    }
-
-    GradleBuild buildArguments(List<String> arguments) {
-        setBuildArguments(arguments)
-        this
-    }
-
-    GradleBuild buildArguments(Iterable<String> arguments) {
-        setBuildArguments(arguments)
-        this
-    }
-
-    GradleBuild buildArguments(String... args) {
-        List<String> arguments = CollectionUtils.flattenCollections(args)
-        buildArguments(arguments)
-    }
+    final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
 
     @TaskAction
     protected exec() {
         def args = []
-        args.addAll(getBuildArguments())
+        args.addAll(buildArguments.get())
 
         if (!['--debug', '--info', '--quiet'].any { args.contains(it) }) {
             def startParameter = this.project.gradle.startParameter
@@ -117,12 +60,12 @@ class GradleBuild extends DefaultTask {
         }
 
         ProjectConnection connection = GradleConnector.newConnector()
-                .forProjectDirectory(getDir())
+                .forProjectDirectory(dir.get().asFile)
                 .connect()
 
         try {
             connection.newBuild()
-                    .forTasks(*getTasks().toArray(new String[0]))
+                    .forTasks(*tasks.get().toArray(new String[0]))
                     .withArguments(args)
                     .setColorOutput(false)
                     .setStandardOutput(System.out)

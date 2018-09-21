@@ -39,7 +39,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         buildFile << """
             task("exportCustom", type: wooga.gradle.build.unity.tasks.UnityBuildPlayerTask) {
-                appConfigFile file('Assets/CustomConfigs/custom.asset')
+                appConfigFile = file('Assets/CustomConfigs/custom.asset')
             }
         """.stripIndent()
     }
@@ -58,10 +58,12 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "can override #methodIsOptional property #property with #methodName(#type)"() {
+    def "can override #methodIsOptional property #property"() {
         given: "a export task with custom configuration"
         buildFile << """
-            exportCustom.${methodName}(${value})
+            exportCustom {
+                ${property} = ${value}
+            }
         """.stripIndent()
 
         when:
@@ -78,47 +80,12 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("outputPath=${new File(projectDir, expectedOutputPath).path}")
 
         where:
-        property              | rawValue                          | type       | useSetter
-        "exportMethodName"    | "method1"                         | 'String'   | true
-        "exportMethodName"    | "method2"                         | 'String'   | false
-        "exportMethodName"    | "method3"                         | 'Callable' | true
-        "exportMethodName"    | "method4"                         | 'Callable' | false
-        "exportMethodName"    | "method5"                         | 'Closure'  | true
-        "exportMethodName"    | "method6"                         | 'Closure'  | false
-        "exportMethodName"    | "method7"                         | 'Object'   | true
-        "exportMethodName"    | "method8"                         | 'Object'   | false
-        "version"             | "1.0.0"                           | 'String'   | true
-        "version"             | "1.0.1"                           | 'String'   | false
-        "version"             | "2.0.0"                           | 'Callable' | true
-        "version"             | "2.0.1"                           | 'Callable' | false
-        "version"             | "3.0.0"                           | 'Closure'  | true
-        "version"             | "3.0.1"                           | 'Closure'  | false
-        "version"             | "4.0.0"                           | 'Object'   | true
-        "version"             | "4.0.1"                           | 'Object'   | false
-        "toolsVersion"        | "1.0.0"                           | 'String'   | true
-        "toolsVersion"        | "1.0.1"                           | 'String'   | false
-        "toolsVersion"        | "2.0.0"                           | 'Callable' | true
-        "toolsVersion"        | "2.0.1"                           | 'Callable' | false
-        "toolsVersion"        | "3.0.0"                           | 'Closure'  | true
-        "toolsVersion"        | "3.0.1"                           | 'Closure'  | false
-        "toolsVersion"        | "4.0.0"                           | 'Object'   | true
-        "toolsVersion"        | "4.0.1"                           | 'Object'   | false
-        "outputDirectoryBase" | "build/customExport"              | 'String'   | true
-        "outputDirectoryBase" | "build/customExport2"             | 'String'   | false
-        "outputDirectoryBase" | "build/customExport3"             | 'File'     | true
-        "outputDirectoryBase" | "build/customExport4"             | 'File'     | false
-        "outputDirectoryBase" | "build/customExport5"             | 'Closure'  | true
-        "outputDirectoryBase" | "build/customExport6"             | 'Closure'  | false
-        "outputDirectoryBase" | "build/customExport5"             | 'Callable' | true
-        "outputDirectoryBase" | "build/customExport6"             | 'Callable' | false
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'String'   | true
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'String'   | false
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'     | true
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'     | false
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Closure'  | true
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Closure'  | false
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Callable' | true
-        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'Callable' | false
+        property              | rawValue                          | type     | useSetter
+        "exportMethodName"    | "method1"                         | 'String' | true
+        "version"             | "1.0.0"                           | 'String' | true
+        "toolsVersion"        | "1.0.0"                           | 'String' | true
+        "outputDirectoryBase" | "build/customExport3"             | 'File'   | true
+        "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'   | true
 
         expectedExportMethod = (property == "exportMethodName") ? rawValue : 'Wooga.UnifiedBuildSystem.Build.Export'
 
@@ -131,7 +98,6 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         expectedOutputPath = "$expectedOutputDirectoryBase/${FilenameUtils.removeExtension(expectedAppConfigFile.name)}/project"
 
         methodIsOptional = (property == "toolsVersion") ? 'optional' : ''
-        methodName = (useSetter) ? "set${property.capitalize()}" : property
         value = wrapValueBasedOnType(rawValue, type)
     }
 
@@ -169,7 +135,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "up-to-date check returns false when input paramter: #property changes"() {
+    def "up-to-date check returns false when input parameter: #property changes"() {
         given: "up to date task"
         runTasksSuccessfully("exportCustom")
         def result = runTasksSuccessfully("exportCustom")
@@ -177,7 +143,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         when: "update an input property"
         buildFile << """
-            exportCustom.${methodName}('${value}')
+            exportCustom.${property} = ${value}
         """.stripIndent()
 
         result = runTasksSuccessfully("exportCustom")
@@ -186,20 +152,16 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         !result.wasUpToDate('exportCustom')
 
         where:
-        property           | value                             | useSetter
-        "exportMethodName" | "method1"                         | true
-        "exportMethodName" | "method2"                         | false
-        "appConfigFile"    | "Assets/CustomConfigs/test.asset" | true
-        "appConfigFile"    | "Assets/CustomConfigs/test.asset" | false
-        "version"          | "1.0.1"                           | true
-        "version"          | "1.1.0"                           | false
-        methodName = (useSetter) ? "set${property.capitalize()}" : property
+        property           | value
+        "exportMethodName" | "'method1'"
+        "appConfigFile"    | "file('Assets/CustomConfigs/test.asset')"
+        "version"          | "'1.0.1'"
     }
 
     def "task skips with no-source when input files are empty"() {
         given: "a task with empty input source"
         buildFile << """
-            exportCustom.inputFiles = files()
+            exportCustom.inputFiles.setFrom(files())
         """.stripIndent()
 
         when:
@@ -274,14 +236,14 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "can set custom inputFiles for up-to-date check with #methodName(#type)"() {
+    def "can set custom inputFiles for up-to-date check #type"() {
         given: "a mocked unity project"
         //need to convert the relative files to absolute files
         def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
 
         and: "a custom inputCollection"
         buildFile << """
-            exportCustom.${methodName}(${value})
+            exportCustom.${methodName}.setFrom(${value})
         """.stripIndent()
 
         and: "a up-to-date project state"
@@ -300,22 +262,20 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.wasUpToDate('exportCustom') == upToDate
 
         where:
-        file                                          | upToDate | type             | value                                                                                          | useGetter
-        new File("Assets/Plugins/iOS/somefile.m")     | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
-        new File("Assets/Plugins/Android/somefile.m") | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
-        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'     | false
-        new File("Assets/Plugins/iOS/somefile.m")     | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
-        new File("Assets/Plugins/Android/somefile.m") | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
-        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}' | true
-        new File("Assets/Editor/somefile.cs")         | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
-        new File("Assets/Editor/somefile.cs")         | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
-        new File("Assets/Source.cs")                  | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | false
-        new File("Assets/Source.cs")                  | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'                                 | true
+        file                                          | upToDate | type             | value
+        new File("Assets/Plugins/iOS/somefile.m")     | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'
+        new File("Assets/Plugins/Android/somefile.m") | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'
+        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/iOS/**")}'
+        new File("Assets/Plugins/iOS/somefile.m")     | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}'
+        new File("Assets/Plugins/Android/somefile.m") | true     | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}'
+        new File("Assets/Source.cs")                  | false    | 'FileTree'       | 'project.fileTree(project.projectDir){include("Assets/**"); exclude("**/Plugins/Android/**")}'
+        new File("Assets/Editor/somefile.cs")         | true     | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'
+        new File("Assets/Source.cs")                  | false    | 'FileCollection' | 'project.files("Assets/Editor/anyfile.cs","Assets/Source.cs")'
 
         files = mockProjectFiles.collect { it[0] }
 
         statusMessage = (upToDate) ? "is" : "is not"
-        methodName = (useGetter) ? "setInputFiles" : "inputFiles"
+        methodName = "inputFiles"
     }
 
     Tuple prepareMockedProject(File projectDir, Iterable<File> files, File testFile) {

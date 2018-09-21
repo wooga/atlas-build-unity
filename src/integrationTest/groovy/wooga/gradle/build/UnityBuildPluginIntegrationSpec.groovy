@@ -97,7 +97,6 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
 
         def extensionKey = "unityBuild.$property"
-        def extensionSetter = "unityBuild.set${property.capitalize()}"
         def propertiesKey = "unityBuild.$property"
         def envKey = convertPropertyToEnvName(extensionKey)
 
@@ -106,29 +105,27 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         } else if (location == "properties") {
             createFile("gradle.properties") << "${propertiesKey}=${value}"
         } else if (location == "extension") {
-            buildFile << "${extensionKey}('${escapedPath(value)}')"
-        } else {
-            buildFile << "${extensionSetter}('${escapedPath(value)}')"
+            buildFile << "${extensionKey} = ${escapedPath(value)}"
         }
 
         when:
         def result = runTasksSuccessfully("exportAndroidCi")
 
         then:
-        result.standardOutput.contains("$expectedBuildParameterBase$value")
+        result.standardOutput.contains("$expectedBuildParameterBase$rawValue")
 
         where:
-        property              | value                                       | location          | expectedBuildParameterBase
-        "exportMethodName"    | "test1"                                     | 'environment'     | "-executeMethod "
-        "exportMethodName"    | "test2"                                     | 'properties'      | "-executeMethod "
-        "exportMethodName"    | "test3"                                     | 'extension'       | "-executeMethod "
-        "exportMethodName"    | "test3"                                     | 'extensionSetter' | "-executeMethod "
-        "toolsVersion"        | "1.2.3"                                     | 'environment'     | "toolsVersion="
-        "toolsVersion"        | "3.2.1"                                     | 'properties'      | "toolsVersion="
-        "toolsVersion"        | "2.1.3"                                     | 'extension'       | "toolsVersion="
-        "toolsVersion"        | "3.1.2"                                     | 'extensionSetter' | "toolsVersion="
-        "outputDirectoryBase" | File.createTempDir("build", "export1").path | 'extension'       | "outputPath="
-        "outputDirectoryBase" | File.createTempDir("build", "export2").path | 'extensionSetter' | "outputPath="
+        property              | rawValue                                    | type     | location      | expectedBuildParameterBase
+        "exportMethodName"    | "test1"                                     | ""       | 'environment' | "-executeMethod "
+        "exportMethodName"    | "test2"                                     | ""       | 'properties'  | "-executeMethod "
+        "exportMethodName"    | "test3"                                     | "String" | 'extension'   | "-executeMethod "
+
+        "toolsVersion"        | "1.2.3"                                     | ""       | 'environment' | "toolsVersion="
+        "toolsVersion"        | "3.2.1"                                     | ""       | 'properties'  | "toolsVersion="
+        "toolsVersion"        | "2.1.3"                                     | "String" | 'extension'   | "toolsVersion="
+        "outputDirectoryBase" | File.createTempDir("build", "export1").path | "File"   | 'extension'   | "outputPath="
+
+        value = wrapValueBasedOnType(rawValue, type)
     }
 
     @Unroll
@@ -138,7 +135,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
 
         buildFile << """
-        unityBuild.defaultAppConfigName 'android_ci'
+        unityBuild.defaultAppConfigName = 'android_ci'
         """.stripIndent()
 
         when:
@@ -170,7 +167,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         } else if (location == "properties") {
             createFile("gradle.properties") << "${propertiesKey}=${value}"
         } else {
-            buildFile << "${extensionKey}('${value}')"
+            buildFile << "${extensionKey} = '${value}'"
         }
 
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
@@ -234,7 +231,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         appConfigsDir.mkdirs()
 
         buildFile << """
-        unityBuild.appConfigsDirectory = "${escapedPath(appConfigsDir.path)}"
+        unityBuild.appConfigsDirectory = file("${escapedPath(appConfigsDir.path)}")
         """.stripIndent()
 
         and: "app config with delimiter in names"
@@ -246,7 +243,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         runTasksSuccessfully(expectedTaskName, '--dry-run')
 
         where:
-        appConfigName << Gen.these('test-config-file','test_config_file','test config file')
+        appConfigName << Gen.these('test-config-file', 'test_config_file', 'test config file')
                 .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
         expectedTaskName << Gen.any("assemble", "export", "check", "publish").map { "${it}TestConfigFile" }
     }

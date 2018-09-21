@@ -59,12 +59,11 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
             @Override
             void execute(UnityBuildPlayerTask task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("exportMethodName", { extension.getExportMethodName() })
-                conventionMapping.map("toolsVersion", { extension.getToolsVersion() })
-                conventionMapping.map("outputDirectoryBase", { extension.getOutputDirectoryBase() })
-                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
-                conventionMapping.map("inputFiles", {
+                task.exportMethodName.set(extension.exportMethodName)
+                task.toolsVersion.set(extension.toolsVersion)
+                task.outputDirectoryBase.set(extension.outputDirectoryBase)
+                task.version.set(project.provider({PropertyUtils.convertToString(project.version)}))
+                task.inputFiles.from({
 
                     def assetsDir = new File(task.getProjectPath(), "Assets")
                     def assetsFileTree = project.fileTree(assetsDir)
@@ -110,7 +109,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         })
 
         project.afterEvaluate {
-            def defaultAppConfigName = extension.getDefaultAppConfigName()
+            def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
             extension.getAppConfigs().each { File appConfig ->
                 def appConfigName = FilenameUtils.removeExtension(appConfig.name)
 
@@ -118,11 +117,11 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
                 baseName = baseName.replaceAll(~/[$characterPattern]/,'')
 
-                def exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) {
-                    it.group = "build unity"
-                    it.description = "exports gradle project for app config ${appConfigName}"
-                    it.appConfigFile appConfig
-                }
+                UnityBuildPlayerTask exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
+                    t.group = "build unity"
+                    t.description = "exports gradle project for app config ${appConfigName}"
+                    t.appConfigFile.set(appConfig)
+                } as UnityBuildPlayerTask
 
                 FileCollection exportInitScripts = project.fileTree(project.projectDir) {
                     it.include('exportInit.gradle')
@@ -135,18 +134,17 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
 
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
-                    def t = project.tasks.create("${taskName}${baseName.capitalize()}", GradleBuild)
-                    t.with {
-                        dependsOn exportTask
-                        group = groupName
-                        description = "executes :${taskName} task on exported project for app config ${appConfigName}"
-                        dir = exportTask.getOutputDirectory()
-                        buildArguments = args
-                        tasks = [taskName]
+                    def gradleBuild = project.tasks.create("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
+                        t.dependsOn exportTask
+                        t.group = groupName
+                        t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
+                        t.dir.set(exportTask.outputDirectory)
+                        t.buildArguments.set(args)
+                        t.tasks.add(taskName)
                     }
 
                     if (defaultAppConfigName == appConfigName) {
-                        project.tasks.getByName(taskName).dependsOn(t)
+                        project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }
                 }
             }
