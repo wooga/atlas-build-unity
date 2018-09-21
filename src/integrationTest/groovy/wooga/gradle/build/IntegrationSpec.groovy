@@ -42,7 +42,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
         result.standardOutput.contains(message) || result.standardError.contains(message)
     }
 
-    def wrapValueBasedOnType(Object rawValue, String type) {
+    String wrapValueBasedOnType(Object rawValue, String type) {
         def value
         switch (type) {
             case "Closure":
@@ -58,7 +58,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
                 value = "'$rawValue'"
                 break
             case "File":
-                value = "new File('$rawValue')"
+                value = "new File('${escapedPath(rawValue.toString())}')"
                 break
             case "List<String>":
                 value = "['$rawValue']"

@@ -17,29 +17,17 @@
 
 package wooga.gradle.build.unity
 
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
+import org.gradle.api.provider.Property
 
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
-    File getAppConfigsDirectory()
-    void setAppConfigsDirectory(Object appConfigsDirectory)
-    T appConfigsDirectory(Object appConfigsDirectory)
+    DirectoryProperty getAppConfigsDirectory()
+    DirectoryProperty getOutputDirectoryBase()
+    Property<String> getToolsVersion()
+    Property<String> getExportMethodName()
+    Property<String> getDefaultAppConfigName()
 
     FileCollection getAppConfigs()
-
-    String getExportMethodName()
-    void setExportMethodName(String method)
-    T exportMethodName(String method)
-
-    String getDefaultAppConfigName()
-    void setDefaultAppConfigName(String name)
-    T defaultAppConfigName(String name)
-
-    String getToolsVersion()
-    void setToolsVersion(String version)
-    T toolsVersion(String version)
-
-    File getOutputDirectoryBase()
-    void setOutputDirectoryBase(Object outputDirectoryBase)
-    T outputDirectoryBase(Object outputDirectoryBase)
 }

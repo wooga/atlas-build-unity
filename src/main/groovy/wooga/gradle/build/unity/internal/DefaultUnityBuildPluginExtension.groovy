@@ -18,140 +18,82 @@
 package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UnityBuildPluginConsts
 import wooga.gradle.build.unity.UnityBuildPluginExtension
 import wooga.gradle.unity.UnityPluginExtension
 
+import java.util.concurrent.Callable
+
 class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
-    private final Project project
+    protected final Project project
 
-    private String toolsVersion
-    private String exportMethodName
-
-    private Object outputDirectoryBase
-    private Object appConfigsDirectory
-    private String appConfigIncludePattern
-    private String appConfigExcludePattern
-    private String defaultAppConfigName
-    private FileCollection appConfigs
+    final DirectoryProperty appConfigsDirectory
+    final DirectoryProperty outputDirectoryBase
+    final Property<String> toolsVersion
+    final Property<String> exportMethodName
+    final Property<String> defaultAppConfigName
+    final Provider<Directory> assetsDir
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
-    }
 
-    @Override
-    String getExportMethodName() {
-        if (exportMethodName) {
-            return exportMethodName
-        }
-        System.getenv().get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_ENV_VAR) ?:
-                project.properties.get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_OPTION, UnityBuildPluginConsts.DEFAULT_EXPORT_METHOD_NAME)
-    }
+        appConfigsDirectory = project.layout.directoryProperty()
+        outputDirectoryBase = project.layout.directoryProperty()
+        toolsVersion = project.objects.property(String.class)
+        exportMethodName = project.objects.property(String.class)
+        defaultAppConfigName = project.objects.property(String.class)
+        assetsDir = project.layout.directoryProperty()
 
-    @Override
-    void setExportMethodName(String method) {
-        exportMethodName = method
-    }
+        exportMethodName.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                System.getenv().get(UnityBuildPluginConsts.EXPORT_METHOD_NAME_ENV_VAR) ?:
+                        project.properties.getOrDefault(UnityBuildPluginConsts.EXPORT_METHOD_NAME_OPTION, UnityBuildPluginConsts.DEFAULT_EXPORT_METHOD_NAME)
+            }
+        }))
 
-    @Override
-    UnityBuildPluginExtension exportMethodName(String method) {
-        setExportMethodName(method)
-        this
-    }
+        defaultAppConfigName.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                System.getenv()[UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_ENV_VAR] ?:
+                        project.properties.get(UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_OPTION)
+            }
+        }))
 
-    @Override
-    String getDefaultAppConfigName() {
-        if (defaultAppConfigName) {
-            return defaultAppConfigName
-        }
-        System.getenv()[UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_ENV_VAR] ?:
-                project.properties.get(UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_OPTION)
-    }
+        toolsVersion.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
+            }
+        }))
 
-    @Override
-    void setDefaultAppConfigName(String name) {
-        defaultAppConfigName = name
-    }
+        outputDirectoryBase.set(project.layout.buildDirectory.dir(UnityBuildPluginConsts.DEFAULT_EXPORT_DIRECTORY_NAME))
+        appConfigsDirectory.set(assetsDir.dir(UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_DIRECTORY))
 
-    @Override
-    UnityBuildPluginExtension defaultAppConfigName(String name) {
-        setDefaultAppConfigName(name)
-        return this
-    }
-
-    @Override
-    String getToolsVersion() {
-        if (toolsVersion) {
-            return toolsVersion
-        }
-        System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?:
-                project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
-    }
-
-    @Override
-    void setToolsVersion(String version) {
-        toolsVersion = version
-    }
-
-    @Override
-    UnityBuildPluginExtension toolsVersion(String version) {
-        setToolsVersion(version)
-        this
-    }
-
-    @Override
-    File getOutputDirectoryBase() {
-        if (outputDirectoryBase) {
-            return project.file(outputDirectoryBase)
-        }
-
-        project.file("${project.buildDir}/${UnityBuildPluginConsts.DEFAULT_EXPORT_DIRECTORY_NAME}")
-    }
-
-    @Override
-    void setOutputDirectoryBase(Object outputDirectoryBase) {
-        this.outputDirectoryBase = outputDirectoryBase
-    }
-
-    @Override
-    UnityBuildPluginExtension outputDirectoryBase(Object outputDirectoryBase) {
-        setOutputDirectoryBase(outputDirectoryBase)
-        this
-    }
-
-
-    File getAppConfigsDirectory() {
-        if (appConfigsDirectory) {
-            return project.file(appConfigsDirectory)
-        }
-
-        UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
-
-        project.file("${unity.assetsDir}/${UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_DIRECTORY}")
-    }
-
-
-    void setAppConfigsDirectory(Object appConfigsDirectory) {
-        this.appConfigsDirectory = appConfigsDirectory
-        appConfigs = null
-    }
-
-    @Override
-    UnityBuildPluginExtension appConfigsDirectory(Object appConfigsDirectory) {
-        setAppConfigsDirectory(appConfigsDirectory)
-        return this
+        assetsDir.set(project.provider(new Callable<Directory>() {
+            @Override
+            Directory call() throws Exception {
+                UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
+                def assetDir = project.layout.directoryProperty()
+                assetDir.set(project.file(unity.assetsDir))
+                assetDir.get()
+            }
+        }))
     }
 
     @Override
     FileCollection getAppConfigs() {
-        if(!appConfigs) {
-            appConfigs = project.fileTree(getAppConfigsDirectory()) {
-                it.include UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_INCLUDE_PATTERN
-                it.exclude UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN
-            }
+        project.fileTree(getAppConfigsDirectory()) {
+            it.include UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_INCLUDE_PATTERN
+            it.exclude UnityBuildPluginConsts.DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN
         }
-        appConfigs
     }
 }

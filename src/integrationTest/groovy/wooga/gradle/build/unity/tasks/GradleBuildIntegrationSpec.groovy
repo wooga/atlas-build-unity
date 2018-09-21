@@ -62,7 +62,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
+                dir = file("${escapedPath(externalDir.path)}")
                 tasks = ['foo']
             }
         """.stripIndent()
@@ -78,7 +78,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
+                dir = file("${escapedPath(externalDir.path)}")
                 tasks = ['foo', 'bar']
             }
         """.stripIndent()
@@ -95,7 +95,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(File.createTempDir().path)}"
+                dir = file("${escapedPath(File.createTempDir().path)}")
                 tasks = ['foo', 'bar']
             }
         """.stripIndent()
@@ -104,14 +104,14 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         def result = runTasksWithFailure('externalGradle')
 
         then:
-        outputContains(result,"Task 'foo' not found")
+        outputContains(result, "Task 'foo' not found")
     }
 
     def "task fails when task is not part of external build"() {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
+                dir = file("${escapedPath(externalDir.path)}")
                 tasks = ['baz']
             }
         """.stripIndent()
@@ -120,7 +120,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         def result = runTasksWithFailure('externalGradle')
 
         then:
-        outputContains(result,"Task 'baz' not found")
+        outputContains(result, "Task 'baz' not found")
     }
 
     @Unroll
@@ -128,7 +128,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
+                dir = file("${escapedPath(externalDir.path)}")
                 tasks = ['foo']
             }
         """.stripIndent()
@@ -170,7 +170,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
+                dir = file("${escapedPath(externalDir.path)}")
                 tasks = ['foo']
                 buildArguments = ['--$level2']
             }
@@ -214,8 +214,8 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
-                $method($value) 
+                dir = file("${escapedPath(externalDir.path)}")
+                $method = $value 
                 tasks = ['foo']
             }
         """.stripIndent()
@@ -239,15 +239,11 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
 
 
         where:
-        type               | value                                                   | useSetter
-        'List<String>'     | "['-PtestParam1=foo', '-PtestParam2=bar']"              | false
-        'List<String>'     | "['-PtestParam1=foo', '-PtestParam2=bar']"              | true
-        'Iterable<String>' | "new HashSet(['-PtestParam1=foo', '-PtestParam2=bar'])" | false
-        'Iterable<String>' | "new HashSet(['-PtestParam1=foo', '-PtestParam2=bar'])" | true
-        'String...'        | "'-PtestParam1=foo', '-PtestParam2=bar'"                | false
-        'String'           | "'-PtestParam1=foo', '-PtestParam2=bar'"                | false
+        type               | value
+        'List<String>'     | "['-PtestParam1=foo', '-PtestParam2=bar']"
+        'Iterable<String>' | "new HashSet(['-PtestParam1=foo', '-PtestParam2=bar'])"
 
-        method = (useSetter) ? "setBuildArguments" : "buildArguments"
+        method = "buildArguments"
     }
 
     @Unroll
@@ -255,8 +251,8 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         given: "build script with exernal execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir "${escapedPath(externalDir.path)}"
-                $method($value)
+                dir = file("${escapedPath(externalDir.path)}")
+                $method = $value
             }
         """.stripIndent()
 
@@ -268,14 +264,12 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         result.standardOutput.contains("bar executed")
 
         where:
-        type               | value                         | useSetter
-        'List<String>'     | "['foo', 'bar']"              | false
-        'List<String>'     | "['foo', 'bar']"              | true
-        'Iterable<String>' | "new HashSet(['foo', 'bar'])" | false
-        'Iterable<String>' | "new HashSet(['foo', 'bar'])" | true
-        'String...'        | "'foo', 'bar'"                | false
-        'String'           | "'foo', 'bar'"                | false
+        type               | value
+        'List<String>'     | "['foo', 'bar']"
+        'List<String>'     | "['foo', 'bar']"
+        'Iterable<String>' | "new HashSet(['foo', 'bar'])"
+        'Iterable<String>' | "new HashSet(['foo', 'bar'])"
 
-        method = (useSetter) ? "setTasks" : "tasks"
+        method = "tasks"
     }
 }
