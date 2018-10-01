@@ -21,13 +21,11 @@ import org.apache.commons.io.FilenameUtils
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
-import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.UnityPlugin
@@ -68,7 +66,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     def assetsDir = new File(task.getProjectPath(), "Assets")
                     def assetsFileTree = project.fileTree(assetsDir)
 
-                    assetsFileTree.include(new Spec<FileTreeElement>() {
+                    def includeSpec = new Spec<FileTreeElement>() {
                         @Override
                         boolean isSatisfiedBy(FileTreeElement element) {
                             def path = element.getRelativePath().getPathString().toLowerCase()
@@ -95,13 +93,25 @@ class UnityBuildPlugin implements Plugin<Project> {
 
                             status
                         }
-                    })
+                    }
+
+                    def excludeSpec = new Spec<FileTreeElement>() {
+                        @Override
+                        boolean isSatisfiedBy(FileTreeElement element) {
+                            return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
+                        }
+                    }
+
+                    assetsFileTree.include(includeSpec)
+                    assetsFileTree.exclude(excludeSpec)
 
                     def projectSettingsDir = new File(task.getProjectPath(), "ProjectSettings")
                     def projectSettingsFileTree = project.fileTree(projectSettingsDir)
+                    projectSettingsFileTree.exclude(excludeSpec)
 
                     def packageManagerDir = new File(task.getProjectPath(), "UnityPackageManager")
                     def packageManagerDirFileTree = project.fileTree(packageManagerDir)
+                    packageManagerDirFileTree.exclude(excludeSpec)
 
                     project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
                 })

@@ -18,10 +18,10 @@
 package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UnityBuildPluginConsts
@@ -40,6 +40,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
     final Provider<Directory> assetsDir
+    final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -50,6 +51,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         exportMethodName = project.objects.property(String.class)
         defaultAppConfigName = project.objects.property(String.class)
         assetsDir = project.layout.directoryProperty()
+        ignoreFilesForExportUpToDateCheck = project.layout.configurableFiles()
 
         exportMethodName.set(project.provider(new Callable<String>() {
             @Override
