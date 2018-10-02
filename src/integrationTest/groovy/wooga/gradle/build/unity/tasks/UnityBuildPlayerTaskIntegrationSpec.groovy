@@ -278,6 +278,44 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         methodName = "inputFiles"
     }
 
+    @Unroll
+    def "can exclude files with custom fileCollection for up-to-date check"() {
+        given: "a mocked unity project"
+        //need to convert the relative files to absolute files
+        def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
+
+        and: "a custom ignore collection"
+        buildFile << """
+            unityBuild.${methodName}.setFrom(${value})
+        """.stripIndent()
+
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully("exportCustom")
+        assert !result.wasUpToDate('exportCustom')
+
+        result = runTasksSuccessfully("exportCustom")
+        assert result.wasUpToDate('exportCustom')
+
+        when: "change content of one source file"
+        testFile.text = "new content"
+
+        result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.wasUpToDate('exportCustom') == upToDate
+
+        where:
+        file                                              | upToDate | type             | value
+        new File("Assets/Source.cs.meta")                 | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
+        new File("Assets/Source.cs")                      | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
+        new File("Assets/Nested/LevelEditor/somefile.cs") | false    | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
+        new File("ProjectSettings/SomeSettings.asset")    | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
+        new File("UnityPackageManager/manifest.json")     | true     | 'FileCollection' | 'project.files("UnityPackageManager/manifest.json","ProjectSettings/SomeSettings.asset")'
+        files = mockProjectFiles.collect { it[0] }
+        statusMessage = (upToDate) ? "is" : "is not"
+        methodName = "ignoreFilesForExportUpToDateCheck"
+    }
+
     Tuple prepareMockedProject(File projectDir, Iterable<File> files, File testFile) {
         files = files.collect { new File(projectDir, it.path) }
         testFile = new File(projectDir, testFile.path)
