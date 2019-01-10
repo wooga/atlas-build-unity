@@ -19,6 +19,7 @@ package wooga.gradle.build.unity.tasks
 
 import org.apache.commons.io.FilenameUtils
 import org.yaml.snakeyaml.Yaml
+import spock.lang.Issue
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
@@ -55,6 +56,21 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("version=unspecified")
         result.standardOutput.contains("outputPath=${new File(projectDir, '/build/export/custom/project').path}")
         !result.standardOutput.contains("toolsVersion=")
+    }
+
+    @Issue("https://github.com/wooga/atlas-build-unity/issues/23")
+    def "clear buildTarget setting"() {
+        given: "a project setting default build target for all Unity tasks"
+        buildFile << """
+            unity.defaultBuildTarget = "ios"
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.standardOutput.contains("-buildTarget android")
+        !result.standardOutput.contains("-buildTarget ios")
     }
 
     @Unroll
