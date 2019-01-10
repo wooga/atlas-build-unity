@@ -126,8 +126,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         batchModeBuildTarget | valueType             | shouldContainBuildTargetFlag
-        'value'              | 'string'              | true
-        "'value'"            | 'quoted string'       | true
+        'ios'                | 'string'              | true
+        "'ios'"              | 'quoted string'       | true
         ''                   | 'empty'               | false
         "''"                 | 'quoted empty string' | false
         null                 | 'null'                | false
@@ -209,7 +209,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     ]
 
     @Unroll
-    def "task #statusMessage up-to-date when file change at location #file with default inputFiles"() {
+    def "task #statusMessage up-to-date when #file changed with default inputFiles"() {
         given: "a mocked unity project"
         //need to convert the relative files to absolute files
         def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
