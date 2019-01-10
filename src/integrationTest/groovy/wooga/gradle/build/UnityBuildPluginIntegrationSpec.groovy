@@ -26,6 +26,7 @@ import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.unity.batchMode.BatchModeFlags
+import wooga.gradle.unity.batchMode.BuildTarget
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
@@ -40,7 +41,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
             Yaml yaml = new Yaml()
-            def buildTarget = it.name.split(/_/, 1).first()
+            def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
             def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
             it << yaml.dump(appConfig)
         }
@@ -63,9 +64,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun         | expectedParameters
-        "exportAndroidCi" | "${BatchModeFlags.BUILD_TARGET} android"
-        "exportIosCi"     | "${BatchModeFlags.BUILD_TARGET} ios"
-        "exportWebGLCi"   | "${BatchModeFlags.BUILD_TARGET} webGL"
+        "exportAndroidCi" | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.android}"
+        "exportIosCi"     | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.ios}"
+        "exportWebGLCi"   | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.webgl}"
     }
 
     @Unroll
@@ -91,7 +92,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
 
     @Unroll
-    def "can override property #property in #location with #value"() {
+    def "can override property #property in #location"() {
         given: "execute on a default project"
         assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
 
