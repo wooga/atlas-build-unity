@@ -117,7 +117,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         customArgs += "version=${version.get()};"
 
         if (getBuildPlatform()) {
-            args BatchModeFlags.BUILD_TARGET, getBuildPlatform()
+            setBuildTarget(getBuildPlatform().toLowerCase() as BuildTarget)
         }
 
         if (toolsVersion.present) {
