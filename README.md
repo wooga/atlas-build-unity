@@ -16,7 +16,7 @@ This plugin is work in progress.
 **build.gradle**
 ```groovy
 plugins {
-    id 'net.wooga.build-unity' version '0.1.0'
+    id 'net.wooga.build-unity' version '0.14.0'
 }
 ```
 
@@ -40,16 +40,16 @@ Tested with Oracle JDK8
 | 3.2             | ![no]  |
 | 3.3             | ![no]  |
 | 3.4             | ![no]  |
-| 3.5             | ![yes] |
-| 3.5.1           | ![yes] |
-| 4.0             | ![yes] |
-| 4.1             | ![yes] |
-| 4.2             | ![yes] |
-| 4.3             | ![yes] |
-| 4.4             | ![yes] |
-| 4.5             | ![yes] |
-| 4.6             | ![yes] |
-| 4.6             | ![yes] |
+| 3.5             | ![no]  |
+| 3.5.1           | ![no]  |
+| 4.0             | ![no]  |
+| 4.1             | ![no]  |
+| 4.2             | ![no]  |
+| 4.3             | ![no]  |
+| 4.4             | ![no]  |
+| 4.5             | ![no]  |
+| 4.6             | ![no]  |
+| 4.6             | ![no]  |
 | 4.7             | ![yes] |
 | 4.8             | ![yes] |
 | 4.9             | ![yes] |
