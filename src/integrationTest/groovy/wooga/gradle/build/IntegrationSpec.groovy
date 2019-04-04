@@ -68,6 +68,9 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
             case "List<String>":
                 value = "['$rawValue']"
                 break
+            case "List":
+                value = "[${rawValue.collect {'"' + it + '"'}.join(", ")}]"
+                break
             default:
                 value = rawValue
         }
