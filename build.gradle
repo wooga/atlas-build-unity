@@ -41,7 +41,7 @@ pluginBundle {
         }
 
         webgl {
-            id = 'net.wooga.build-unity-wegbl'
+            id = 'net.wooga.build-unity-webgl'
             displayName = 'Gradle Unity WebGL build plugin'
             description = 'This plugin provides tasks for building exported webGL projects from Unity3D'
         }
