@@ -64,7 +64,7 @@ dependencies {
     compile 'gradle.plugin.net.wooga.gradle:atlas-unity:1.+'
     compile 'xmlwise:xmlwise:1.2.11'
 
-    compile 'commons-codec:commons-codec:1.12'
+    compile 'commons-codec:commons-codec:1.13'
     compile 'org.meteogroup.jbrotli:jbrotli:0.5.0'
     if (System.getProperty('os.name').toLowerCase().contains("mac")) {
         compile "org.meteogroup.jbrotli:jbrotli-native-darwin-x86-amd64:0.5.0"
