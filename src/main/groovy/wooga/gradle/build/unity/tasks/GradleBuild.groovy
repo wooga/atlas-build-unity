@@ -21,8 +21,10 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -38,6 +40,9 @@ class GradleBuild extends DefaultTask {
 
     @Input
     final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
+
+    @Input
+    final Property<String> gradleVersion = project.objects.property(String.class)
 
     @TaskAction
     protected exec() {
@@ -61,6 +66,7 @@ class GradleBuild extends DefaultTask {
 
         ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(dir.get().asFile)
+                .useGradleVersion(gradleVersion.get())
                 .connect()
 
         try {
