@@ -22,6 +22,8 @@ import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.UnityBuildPlugin
 
+import java.util.regex.Pattern
+
 class GradleBuildIntegrationSpec extends IntegrationSpec {
 
     @Shared
@@ -56,6 +58,10 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
                 }
             }
         """.stripIndent()
+        def externalSettings = createFile("settings.gradle", externalDir)
+        externalSettings << """
+            rootProject.name = 'test'
+        """.stripIndent()
     }
 
     def "can execute external gradle build"() {
@@ -72,6 +78,27 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
 
         then:
         result.standardOutput.contains("foo executed")
+    }
+
+    @Unroll
+    def "can execute external gradle build with custom gradle version #gradleVersion"() {
+        given: "build script with external execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['foo']
+                gradleVersion = "${gradleVersion}"
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasks('externalGradle')
+
+        then:
+        result.standardOutput.contains("foo executed")
+        result.standardOutput.contains(new File(".gradle/daemon/${gradleVersion}").path)
+        where:
+        gradleVersion << ["4.0", "4.10", "5.0"]
     }
 
     def "can execute multiple tasks in external gradle build"() {

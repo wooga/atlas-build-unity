@@ -33,10 +33,13 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
+    @Shared
+    File appConfigsDir
+
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
-        def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
+        appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
         appConfigsDir.mkdirs()
 
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
@@ -51,7 +54,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def ":#taskToRun calls Untity export method with buildType fetched from appConfig"() {
+    def ":#taskToRun calls Unity export method with buildType fetched from appConfig"() {
         given: "a project with multiple appConfigs"
         and: "a custom appConfig without buildTarget"
 
@@ -70,7 +73,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def ":#taskToRun calls Untity export method without buildType when not contained in appConfig"() {
+    def ":#taskToRun calls Unity export method without buildType when not contained in appConfig"() {
         given: "a project with multiple appConfigs"
         and: "a custom appConfig without buildTarget"
 
@@ -192,6 +195,41 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "publish"  | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
         "publish"  | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
         "publish"  | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+    }
+
+    @Unroll
+    def "picks gradle version from appConfig and executes exported project"() {
+        given: "a default gradle project with adjusted default platform/environment settings"
+        buildFile << "unityBuild.defaultAppConfigName = '${appConfigName}'"
+
+        def expectedExportTask = "export${expectedDefaultHandlerTask}"
+        def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
+
+        and: "an app config with configured gradle version"
+//        if(version) {
+//        }
+        Yaml yaml = new Yaml()
+        createFile("${appConfigName}.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
+
+        when:
+        def result = runTasks(taskToRun)
+
+        then:
+        result.wasExecuted(expectedExportTask)
+        result.wasExecuted(handleTaskName)
+
+        def expectedVersion = version ?: "4.8"
+        def error = "Could not execute build using Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
+        // we expecting this task to fail because its not a real integration test
+        // but gradle should have attempted to run the exported gradle project with the configured version
+        // we simply check if the error contains the correct gradle version
+        outputContains(result, error)
+
+        where:
+        taskToRun  | appConfigName | version | expectedDefaultHandlerTask
+//        "assemble" | "android_ci"  | "5.0.0" | 'AndroidCi'
+//        "assemble" | "ios_ci"      | "4.4.0" | 'IosCi'
+        "assemble" | "webGL_ci"    | null    | 'WebGLCi'
     }
 
     @Unroll

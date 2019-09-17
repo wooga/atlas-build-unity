@@ -26,12 +26,14 @@ import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.StopExecutionException
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
+import wooga.gradle.unity.utils.GenericUnityAsset
 
 class UnityBuildPlugin implements Plugin<Project> {
 
@@ -118,14 +120,22 @@ class UnityBuildPlugin implements Plugin<Project> {
             }
         })
 
+        project.tasks.withType(GradleBuild, new Action<GradleBuild>() {
+            @Override
+            void execute(GradleBuild t) {
+                t.gradleVersion.set(project.provider({project.gradle.gradleVersion}))
+            }
+        })
+
         project.afterEvaluate {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
             extension.getAppConfigs().each { File appConfig ->
                 def appConfigName = FilenameUtils.removeExtension(appConfig.name)
+                def config = new GenericUnityAsset(appConfig)
 
                 def characterPattern = ':_\\-<>|*\\\\?/ '
                 def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
-                baseName = baseName.replaceAll(~/[$characterPattern]/,'')
+                baseName = baseName.replaceAll(~/[$characterPattern]/, '')
 
                 UnityBuildPlayerTask exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
                     t.group = "build unity"
@@ -151,6 +161,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.dir.set(exportTask.outputDirectory)
                         t.buildArguments.set(args)
                         t.tasks.add(taskName)
+                        t.gradleVersion.set(project.provider({
+                            if (!config.isValid()) {
+                                throw new StopExecutionException('provided appConfig is invalid')
+                            }
+                            (config.get("gradleVersion", null) ?: project.gradle.gradleVersion).toString()
+                        }))
                     }
 
                     if (defaultAppConfigName == appConfigName) {
