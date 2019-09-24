@@ -39,12 +39,6 @@ pluginBundle {
             displayName = 'Gradle Unity iOS build plugin'
             description = 'This plugin provides tasks for building exported iOS projects from Unity3D'
         }
-
-        webgl {
-            id = 'net.wooga.build-unity-webgl'
-            displayName = 'Gradle Unity WebGL build plugin'
-            description = 'This plugin provides tasks for building exported webGL projects from Unity3D'
-        }
     }
 }
 
@@ -54,7 +48,6 @@ github {
 
 repositories {
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
-    maven { url "https://dl.bintray.com/nitram509/jbrotli" }
     jcenter()
     mavenCentral()
 }
@@ -65,15 +58,6 @@ dependencies {
     compile 'xmlwise:xmlwise:1.2.11'
 
     compile 'commons-codec:commons-codec:1.13'
-    compile 'org.meteogroup.jbrotli:jbrotli:0.5.0'
-    if (System.getProperty('os.name').toLowerCase().contains("mac")) {
-        compile "org.meteogroup.jbrotli:jbrotli-native-darwin-x86-amd64:0.5.0"
-    } else if (System.getProperty('os.name').toLowerCase().contains("win") && System.getProperty('os.arch') == "x86_64") {
-        compile "org.meteogroup.jbrotli:jbrotli-native-win32-x86-amd64:0.5.0"
-    } else if (System.getProperty('os.name').toLowerCase().contains("win") && System.getProperty('os.arch') == "x86") {
-        compile "org.meteogroup.jbrotli:jbrotli-native-win32-x86:0.5.0"
-    }
-
     testCompile 'org.apache.commons:commons-text:1.8'
     testCompile('com.nagternal:spock-genesis:0.6.0') {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
