@@ -54,4 +54,8 @@ interface IOSBuildPluginExtension {
     void setConfiguration(String configuration)
     IOSBuildPluginExtension configuration(String configuration)
 
+    String getProvisioningName()
+    void setProvisioningName(String provisioningName)
+    IOSBuildPluginExtension provisioningName(String provisioningName)
+
 }

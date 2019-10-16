@@ -31,6 +31,7 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     private String teamId
     private String scheme
     private String configuration
+    private String provisioningName
 
     @Override
     org.gradle.api.credentials.PasswordCredentials getFastlaneCredentials() {
@@ -155,6 +156,22 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     @Override
     IOSBuildPluginExtension configuration(String configuration) {
         setConfiguration(configuration)
+        this
+    }
+
+    @Override
+    String getProvisioningName() {
+        this.provisioningName
+    }
+
+    @Override
+    void setProvisioningName(String provisioningName) {
+        this.provisioningName = provisioningName
+    }
+
+    @Override
+    IOSBuildPluginExtension provisioningName(String provisioningName) {
+        setProvisioningName(provisioningName)
         this
     }
 
