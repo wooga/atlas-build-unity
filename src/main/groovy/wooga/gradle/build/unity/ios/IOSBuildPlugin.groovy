@@ -119,6 +119,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("teamId", { extension.getTeamId() })
                 conventionMapping.map("appIdentifier", { extension.getAppIdentifier() })
                 conventionMapping.map("destinationDir", { task.getTemporaryDir() })
+                conventionMapping.map("provisioningName", { extension.getProvisioningName() })
                 conventionMapping.map("profileName", { 'signing.mobileprovision' })
             }
         })

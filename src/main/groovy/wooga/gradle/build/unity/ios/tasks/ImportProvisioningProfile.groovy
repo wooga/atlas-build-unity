@@ -114,6 +114,24 @@ class ImportProvisioningProfile extends ConventionTask {
         this
     }
 
+    private Object provisioningName
+
+    @Optional
+    @Input
+    String getProvisioningName() {
+        convertToString(provisioningName)
+    }
+
+    void setProvisioningName(Object value) {
+        provisioningName = value
+    }
+
+    ImportProvisioningProfile provisioningName(Object provisioningName) {
+        setProvisioningName(provisioningName)
+        this
+    }
+
+
     private Object destinationDir
 
     @Input
@@ -191,6 +209,12 @@ class ImportProvisioningProfile extends ConventionTask {
 
             args "--team_id", getTeamId()
             args "--app_identifier", getAppIdentifier()
+
+            def provisioningName = getProvisioningName()
+            if (provisioningName) {
+                args "--provisioning_name", provisioningName
+            }
+
             args "--filename", getProfileName()
             args "--output_path", getDestinationDir()
         }
