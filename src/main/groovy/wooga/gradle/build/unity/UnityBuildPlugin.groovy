@@ -100,7 +100,9 @@ class UnityBuildPlugin implements Plugin<Project> {
                     def excludeSpec = new Spec<FileTreeElement>() {
                         @Override
                         boolean isSatisfiedBy(FileTreeElement element) {
-                            return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
+                            return extension.ignoreFilesForExportUpToDateCheck.any {
+                                f -> element.getFile().name.contains(f.name)
+                            }
                         }
                     }
 
