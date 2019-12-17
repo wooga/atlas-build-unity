@@ -324,9 +324,11 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         file                                              | upToDate | type             | value
         new File("Assets/Source.cs.meta")                 | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
         new File("Assets/Source.cs")                      | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
-        new File("Assets/Nested/LevelEditor/somefile.cs") | false    | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
         new File("ProjectSettings/SomeSettings.asset")    | true     | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
+        new File("Assets/Nested/LevelEditor/somefile.cs") | false    | 'FileCollection' | 'project.files("Assets/Source.cs.meta","Assets/Source.cs","ProjectSettings/SomeSettings.asset")'
         new File("UnityPackageManager/manifest.json")     | true     | 'FileCollection' | 'project.files("UnityPackageManager/manifest.json","ProjectSettings/SomeSettings.asset")'
+        new File("IgnoredFolder/test.json")               | true     | 'FileCollection' | 'project.files("IgnoredFolder")'
+        new File("OtherFolder/test.json")                 | false    | 'FileCollection' | 'project.files("IgnoredFolder")'
         files = mockProjectFiles.collect { it[0] }
         statusMessage = (upToDate) ? "is" : "is not"
         methodName = "ignoreFilesForExportUpToDateCheck"
