@@ -91,6 +91,10 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
             result.standardOutput.contains("toolsVersion=${expectedToolsVersion}")
         }
 
+        if (expectedCommitHash) {
+            result.standardOutput.contains("commitHash=${expectedCommitHash}")
+        }
+
         result.standardOutput.contains("-executeMethod ${expectedExportMethod}")
         result.standardOutput.contains("version=${expectedVersion}")
         result.standardOutput.contains("outputPath=${new File(projectDir, expectedOutputPath).path}")
@@ -100,6 +104,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         "exportMethodName"    | "method1"                         | 'String' | true
         "version"             | "1.0.0"                           | 'String' | true
         "toolsVersion"        | "1.0.0"                           | 'String' | true
+        "commitHash"          | "abcdef123456"                    | 'String' | true
         "outputDirectoryBase" | "build/customExport3"             | 'File'   | true
         "appConfigFile"       | "Assets/CustomConfigs/test.asset" | 'File'   | true
 
@@ -107,6 +112,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         expectedVersion = (property == "version") ? rawValue : 'unspecified'
         expectedToolsVersion = (property == "toolsVersion") ? rawValue : null
+        expectedCommitHash = (property == "commitHash") ? rawValue : null
 
         expectedOutputDirectoryBase = (property == 'outputDirectoryBase') ? rawValue : "/build/export"
         expectedAppConfigFile = (property == 'appConfigFile') ? new File(rawValue) : new File("Assets/CustomConfigs/custom.asset")

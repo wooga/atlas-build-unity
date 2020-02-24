@@ -76,6 +76,23 @@ class UnityBuildPluginConsts {
     static String BUILD_TOOLS_VERSION_ENV_VAR = "UNITY_BUILD_TOOLS_VERSION"
 
     /**
+     * Gradle property baseName to set the default value for {@code commitHash}.
+     *
+     * @value "unityBuild.commitHash"
+     * @see UnityBuildPluginExtension#getCommitHash()
+     */
+    static String BUILD_COMMIT_HASH_OPTION = "unityBuild.commitHash"
+
+    /**
+     * Environment variable to set the default value for {@code commitHash}.
+     *
+     * @value "unityBuild.commitHash"
+     * @see UnityBuildPluginExtension#getCommitHash()
+     */
+    static String BUILD_COMMIT_HASH_ENV_VAR = "UNITY_BUILD_COMMIT_HASH"
+
+
+    /**
      * Default name for the base export location.
      *
      * @value "export"

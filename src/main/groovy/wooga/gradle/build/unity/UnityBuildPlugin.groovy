@@ -61,6 +61,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             void execute(UnityBuildPlayerTask task) {
                 task.exportMethodName.set(extension.exportMethodName)
                 task.toolsVersion.set(extension.toolsVersion)
+                task.commitHash.set(extension.commitHash)
                 task.outputDirectoryBase.set(extension.outputDirectoryBase)
                 task.version.set(project.provider({PropertyUtils.convertToString(project.version)}))
                 task.inputFiles.from({
