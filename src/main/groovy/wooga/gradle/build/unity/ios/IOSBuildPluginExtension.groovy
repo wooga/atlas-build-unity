@@ -58,4 +58,8 @@ interface IOSBuildPluginExtension {
     void setProvisioningName(String provisioningName)
     IOSBuildPluginExtension provisioningName(String provisioningName)
 
+    Boolean getAdhoc()
+    void setAdhoc(Boolean value)
+    IOSBuildPluginExtension adhoc(Boolean value)
+
 }
