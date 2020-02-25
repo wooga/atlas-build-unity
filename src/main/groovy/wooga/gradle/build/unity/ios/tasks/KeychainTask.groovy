@@ -17,9 +17,11 @@
 
 package wooga.gradle.build.unity.ios.tasks
 
+import org.gradle.api.GradleScriptException
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.ConventionTask
 import org.gradle.api.tasks.*
+import org.gradle.process.internal.ExecException
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -162,10 +164,22 @@ class KeychainTask extends ConventionTask {
         logger.info("Run scurity tasks:")
         logger.info(commands.join("\n"))
 
-        project.exec {
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+
+        def execResult = project.exec {
             executable "security"
             args "-i"
             standardInput = new ByteArrayInputStream(commands.join("\n").getBytes(StandardCharsets.UTF_8))
+            ignoreExitValue = true
+            standardOutput = stdout
+            errorOutput = stderr
+        }
+
+        logger.info(stdout.toString())
+        if (execResult.exitValue != 0) {
+            logger.error(stderr.toString())
+            throw new ExecException(stderr.toString())
         }
 
         def extension = getExtension()
