@@ -62,4 +62,8 @@ dependencies {
     testCompile('com.nagternal:spock-genesis:0.6.0') {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
     }
+
+    testCompile('com.netflix.nebula:nebula-test:7.3.0') {
+        force = true
+    }
 }
