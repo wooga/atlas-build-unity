@@ -37,6 +37,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final DirectoryProperty appConfigsDirectory
     final DirectoryProperty outputDirectoryBase
     final Property<String> toolsVersion
+    final Property<String> commitHash
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
     final Provider<Directory> assetsDir
@@ -48,6 +49,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         appConfigsDirectory = project.layout.directoryProperty()
         outputDirectoryBase = project.layout.directoryProperty()
         toolsVersion = project.objects.property(String.class)
+        commitHash = project.objects.property(String.class)
         exportMethodName = project.objects.property(String.class)
         defaultAppConfigName = project.objects.property(String.class)
         assetsDir = project.layout.directoryProperty()
@@ -66,6 +68,14 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             String call() throws Exception {
                 System.getenv()[UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_ENV_VAR] ?:
                         project.properties.get(UnityBuildPluginConsts.DEFAULT_APP_CONFIG_NAME_OPTION)
+            }
+        }))
+
+        commitHash.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                System.getenv().get(UnityBuildPluginConsts.BUILD_COMMIT_HASH_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.BUILD_COMMIT_HASH_OPTION, null)
             }
         }))
 

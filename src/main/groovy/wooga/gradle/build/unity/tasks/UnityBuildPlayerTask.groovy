@@ -64,6 +64,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     @Input
     final Property<String> toolsVersion
 
+    @Optional
+    @Input
+    final Property<String> commitHash
+
     @Input
     final Property<String> version
 
@@ -105,6 +109,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
         exportMethodName = project.objects.property(String.class)
         toolsVersion = project.objects.property(String.class)
+        commitHash = project.objects.property(String.class)
         version = project.objects.property(String.class)
     }
 
@@ -122,6 +127,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
 
         if (toolsVersion.present) {
             customArgs += "toolsVersion=${toolsVersion.get()}"
+        }
+
+        if (commitHash.present) {
+            customArgs += "commitHash=${commitHash.get()}"
         }
 
         args "-executeMethod", exportMethodName.get()

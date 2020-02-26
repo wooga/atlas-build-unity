@@ -27,6 +27,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     DirectoryProperty getAppConfigsDirectory()
     DirectoryProperty getOutputDirectoryBase()
     Property<String> getToolsVersion()
+    Property<String> getCommitHash()
     Property<String> getExportMethodName()
     Property<String> getDefaultAppConfigName()
 

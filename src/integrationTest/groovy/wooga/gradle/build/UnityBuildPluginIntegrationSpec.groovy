@@ -127,6 +127,10 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "toolsVersion"        | "1.2.3"                                     | ""       | 'environment' | "toolsVersion="
         "toolsVersion"        | "3.2.1"                                     | ""       | 'properties'  | "toolsVersion="
         "toolsVersion"        | "2.1.3"                                     | "String" | 'extension'   | "toolsVersion="
+
+        "commitHash"          | "abcdefg"                                   | ""       | 'environment' | "commitHash="
+        "commitHash"          | "gfedcba"                                   | ""       | 'properties'  | "commitHash="
+        "commitHash"          | "1234567"                                   | "String" | 'extension'   | "commitHash="
         "outputDirectoryBase" | File.createTempDir("build", "export1").path | "File"   | 'extension'   | "outputPath="
 
         value = wrapValueBasedOnType(rawValue, type)
@@ -165,6 +169,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def extensionKey = 'unityBuild.defaultAppConfigName'
         def propertiesKey = 'unityBuild.defaultAppConfigName'
         def envKey = 'UNITY_BUILD_DEFAULT_APP_CONFIG_NAME'
+
+        envs.clear(envKey)
 
         if (location == "environment") {
             envs.set(envKey, value)
