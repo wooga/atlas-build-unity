@@ -97,4 +97,18 @@ class KeychainTaskSpec extends IntegrationSpec {
         then:
         result.wasUpToDate('buildKeychain')
     }
+
+    def "fails with security stderr printed to error log"() {
+        given: "wrong certificatePassphrase"
+        buildFile << """
+            iosBuild.certificatePassphrase = "randomPassphrase"
+        """.stripIndent()
+
+        when:
+        def result = runTasksWithFailure('buildKeychain')
+
+        then:
+        outputContains(result, "security: SecKeychainItemImport: MAC verification failed during PKCS12 import (wrong password?)")
+
+    }
 }
