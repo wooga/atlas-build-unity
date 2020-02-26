@@ -32,6 +32,7 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     private String scheme
     private String configuration
     private String provisioningName
+    private Boolean adhoc
 
     @Override
     org.gradle.api.credentials.PasswordCredentials getFastlaneCredentials() {
@@ -173,6 +174,22 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     IOSBuildPluginExtension provisioningName(String provisioningName) {
         setProvisioningName(provisioningName)
         this
+    }
+
+    @Override
+    Boolean getAdhoc() {
+        return adhoc
+    }
+
+    @Override
+    void setAdhoc(Boolean value) {
+        adhoc = value
+    }
+
+    @Override
+    IOSBuildPluginExtension adhoc(Boolean value) {
+        setAdhoc(value)
+        return this
     }
 
     DefaultIOSBuildPluginExtension() {

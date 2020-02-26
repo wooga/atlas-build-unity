@@ -131,6 +131,23 @@ class ImportProvisioningProfile extends ConventionTask {
         this
     }
 
+    private Object adhoc
+
+    @Optional
+    @Input
+    Boolean getAdhoc() {
+        convertToBoolean(adhoc)
+    }
+
+    void setAdhoc(Object value) {
+        adhoc = value
+    }
+
+    ImportProvisioningProfile adhoc(Object value) {
+        setAdhoc(value)
+        this
+    }
+
 
     private Object destinationDir
 
@@ -215,9 +232,22 @@ class ImportProvisioningProfile extends ConventionTask {
                 args "--provisioning_name", provisioningName
             }
 
+            args "--adhoc", getAdhoc().toString()
             args "--filename", getProfileName()
             args "--output_path", getDestinationDir()
         }
+    }
+
+    private static Boolean convertToBoolean(Object value) {
+        if (!value) {
+            return false
+        }
+
+        if (value instanceof Callable) {
+            value = ((Callable) value).call()
+        }
+
+        value
     }
 
     private static String convertToString(Object value) {

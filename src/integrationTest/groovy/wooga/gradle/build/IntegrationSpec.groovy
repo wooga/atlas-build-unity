@@ -53,18 +53,20 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
 
     String wrapValueBasedOnType(Object rawValue, String type) {
         def value
+        def rawValueEscaped = String.isInstance(rawValue) ? "'${rawValue}'" : rawValue
+
         switch (type) {
             case "Closure":
-                value = "{'$rawValue'}"
+                value = "{$rawValueEscaped}"
                 break
             case "Callable":
-                value = "new java.util.concurrent.Callable<String>() {@Override String call() throws Exception { '$rawValue' }}"
+                value = "new java.util.concurrent.Callable<${rawValue.class.typeName}>() {@Override ${rawValue.class.typeName} call() throws Exception { $rawValueEscaped }}"
                 break
             case "Object":
-                value = "new Object() {@Override String toString() { '$rawValue' }}"
+                value = "new Object() {@Override String toString() { ${rawValueEscaped}.toString() }}"
                 break
             case "String":
-                value = "'$rawValue'"
+                value = "$rawValueEscaped"
                 break
             case "File":
                 value = "new File('${escapedPath(rawValue.toString())}')"

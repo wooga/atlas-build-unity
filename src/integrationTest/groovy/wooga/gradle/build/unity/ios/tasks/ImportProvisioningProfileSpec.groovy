@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.ios.tasks
 
+import spock.lang.Ignore
 import spock.lang.Issue
 import spock.lang.Requires
 import spock.lang.Unroll
@@ -81,6 +82,25 @@ class ImportProvisioningProfileSpec extends IntegrationSpec {
         taskToRun = "importProfiles"
     }
 
+    // Test fails with current implementation.
+    // When we switch to gradle provider API we can fix this usecase.
+    @Ignore()
+    def "task :#taskToRun accepts input #parameter is unset when not configured"() {
+        given: "task adhoc property is not configured"
+
+        when:
+        def result = runTasksSuccessfully(taskToRun)
+
+        then:
+        !outputContains(result, commandlineFlag)
+
+        where:
+        parameter | commandlineFlag
+        "adhoc"   | "--adhoc"
+
+        taskToRun = "importProfiles"
+    }
+
     @Unroll
     def "task :#taskToRun accepts input #parameter with #method and type #type"() {
         given: "task with configured properties"
@@ -94,7 +114,7 @@ class ImportProvisioningProfileSpec extends IntegrationSpec {
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains(expectedCommandlineSwitch.replace("#{value_path}", new File(projectDir, rawValue).path))
+        result.standardOutput.contains(expectedCommandlineSwitch.replace("#{value_path}", new File(projectDir, rawValue.toString()).path))
 
         where:
         parameter           | rawValue                | type       | useSetter | expectedCommandlineSwitchRaw
@@ -146,16 +166,29 @@ class ImportProvisioningProfileSpec extends IntegrationSpec {
         "provisioningName" | "profile_7"             | 'Object'   | true      | "--provisioning_name #{value}"
         "provisioningName" | "profile_8"             | 'Object'   | false     | "--provisioning_name #{value}"
 
-        "destinationDir"    | "build/out1"            | 'String'   | true      | "--output_path #{value_path}"
-        "destinationDir"    | "build/out2"            | 'String'   | false     | "--output_path #{value_path}"
-        "destinationDir"    | "build/out3"            | 'File'     | true      | "--output_path #{value_path}"
-        "destinationDir"    | "build/out4"            | 'File'     | false     | "--output_path #{value_path}"
-        "destinationDir"    | "build/out5"            | 'Closure'  | true      | "--output_path #{value_path}"
-        "destinationDir"    | "build/out6"            | 'Closure'  | false     | "--output_path #{value_path}"
+        "adhoc"            | true                    | 'Boolean'  | true      | "--adhoc true"
+        "adhoc"            | true                    | 'Boolean'  | false     | "--adhoc true"
+        "adhoc"            | true                    | 'Closure'  | true      | "--adhoc true"
+        "adhoc"            | true                    | 'Closure'  | false     | "--adhoc true"
+        "adhoc"            | true                    | 'Callable' | true      | "--adhoc true"
+        "adhoc"            | true                    | 'Callable' | false     | "--adhoc true"
+        "adhoc"            | false                   | 'Boolean'  | true      | "--adhoc false"
+        "adhoc"            | false                   | 'Boolean'  | false     | "--adhoc false"
+        "adhoc"            | false                   | 'Closure'  | true      | "--adhoc false"
+        "adhoc"            | false                   | 'Closure'  | false     | "--adhoc false"
+        "adhoc"            | false                   | 'Callable' | true      | "--adhoc false"
+        "adhoc"            | false                   | 'Callable' | false     | "--adhoc false"
+
+        "destinationDir"   | "build/out1"            | 'String'   | true      | "--output_path #{value_path}"
+        "destinationDir"   | "build/out2"            | 'String'   | false     | "--output_path #{value_path}"
+        "destinationDir"   | "build/out3"            | 'File'     | true      | "--output_path #{value_path}"
+        "destinationDir"   | "build/out4"            | 'File'     | false     | "--output_path #{value_path}"
+        "destinationDir"   | "build/out5"            | 'Closure'  | true      | "--output_path #{value_path}"
+        "destinationDir"   | "build/out6"            | 'Closure'  | false     | "--output_path #{value_path}"
 
         taskToRun = "importProfiles"
         value = wrapValueBasedOnType(rawValue, type)
         method = (useSetter) ? "set${parameter.capitalize()}" : parameter
-        expectedCommandlineSwitch = expectedCommandlineSwitchRaw.replace("#{value}", rawValue)
+        expectedCommandlineSwitch = expectedCommandlineSwitchRaw.replace("#{value}", rawValue.toString())
     }
 }
