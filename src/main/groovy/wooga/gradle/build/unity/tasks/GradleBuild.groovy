@@ -18,17 +18,20 @@
 package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
-import org.gradle.util.CollectionUtils
 
 class GradleBuild extends DefaultTask {
 
@@ -38,16 +41,67 @@ class GradleBuild extends DefaultTask {
     @Input
     final ListProperty<String> tasks = project.objects.listProperty(String.class)
 
+    @Optional
+    @InputFile
+    final RegularFileProperty initScript
+
+    @Optional
+    @Internal
+    final DirectoryProperty buildDirBase
+
+    @Internal
+    final Property<Boolean> cleanBuildDirBeforeBuild
+
+    @Optional
+    @Internal
+    private final Provider<Directory> projectCacheDir
+
     @Input
     final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
 
     @Input
     final Property<String> gradleVersion = project.objects.property(String.class)
 
+    GradleBuild() {
+        initScript = project.layout.fileProperty()
+        buildDirBase = project.layout.directoryProperty()
+        projectCacheDir = buildDirBase.dir('.gradle')
+        cleanBuildDirBeforeBuild = project.objects.property(Boolean)
+    }
+
     @TaskAction
     protected exec() {
         def args = []
         args.addAll(buildArguments.get())
+
+        Boolean cleanBuildDirBeforeBuild = (cleanBuildDirBeforeBuild.isPresent() && cleanBuildDirBeforeBuild.get())
+        if (buildDirBase.isPresent() || initScript.isPresent() || cleanBuildDirBeforeBuild) {
+            // we need to create a temp init script
+            def tempInitScript = new File(getTemporaryDir(), 'initScript.groovy')
+            tempInitScript.text = ""
+
+            if (buildDirBase.isPresent() || cleanBuildDirBeforeBuild) {
+                tempInitScript << getClass().getResource('/buildUnityExportInit.gradle').text
+
+                if (buildDirBase.isPresent()) {
+                    def buildBase = buildDirBase.get().getAsFile()
+                    // provide new build base as property to be picked up by custom init script
+                    args << "-Pexport.buildDirBase=${buildBase.getAbsoluteFile().getPath()}".toString()
+                    args << "--project-cache-dir=${projectCacheDir.get().getAsFile().getPath()}".toString()
+                }
+
+                if(cleanBuildDirBeforeBuild) {
+                    args << "-Pexport.deleteBuildDirBeforeBuild=1"
+                }
+            }
+
+            if (initScript.isPresent()) {
+                tempInitScript << getClass().getResource('/exportMarker.gradle').text
+                tempInitScript << initScript.get().getAsFile().text
+            }
+
+            args << "--init-script=${tempInitScript.getPath()}".toString()
+        }
 
         if (!['--debug', '--info', '--quiet'].any { args.contains(it) }) {
             def startParameter = this.project.gradle.startParameter

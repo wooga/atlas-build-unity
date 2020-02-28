@@ -1,0 +1,21 @@
+println "------------------------------------------------------------"
+println "               BUILD UNITY EXPORT INIT SCRIPT               "
+println "------------------------------------------------------------"
+
+projectsLoaded {
+    def buildDirBase = rootProject.file(rootProject.properties.get("export.buildDirBase", rootProject.projectDir))
+    Boolean cleanBuildDirBeforeBuild = rootProject.properties.get("export.deleteBuildDirBeforeBuild", "0") == "1"
+
+    allprojects(new Action<Project>() {
+        @Override
+        void execute(Project project) {
+            def newBuildPath = new File(buildDirBase, "${project.path.replace(':','/')}/build")
+            println("set buildDir for project ${project.name} to $newBuildPath")
+            project.buildDir = newBuildPath
+            if(cleanBuildDirBeforeBuild) {
+                println("Delete buildDir: ${project.buildDir.path}")
+                project.buildDir.deleteDir()
+            }
+        }
+    })
+}

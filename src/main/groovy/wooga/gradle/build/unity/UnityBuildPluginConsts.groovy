@@ -86,10 +86,58 @@ class UnityBuildPluginConsts {
     /**
      * Environment variable to set the default value for {@code commitHash}.
      *
-     * @value "unityBuild.commitHash"
+     * @value "UNITY_BUILD_COMMIT_HASH"
      * @see UnityBuildPluginExtension#getCommitHash()
      */
     static String BUILD_COMMIT_HASH_ENV_VAR = "UNITY_BUILD_COMMIT_HASH"
+
+    /**
+     * Environment variable to set the default value for {@code exportBuildDirBase}.
+     *
+     * @value "UNITY_BUILD_EXPORT_BUILD_DIR_BASE"
+     * @see UnityBuildPluginExtension#getExportBuildDirBase()
+     */
+    static String EXPORT_BUILD_DIR_BASE_ENV_VAR = "UNITY_BUILD_EXPORT_BUILD_DIR_BASE"
+
+    /**
+     * Gradle property baseName to set the default value for {@code exportBuildDirBase}.
+     *
+     * @value "unityBuild.exportBuildDirBase"
+     * @see UnityBuildPluginExtension#getExportBuildDirBase()
+     */
+    static String EXPORT_BUILD_DIR_BASE_OPTION = "unityBuild.exportBuildDirBase"
+
+    /**
+     * Gradle property baseName to set the default value for {@code exportInitScript}.
+     *
+     * @value "unityBuild.exportInitScript"
+     * @see UnityBuildPluginExtension#getExportInitScript()
+     */
+    static String EXPORT_INIT_SCRIPT_OPTION = "unityBuild.exportInitScript"
+
+    /**
+     * Environment variable to set the default value for {@code exportInitScript}.
+     *
+     * @value "UNITY_BUILD_EXPORT_INIT_SCRIPT"
+     * @see UnityBuildPluginExtension#getExportInitScript()
+     */
+    static String EXPORT_INIT_SCRIPT_ENV_VAR = "UNITY_BUILD_EXPORT_INIT_SCRIPT"
+
+    /**
+     * Gradle property baseName to set the default value for {@code cleanBuildDirBeforeBuild}.
+     *
+     * @value "unityBuild.cleanBuildDirBeforeBuild"
+     * @see UnityBuildPluginExtension#getCleanBuildDirBeforeBuild()
+     */
+    static String CLEAN_BUILD_DIR_BEFORE_BUILD_OPTION = "unityBuild.cleanBuildDirBeforeBuild"
+
+    /**
+     * Environment variable to set the default value for {@code cleanBuildDirBeforeBuild}.
+     *
+     * @value "UNITY_BUILD_CLEAN_BUILD_DIR_BEFORE_BUILD"
+     * @see UnityBuildPluginExtension#getCleanBuildDirBeforeBuild()
+     */
+    static String CLEAN_BUILD_DIR_BEFORE_BUILD_ENV_VAR = "UNITY_BUILD_CLEAN_BUILD_DIR_BEFORE_BUILD"
 
 
     /**

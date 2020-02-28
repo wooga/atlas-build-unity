@@ -57,6 +57,14 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
                     println('bar executed')
                 }
             }
+
+            task(writeOutput) {
+                doLast {
+                    def outputFile = new File(project.buildDir, 'output.txt')
+                    outputFile.parentFile.mkdirs()
+                    outputFile.text = "CustomOutput"
+                }
+            }
         """.stripIndent()
         def externalSettings = createFile("settings.gradle", externalDir)
         externalSettings << """
@@ -298,5 +306,157 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         'Iterable<String>' | "new HashSet(['foo', 'bar'])"
 
         method = "tasks"
+    }
+
+    def "can set custom buildDirBase for external project"() {
+        given: "build script with external execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['writeOutput']
+            }
+        """.stripIndent()
+
+        and: "custom build base dir"
+        def customBuildBase = new File(projectDir,"customBuildCache")
+
+        and: "potential future output files"
+        def outputInternal = new File(externalDir, "build/output.txt")
+        def outputExternal = new File(customBuildBase, "build/output.txt")
+
+        assert !outputInternal.exists()
+        assert !outputExternal.exists()
+
+        when: "run task without changing build base"
+        runTasksSuccessfully('externalGradle')
+
+        then:
+        outputInternal.exists()
+        !outputExternal.exists()
+
+        when: "new build base set to the external task"
+        buildFile << """
+            externalGradle.buildDirBase = new File('${escapedPath(customBuildBase.path)}')
+        """.stripIndent()
+
+        outputExternal.delete()
+        outputInternal.delete()
+
+        runTasksSuccessfully('externalGradle')
+
+        then:
+        !outputInternal.exists()
+        outputExternal.exists()
+    }
+
+    @Unroll
+    def "can clean project buildDir for external project before build when buildDirBase #message"() {
+        given: "build script with external execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['writeOutput']
+            }
+        """.stripIndent()
+
+        and: "custom build base dir"
+        def buildBaseDir = (useCustomBuildBase) ? new File(projectDir,"customBuildCache") : externalDir
+
+        and: "potential future output files"
+        def futureOutput = new File(buildBaseDir, "build/output.txt")
+        def fileAlreadyInOutput = new File(buildBaseDir, "build/some_file.txt")
+        fileAlreadyInOutput.parentFile.mkdirs()
+        fileAlreadyInOutput.text = "Some content"
+
+        assert !futureOutput.exists()
+        assert fileAlreadyInOutput.exists()
+
+        and: "custom build base dir"
+        if(useCustomBuildBase) {
+            buildFile << """
+                externalGradle.buildDirBase = new File('${escapedPath(buildBaseDir.path)}')
+            """.stripIndent()
+        }
+
+        when: "run task without cleaning before build"
+        runTasksSuccessfully('externalGradle')
+
+        then:
+        futureOutput.exists()
+        fileAlreadyInOutput.exists()
+
+        when: "new build base set to the external task"
+        buildFile << """
+            externalGradle.cleanBuildDirBeforeBuild = true
+        """.stripIndent()
+
+        runTasksSuccessfully('externalGradle')
+
+        then:
+        futureOutput.exists()
+        !fileAlreadyInOutput.exists()
+
+        where:
+        useCustomBuildBase | _
+        false | _
+        true | _
+
+        message = (useCustomBuildBase) ? "is set" : "is not set"
+    }
+
+    @Unroll
+    def "can execute with custom init script when buildDirBase #message"() {
+        given: "build script with external execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['foo']
+            }
+        """.stripIndent()
+
+        and: "a custom init script"
+        def initScript = createFile("customInit.gradle", projectDir)
+
+        and: "a init script marker"
+
+        def initMarker = """
+        ------------------------------------------------------------
+                          EXECUTE CUSTOM INIT                       
+        ------------------------------------------------------------
+        """.stripIndent().trim()
+
+        initMarker.eachLine {
+            initScript << "println '${it}'\n"
+        }
+
+        and: "custom build base dir"
+        if(useCustomBuildBase) {
+            def customBuildBase = new File(projectDir,"customBuildCache")
+            buildFile << """
+                externalGradle.buildDirBase = new File('${escapedPath(customBuildBase.path)}')
+            """.stripIndent()
+        }
+
+        when:
+        def result = runTasksSuccessfully('externalGradle')
+
+        then:
+        !result.standardOutput.normalize().contains(initMarker.normalize())
+
+        when: "the init script set for the task"
+        buildFile << """
+            externalGradle.initScript = new File('${escapedPath(initScript.path)}')
+        """.stripIndent()
+        result = runTasksSuccessfully('externalGradle')
+
+        then:
+        result.standardOutput.normalize().contains(initMarker.normalize())
+
+        where:
+        useCustomBuildBase | _
+        false | _
+        true | _
+
+        message = (useCustomBuildBase) ? "is set" : "is not set"
     }
 }
