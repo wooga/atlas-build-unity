@@ -438,7 +438,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
     }
 
     @Unroll
-    def "can execute with custom init script when buildDirBase #message"() {
+    def "can override init script with custom init script when buildDirBase #message and delete build before build #deleteBuildMessage"() {
         given: "build script with external execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
@@ -452,15 +452,24 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
 
         and: "a init script marker"
 
-        def initMarker = """
-        ------------------------------------------------------------
-                          EXECUTE CUSTOM INIT                       
-        ------------------------------------------------------------
-        """.stripIndent().trim()
+        def initMarker = "EXECUTE CUSTOM INIT"
 
-        initMarker.eachLine {
-            initScript << "println '${it}'\n"
+        initScript << '''
+        println "------------------------------------------------------------"
+        println "                  EXECUTE CUSTOM INIT                       "
+        println "------------------------------------------------------------"
+        
+        projectsLoaded {
+            def buildDirBase = rootProject.properties.containsKey("export.buildDirBase")
+            def cleanBuildDirBeforeBuild = rootProject.properties.containsKey("export.deleteBuildDirBeforeBuild")
+            
+            println "buildDirBase: ${buildDirBase}"
+            println "cleanBuildDirBeforeBuild: ${cleanBuildDirBeforeBuild}"
         }
+        
+        '''.stripIndent().trim()
+
+        def defaultMarker = "BUILD UNITY EXPORT INIT SCRIPT"
 
         and: "custom build base dir"
         if(useCustomBuildBase) {
@@ -470,10 +479,17 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
             """.stripIndent()
         }
 
+        if(cleanBuildDirBeforeBuild) {
+            buildFile << """
+                externalGradle.cleanBuildDirBeforeBuild = true
+            """.stripIndent()
+        }
+
         when:
         def result = runTasksSuccessfully('externalGradle')
 
         then:
+        result.standardOutput.normalize().contains(defaultMarker.normalize()) == containsDefaultMarker
         !result.standardOutput.normalize().contains(initMarker.normalize())
 
         when: "the init script set for the task"
@@ -483,13 +499,19 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         result = runTasksSuccessfully('externalGradle')
 
         then:
+        !result.standardOutput.normalize().contains(defaultMarker.normalize())
         result.standardOutput.normalize().contains(initMarker.normalize())
+        result.standardOutput.contains("buildDirBase: ${useCustomBuildBase}")
+        result.standardOutput.contains("cleanBuildDirBeforeBuild: ${cleanBuildDirBeforeBuild}")
 
         where:
-        useCustomBuildBase | _
-        false | _
-        true | _
+        useCustomBuildBase | cleanBuildDirBeforeBuild | containsDefaultMarker
+        false              | false                    | false
+        true               | false                    | true
+        false              | true                     | true
+        true               | true                     | true
 
         message = (useCustomBuildBase) ? "is set" : "is not set"
+        deleteBuildMessage = (cleanBuildDirBeforeBuild) ? "is set" : "is not set"
     }
 }

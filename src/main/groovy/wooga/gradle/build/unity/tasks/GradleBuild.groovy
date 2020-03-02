@@ -80,9 +80,13 @@ class GradleBuild extends DefaultTask {
             def tempInitScript = new File(getTemporaryDir(), 'initScript.groovy')
             tempInitScript.text = ""
 
-            if (buildDirBase.isPresent() || cleanBuildDirBeforeBuild) {
+            if(initScript.isPresent()) {
+                tempInitScript << initScript.get().getAsFile().text
+            } else {
                 tempInitScript << getClass().getResource('/buildUnityExportInit.gradle').text
+            }
 
+            if (buildDirBase.isPresent() || cleanBuildDirBeforeBuild) {
                 if (buildDirBase.isPresent()) {
                     def buildBase = buildDirBase.get()
                     def projectCacheDir = projectCacheDir.get()
@@ -104,11 +108,6 @@ class GradleBuild extends DefaultTask {
                 if(cleanBuildDirBeforeBuild) {
                     args << "-Pexport.deleteBuildDirBeforeBuild=1"
                 }
-            }
-
-            if (initScript.isPresent()) {
-                tempInitScript << getClass().getResource('/exportMarker.gradle').text
-                tempInitScript << initScript.get().getAsFile().text
             }
 
             args << "--init-script=${tempInitScript.getPath()}".toString()
