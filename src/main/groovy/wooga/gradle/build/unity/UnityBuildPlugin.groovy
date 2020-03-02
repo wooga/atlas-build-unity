@@ -152,6 +152,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.dir.set(exportTask.outputDirectory)
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
+                        t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({
                             if (!config.isValid()) {
