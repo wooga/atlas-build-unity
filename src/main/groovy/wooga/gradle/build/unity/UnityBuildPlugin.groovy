@@ -144,23 +144,15 @@ class UnityBuildPlugin implements Plugin<Project> {
                     t.appConfigFile.set(appConfig)
                 } as UnityBuildPlayerTask
 
-                FileCollection exportInitScripts = project.fileTree(project.projectDir) {
-                    it.include('exportInit.gradle')
-                }
-                List<String> args = []
-                args << "-Pexport.buildDirBase=../buildCache" << "--project-cache-dir=../buildCache/.gradle"
-
-                if (exportInitScripts.size() > 0) {
-                    args << "--init-script=${exportInitScripts.files.first().path}".toString()
-                }
-
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
                     def gradleBuild = project.tasks.create("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
                         t.dependsOn exportTask
                         t.group = groupName
                         t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
                         t.dir.set(exportTask.outputDirectory)
-                        t.buildArguments.set(args)
+                        t.initScript.set(extension.exportInitScript)
+                        t.buildDirBase.set(extension.exportBuildDirBase)
+                        t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({
                             if (!config.isValid()) {

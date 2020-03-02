@@ -22,6 +22,8 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.RegularFile
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UnityBuildPluginConsts
@@ -42,6 +44,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<String> defaultAppConfigName
     final Provider<Directory> assetsDir
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
+    final RegularFileProperty exportInitScript
+    final Property<File> exportBuildDirBase
+    final Property<Boolean> cleanBuildDirBeforeBuild
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -54,6 +59,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         defaultAppConfigName = project.objects.property(String.class)
         assetsDir = project.layout.directoryProperty()
         ignoreFilesForExportUpToDateCheck = project.layout.configurableFiles()
+        exportInitScript = project.layout.fileProperty()
+        exportBuildDirBase = project.objects.property(File)
+        cleanBuildDirBeforeBuild = project.objects.property(Boolean)
 
         exportMethodName.set(project.provider(new Callable<String>() {
             @Override
@@ -97,6 +105,52 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
                 def assetDir = project.layout.directoryProperty()
                 assetDir.set(project.file(unity.assetsDir))
                 assetDir.get()
+            }
+        }))
+
+        exportInitScript.set(project.provider(new Callable<RegularFile>() {
+            @Override
+            RegularFile call() throws Exception {
+                String exportInitScriptPath = System.getenv().get(UnityBuildPluginConsts.EXPORT_INIT_SCRIPT_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.EXPORT_INIT_SCRIPT_OPTION, null)
+
+                if (exportInitScriptPath) {
+                    def property = project.layout.fileProperty()
+                    property.set(new File(exportInitScriptPath))
+                    return property.get()
+                }
+                return null
+            }
+        }))
+
+        exportBuildDirBase.set(project.provider(new Callable<Directory>() {
+            @Override
+            Directory call() throws Exception {
+                String exportBuildDirBasePath = System.getenv().get(UnityBuildPluginConsts.EXPORT_BUILD_DIR_BASE_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.EXPORT_BUILD_DIR_BASE_OPTION, null)
+
+                if (exportBuildDirBasePath) {
+                    def property = project.layout.directoryProperty()
+                    property.set(new File(exportBuildDirBasePath))
+                    return property.get()
+                }
+                return null
+            }
+        }))
+
+        cleanBuildDirBeforeBuild.set(project.provider(new Callable<Boolean>() {
+            @Override
+            Boolean call() throws Exception {
+                String rawValue = System.getenv().get(UnityBuildPluginConsts.CLEAN_BUILD_DIR_BEFORE_BUILD_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.CLEAN_BUILD_DIR_BEFORE_BUILD_OPTION, null)
+
+                if(rawValue) {
+                    rawValue = rawValue.toString().toLowerCase()
+                    rawValue = (rawValue == "1" || rawValue == "yes") ? "true" : false
+                    return rawValue
+                }
+
+                return false
             }
         }))
     }
