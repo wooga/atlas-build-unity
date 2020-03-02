@@ -47,14 +47,14 @@ class GradleBuild extends DefaultTask {
 
     @Optional
     @Internal
-    final DirectoryProperty buildDirBase
+    final Property<File> buildDirBase
 
     @Internal
     final Property<Boolean> cleanBuildDirBeforeBuild
 
     @Optional
     @Internal
-    private final Provider<Directory> projectCacheDir
+    private final Provider<File> projectCacheDir
 
     @Input
     final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
@@ -64,8 +64,8 @@ class GradleBuild extends DefaultTask {
 
     GradleBuild() {
         initScript = project.layout.fileProperty()
-        buildDirBase = project.layout.directoryProperty()
-        projectCacheDir = buildDirBase.dir('.gradle')
+        buildDirBase = project.objects.property(File)
+        projectCacheDir = buildDirBase.map({it -> new File(it, ".gradle")})
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
     }
 
@@ -84,10 +84,21 @@ class GradleBuild extends DefaultTask {
                 tempInitScript << getClass().getResource('/buildUnityExportInit.gradle').text
 
                 if (buildDirBase.isPresent()) {
-                    def buildBase = buildDirBase.get().getAsFile()
+                    def buildBase = buildDirBase.get()
+                    def projectCacheDir = projectCacheDir.get()
+                    def projectDir = dir.get().asFile
+
+                    if(!buildBase.isAbsolute()) {
+                        buildBase = new File(projectDir, buildBase.path)
+                    }
+
+                    if(!projectCacheDir.isAbsolute()) {
+                        projectCacheDir = new File(projectDir, projectCacheDir.path)
+                    }
+
                     // provide new build base as property to be picked up by custom init script
-                    args << "-Pexport.buildDirBase=${buildBase.getAbsoluteFile().getPath()}".toString()
-                    args << "--project-cache-dir=${projectCacheDir.get().getAsFile().getPath()}".toString()
+                    args << "-Pexport.buildDirBase=${buildBase.getPath()}".toString()
+                    args << "--project-cache-dir=${projectCacheDir.getPath()}".toString()
                 }
 
                 if(cleanBuildDirBeforeBuild) {

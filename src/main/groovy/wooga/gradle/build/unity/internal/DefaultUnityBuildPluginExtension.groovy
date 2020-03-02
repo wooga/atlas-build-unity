@@ -45,7 +45,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Provider<Directory> assetsDir
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
     final RegularFileProperty exportInitScript
-    final DirectoryProperty exportBuildDirBase
+    final Property<File> exportBuildDirBase
     final Property<Boolean> cleanBuildDirBeforeBuild
 
     DefaultUnityBuildPluginExtension(final Project project) {
@@ -60,7 +60,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         assetsDir = project.layout.directoryProperty()
         ignoreFilesForExportUpToDateCheck = project.layout.configurableFiles()
         exportInitScript = project.layout.fileProperty()
-        exportBuildDirBase = project.layout.directoryProperty()
+        exportBuildDirBase = project.objects.property(File)
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
 
         exportMethodName.set(project.provider(new Callable<String>() {

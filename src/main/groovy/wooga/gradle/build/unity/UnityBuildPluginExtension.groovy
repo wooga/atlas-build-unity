@@ -32,7 +32,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     Property<String> getExportMethodName()
     Property<String> getDefaultAppConfigName()
     RegularFileProperty getExportInitScript()
-    DirectoryProperty getExportBuildDirBase()
+    Property<File> getExportBuildDirBase()
     Property<Boolean> getCleanBuildDirBeforeBuild()
     FileCollection getAppConfigs()
 

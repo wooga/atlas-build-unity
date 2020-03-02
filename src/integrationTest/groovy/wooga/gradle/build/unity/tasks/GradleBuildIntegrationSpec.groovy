@@ -349,6 +349,39 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         outputExternal.exists()
     }
 
+    def "can set relative path to custom buildDirBase for external project"() {
+        given: "build script with external execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['writeOutput']
+            }
+        """.stripIndent()
+
+        and: "custom build base dir"
+        def customBuildBase = new File(externalDir,"../customBuildCache")
+
+        def outputInternal = new File(externalDir, "build/output.txt")
+        def outputExternal = new File(customBuildBase, "build/output.txt")
+
+        assert !outputInternal.exists()
+        assert !outputExternal.exists()
+
+        when: "new build base set to the external task"
+        buildFile << """
+            externalGradle.buildDirBase = new File('../customBuildCache')
+        """.stripIndent()
+
+        outputExternal.delete()
+        outputInternal.delete()
+
+        runTasksSuccessfully('externalGradle')
+
+        then:
+        !outputInternal.exists()
+        outputExternal.exists()
+    }
+
     @Unroll
     def "can clean project buildDir for external project before build when buildDirBase #message"() {
         given: "build script with external execution task"
