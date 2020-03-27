@@ -6,3 +6,5 @@ update_configs:
     ignored_updates:
       - match:
           dependency_name: "org.spockframework:spock-core"
+      - match:
+          dependency_name: "com.netflix.nebula:nebula-test"
