@@ -30,29 +30,7 @@ import wooga.gradle.build.IntegrationSpec
  * account with necessary credentials. We only test the invocation of fastlane and its parameters.
  */
 @Requires({ os.macOs })
-class ImportProvisioningProfileSpec extends IntegrationSpec {
-
-    File fastlaneMock
-    File fastlaneMockPath
-
-    def setupFastlaneMock() {
-        fastlaneMockPath = File.createTempDir("fastlane", "mock")
-
-        def path = System.getenv("PATH")
-        environmentVariables.clear("PATH")
-        String newPath = "${fastlaneMockPath}${File.pathSeparator}${path}"
-        environmentVariables.set("PATH", newPath)
-        assert System.getenv("PATH") == newPath
-
-
-        fastlaneMock = createFile("fastlane", fastlaneMockPath)
-        fastlaneMock.executable = true
-        fastlaneMock << """
-            #!/usr/bin/env bash
-            echo \$@
-            env
-        """.stripIndent()
-    }
+class ImportProvisioningProfileSpec extends FastlaneSpec {
 
     def setup() {
         buildFile << """
@@ -63,8 +41,6 @@ class ImportProvisioningProfileSpec extends IntegrationSpec {
                 destinationDir = file("build")
             }
         """.stripIndent()
-
-        setupFastlaneMock()
     }
 
     @Issue("https://github.com/wooga/atlas-build-unity/issues/38")

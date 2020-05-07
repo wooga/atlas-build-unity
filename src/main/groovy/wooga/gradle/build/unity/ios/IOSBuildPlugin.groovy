@@ -23,6 +23,7 @@ import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
@@ -32,6 +33,7 @@ import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
 import wooga.gradle.build.unity.ios.tasks.KeychainTask
 import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
 import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
+import wooga.gradle.build.unity.ios.tasks.PublishTestFlight
 import wooga.gradle.build.unity.ios.tasks.XCodeArchiveTask
 import wooga.gradle.build.unity.ios.tasks.XCodeExportTask
 
@@ -50,6 +52,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         project.pluginManager.apply(BasePlugin.class)
+        project.pluginManager.apply(PublishingPlugin.class)
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
 
         //register some defaults
@@ -125,6 +128,18 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
+        project.tasks.withType(PublishTestFlight.class, new Action<PublishTestFlight>() {
+            @Override
+            void execute(PublishTestFlight task) {
+                def conventionMapping = task.getConventionMapping()
+                conventionMapping.map("username", { extension.fastlaneCredentials.username })
+                conventionMapping.map("password", { extension.fastlaneCredentials.password })
+                conventionMapping.map("devPortalTeamId", { extension.getTeamId() })
+                conventionMapping.map("appIdentifier", { extension.getAppIdentifier() })
+                conventionMapping.map("ipa", { extension.getAppIdentifier() })
+            }
+        })
+
         def projects = project.fileTree(project.projectDir) { it.include("*.xcodeproj/project.pbxproj") }.files
         projects.each { File xcodeProject ->
             def base = xcodeProject.parentFile
@@ -132,7 +147,7 @@ class IOSBuildPlugin implements Plugin<Project> {
             if (projects.size() == 1) {
                 taskNameBase = ""
             }
-            generateBuildTasks(taskNameBase, project, base)
+            generateBuildTasks(taskNameBase, project, base, extension)
         }
     }
 
@@ -147,7 +162,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         return ""
     }
 
-    void generateBuildTasks(final String baseName, final Project project, File xcodeProject) {
+    void generateBuildTasks(final String baseName, final Project project, File xcodeProject, IOSBuildPluginExtension extension) {
         def tasks = project.tasks
         def buildKeychain = tasks.create(maybeBaseName(baseName, "buildKeychain"), KeychainTask) {
             it.baseName = maybeBaseName(baseName, "build")
@@ -195,6 +210,22 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.exportOptionsPlist project.file("exportOptions.plist")
             it.xcarchivePath xcodeArchive
         }
+
+        def publishTestFlight = tasks.create(maybeBaseName(baseName, "publishTestFlight"), PublishTestFlight) {
+            it.ipa xcodeExport
+            it.group = PublishingPlugin.PUBLISH_TASK_GROUP
+            it.description = "Upload binary to TestFlightApp"
+        }
+
+        project.afterEvaluate(new Action<Project>() {
+            @Override
+            void execute(Project _) {
+                if(extension.publishToTestFlight) {
+                    def lifecyclePublishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+                    lifecyclePublishTask.dependsOn(publishTestFlight)
+                }
+            }
+        })
 
         removeKeychain.mustRunAfter([xcodeArchive, xcodeExport])
         lockKeychain.mustRunAfter([xcodeArchive, xcodeExport])

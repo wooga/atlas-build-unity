@@ -33,6 +33,7 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     private String configuration
     private String provisioningName
     private Boolean adhoc = false
+    private Boolean publishToTestFlight = false
 
     @Override
     org.gradle.api.credentials.PasswordCredentials getFastlaneCredentials() {
@@ -189,6 +190,22 @@ class DefaultIOSBuildPluginExtension implements IOSBuildPluginExtension {
     @Override
     IOSBuildPluginExtension adhoc(Boolean value) {
         setAdhoc(value)
+        return this
+    }
+
+    @Override
+    Boolean getPublishToTestFlight() {
+        return publishToTestFlight
+    }
+
+    @Override
+    void setPublishToTestFlight(Boolean value) {
+        publishToTestFlight = value
+    }
+
+    @Override
+    IOSBuildPluginExtension publishToTestFlight(Boolean value) {
+        setPublishToTestFlight(value)
         return this
     }
 
