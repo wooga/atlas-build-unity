@@ -62,4 +62,8 @@ interface IOSBuildPluginExtension {
     void setAdhoc(Boolean value)
     IOSBuildPluginExtension adhoc(Boolean value)
 
+    Boolean getPublishToTestFlight()
+    void setPublishToTestFlight(Boolean value)
+    IOSBuildPluginExtension publishToTestFlight(Boolean value)
+
 }
