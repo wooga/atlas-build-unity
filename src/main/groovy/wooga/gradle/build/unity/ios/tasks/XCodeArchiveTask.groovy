@@ -23,6 +23,8 @@ import org.gradle.api.tasks.*
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.XCAction
 
+import java.util.concurrent.Callable
+
 class XCodeArchiveTask extends ConventionTask {
 
     private Object projectPath
@@ -149,6 +151,23 @@ class XCodeArchiveTask extends ConventionTask {
 
     XCodeArchiveTask configuration(String configuration) {
         setConfiguration(configuration)
+        this
+    }
+
+    private Object teamId
+
+    @Optional
+    @Input
+    String getTeamId() {
+        convertToString(teamId)
+    }
+
+    void setTeamId(Object value) {
+        teamId = value
+    }
+
+    ImportProvisioningProfile teamId(Object teamId) {
+        setTeamId(teamId)
         this
     }
 
@@ -299,6 +318,10 @@ class XCodeArchiveTask extends ConventionTask {
             arguments << "OTHER_CODE_SIGN_FLAGS=--keychain ${getBuildKeychain()}"
         }
 
+        if (getTeamId()) {
+            arguments << "DEVELOPMENT_TEAM=${getTeamId()}"
+        }
+
         arguments << "-archivePath" << getArchivePath().getPath()
 
         def derivedDataPath = new File(project.buildDir, "derivedData")
@@ -310,5 +333,17 @@ class XCodeArchiveTask extends ConventionTask {
             executable "/usr/bin/xcrun"
             args = arguments
         }
+    }
+
+    private static String convertToString(Object value) {
+        if (!value) {
+            return null
+        }
+
+        if (value instanceof Callable) {
+            value = ((Callable) value).call()
+        }
+
+        value.toString()
     }
 }
