@@ -69,6 +69,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 conventionMapping.map("extension", { "xcarchive" })
                 conventionMapping.map("scheme", { extension.getScheme() })
                 conventionMapping.map("configuration", { extension.getConfiguration() })
+                conventionMapping.map("teamId", { extension.getTeamId() })
             }
         })
 
