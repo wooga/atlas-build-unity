@@ -28,6 +28,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UnityBuildPluginConsts
 import wooga.gradle.build.unity.UnityBuildPluginExtension
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.unity.UnityPluginExtension
 
 import java.util.concurrent.Callable
@@ -39,6 +40,8 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final DirectoryProperty appConfigsDirectory
     final DirectoryProperty outputDirectoryBase
     final Property<String> toolsVersion
+    final Property<String> version
+    final Property<String> versionCode
     final Property<String> commitHash
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
@@ -54,6 +57,8 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         appConfigsDirectory = project.layout.directoryProperty()
         outputDirectoryBase = project.layout.directoryProperty()
         toolsVersion = project.objects.property(String.class)
+        version = project.objects.property(String.class)
+        versionCode = project.objects.property(String.class)
         commitHash = project.objects.property(String.class)
         exportMethodName = project.objects.property(String.class)
         defaultAppConfigName = project.objects.property(String.class)
@@ -92,6 +97,26 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             String call() throws Exception {
                 System.getenv().get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_ENV_VAR) ?:
                         project.properties.get(UnityBuildPluginConsts.BUILD_TOOLS_VERSION_OPTION, null)
+            }
+        }))
+
+        version.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                def version = PropertyUtils.convertToString(project.version)
+                if(!version || version == "unspecified") {
+                    return System.getenv().get(UnityBuildPluginConsts.BUILD_VERSION_ENV_VAR) ?:
+                            project.properties.get(UnityBuildPluginConsts.BUILD_VERSION_OPTION, version) as String
+                }
+                version
+            }
+        }))
+
+        versionCode.set(project.provider(new Callable<String>() {
+            @Override
+            String call() throws Exception {
+                System.getenv().get(UnityBuildPluginConsts.BUILD_VERSION_CODE_ENV_VAR) ?:
+                        project.properties.get(UnityBuildPluginConsts.BUILD_VERSION_CODE_OPTION, null) as String
             }
         }))
 

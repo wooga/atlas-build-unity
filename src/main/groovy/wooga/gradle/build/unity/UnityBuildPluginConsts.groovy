@@ -58,6 +58,37 @@ class UnityBuildPluginConsts {
      */
     static String DEFAULT_APP_CONFIG_NAME_ENV_VAR = "UNITY_BUILD_DEFAULT_APP_CONFIG_NAME"
 
+    /**
+     * Gradle property baseName to set the default value for {@code version}.
+     *
+     * @value "unityBuild.version"
+     * @see UnityBuildPluginExtension#getVersion()
+     */
+    static String BUILD_VERSION_OPTION = "unityBuild.version"
+
+    /**
+     * Environment variable to set the default value for {@code version}.
+     *
+     * @value "UNITY_BUILD_VERSION"
+     * @see UnityBuildPluginExtension#getVersion()
+     */
+    static String BUILD_VERSION_ENV_VAR = "UNITY_BUILD_VERSION"
+
+    /**
+     * Gradle property baseName to set the default value for {@code versionCode}.
+     *
+     * @value "unityBuild.versionCode"
+     * @see UnityBuildPluginExtension#getVersionCode()
+     */
+    static String BUILD_VERSION_CODE_OPTION = "unityBuild.versionCode"
+
+    /**
+     * Environment variable to set the default value for {@code versionCode}.
+     *
+     * @value "UNITY_BUILD_VERSION_CODE"
+     * @see UnityBuildPluginExtension#getVersionCode()
+     */
+    static String BUILD_VERSION_CODE_ENV_VAR = "UNITY_BUILD_VERSION_CODE"
 
     /**
      * Gradle property baseName to set the default value for {@code toolsVersion}.
@@ -70,7 +101,7 @@ class UnityBuildPluginConsts {
     /**
      * Environment variable to set the default value for {@code toolsVersion}.
      *
-     * @value "unityBuild.toolsVersion"
+     * @value "UNITY_BUILD_TOOLS_VERSION"
      * @see UnityBuildPluginExtension#getToolsVersion()
      */
     static String BUILD_TOOLS_VERSION_ENV_VAR = "UNITY_BUILD_TOOLS_VERSION"

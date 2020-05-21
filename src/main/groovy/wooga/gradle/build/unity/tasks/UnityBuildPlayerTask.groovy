@@ -71,6 +71,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
     @Input
     final Property<String> version
 
+    @Optional
+    @Input
+    final Property<String> versionCode
+
     @Internal("loaded app config asset")
     protected GenericUnityAsset getAppConfig() {
         if(!appConfig) {
@@ -111,6 +115,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
         toolsVersion = project.objects.property(String.class)
         commitHash = project.objects.property(String.class)
         version = project.objects.property(String.class)
+        versionCode = project.objects.property(String.class)
     }
 
     @Override
@@ -125,12 +130,16 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask {
             setBuildTarget(getBuildPlatform().toLowerCase() as BuildTarget)
         }
 
+        if (versionCode.present) {
+            customArgs += "versionCode=${versionCode.get()};"
+        }
+
         if (toolsVersion.present) {
-            customArgs += "toolsVersion=${toolsVersion.get()}"
+            customArgs += "toolsVersion=${toolsVersion.get()};"
         }
 
         if (commitHash.present) {
-            customArgs += "commitHash=${commitHash.get()}"
+            customArgs += "commitHash=${commitHash.get()};"
         }
 
         args "-executeMethod", exportMethodName.get()

@@ -95,14 +95,20 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
             result.standardOutput.contains("commitHash=${expectedCommitHash}")
         }
 
+        if (expectedVersionCode) {
+            result.standardOutput.contains("versionCode=${expectedVersionCode}")
+        }
+
         result.standardOutput.contains("-executeMethod ${expectedExportMethod}")
         result.standardOutput.contains("version=${expectedVersion}")
+
         result.standardOutput.contains("outputPath=${new File(projectDir, expectedOutputPath).path}")
 
         where:
         property              | rawValue                          | type     | useSetter
         "exportMethodName"    | "method1"                         | 'String' | true
         "version"             | "1.0.0"                           | 'String' | true
+        "versionCode"         | "100000"                          | 'String' | true
         "toolsVersion"        | "1.0.0"                           | 'String' | true
         "commitHash"          | "abcdef123456"                    | 'String' | true
         "outputDirectoryBase" | "build/customExport3"             | 'File'   | true
@@ -112,6 +118,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         expectedVersion = (property == "version") ? rawValue : 'unspecified'
         expectedToolsVersion = (property == "toolsVersion") ? rawValue : null
+        expectedVersionCode = (property == "versionCode") ? rawValue : null
         expectedCommitHash = (property == "commitHash") ? rawValue : null
 
         expectedOutputDirectoryBase = (property == 'outputDirectoryBase') ? rawValue : "/build/export"
@@ -119,7 +126,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         expectedOutputPath = "$expectedOutputDirectoryBase/${FilenameUtils.removeExtension(expectedAppConfigFile.name)}/project"
 
-        methodIsOptional = (property == "toolsVersion") ? 'optional' : ''
+        methodIsOptional = (property == "toolsVersion" || property == "versionCode") ? 'optional' : ''
         value = wrapValueBasedOnType(rawValue, type)
     }
 
@@ -178,6 +185,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         "exportMethodName" | "'method1'"
         "appConfigFile"    | "file('Assets/CustomConfigs/test.asset')"
         "version"          | "'1.0.1'"
+        "versionCode"      | "'100100'"
     }
 
     def "task skips with no-source when input files are empty"() {
