@@ -22,12 +22,15 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
     DirectoryProperty getAppConfigsDirectory()
     DirectoryProperty getOutputDirectoryBase()
     Property<String> getToolsVersion()
+    Property<String> getVersion()
+    Property<String> getVersionCode()
     Property<String> getCommitHash()
     Property<String> getExportMethodName()
     Property<String> getDefaultAppConfigName()

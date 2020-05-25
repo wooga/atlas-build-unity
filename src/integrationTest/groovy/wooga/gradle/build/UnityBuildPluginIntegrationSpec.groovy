@@ -128,6 +128,14 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "toolsVersion"        | "3.2.1"                                     | ""       | 'properties'  | "toolsVersion="
         "toolsVersion"        | "2.1.3"                                     | "String" | 'extension'   | "toolsVersion="
 
+        "version"             | "1.2.3"                                     | ""       | 'environment' | "version="
+        "version"             | "3.2.1"                                     | ""       | 'properties'  | "version="
+        "version"             | "2.1.3"                                     | "String" | 'extension'   | "version="
+
+        "versionCode"         | "10203"                                     | ""       | 'environment' | "versionCode="
+        "versionCode"         | "30201"                                     | ""       | 'properties'  | "versionCode="
+        "versionCode"         | "20103"                                     | "String" | 'extension'   | "versionCode="
+
         "commitHash"          | "abcdefg"                                   | ""       | 'environment' | "commitHash="
         "commitHash"          | "gfedcba"                                   | ""       | 'properties'  | "commitHash="
         "commitHash"          | "1234567"                                   | "String" | 'extension'   | "commitHash="

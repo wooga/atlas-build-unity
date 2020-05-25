@@ -63,7 +63,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 task.toolsVersion.set(extension.toolsVersion)
                 task.commitHash.set(extension.commitHash)
                 task.outputDirectoryBase.set(extension.outputDirectoryBase)
-                task.version.set(project.provider({PropertyUtils.convertToString(project.version)}))
+                task.version.set(extension.version)
+                task.versionCode.set(extension.versionCode)
                 task.inputFiles.from({
 
                     def assetsDir = new File(task.getProjectPath(), "Assets")
