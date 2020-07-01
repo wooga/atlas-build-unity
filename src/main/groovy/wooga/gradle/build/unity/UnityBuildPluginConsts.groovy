@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,6 +170,11 @@ class UnityBuildPluginConsts {
      */
     static String CLEAN_BUILD_DIR_BEFORE_BUILD_ENV_VAR = "UNITY_BUILD_CLEAN_BUILD_DIR_BEFORE_BUILD"
 
+    static Integer SECRETS_KEY_ITERATION = 65536
+    static Integer SECRETS_KEY_LENGTH = 256
+
+    static String SECRETS_KEY_OPTION = "unityBuild.secretsKey"
+    static String SECRETS_KEY_ENV_VAR = "UNITY_BUILD_SECRETS_KEY"
 
     /**
      * Default name for the base export location.

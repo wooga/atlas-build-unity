@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package wooga.gradle.build.unity.tasks
@@ -23,7 +22,12 @@ import spock.lang.Issue
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
+import wooga.gradle.build.unity.secrets.internal.SecretText
+import wooga.gradle.build.unity.secrets.internal.Secrets
 import wooga.gradle.unity.batchMode.BatchModeFlags
+
+import javax.crypto.spec.SecretKeySpec
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
@@ -263,6 +267,37 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         files = mockProjectFiles.collect { it[0] }
         [file, upToDate] << mockProjectFiles
         statusMessage = (upToDate) ? "is" : "is not"
+    }
+
+    def "can pass provided secrets in environment"() {
+        given: "a secrets file an matching key"
+        Secrets secrets = new Secrets()
+        SecretKeySpec key = EncryptionSpecHelper.createSecretKey("some_value")
+        secrets.putSecret(secretId, new SecretText(secretValue), key)
+
+        and: "serialized key and secrets text"
+        def secretsKey = File.createTempFile("atlas-build-unity.GradleBuild", ".key")
+        def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
+
+        secretsKey.bytes = key.encoded
+        secretsFile.text = secrets.encode()
+
+        and: "secrets and key configured in task"
+        buildFile << """
+            import javax.crypto.spec.SecretKeySpec
+            exportCustom.secretsFile = project.file('${escapedPath(secretsFile.path)}')
+            exportCustom.secretsKey = new SecretKeySpec(project.file('${escapedPath(secretsKey.path)}').bytes, 'AES')
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully('exportCustom')
+
+        then:
+        result.standardOutput.contains("${secretId.toUpperCase()}=${secretValue}")
+
+        where:
+        secretId  | secretValue
+        "secret1" | "secret1Value"
     }
 
     @Unroll

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,17 @@ import org.apache.commons.io.FilenameUtils
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.language.base.plugins.LifecycleBasePlugin
-import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
-import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.build.unity.tasks.FetchSecrets
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
+import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.utils.GenericUnityAsset
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -125,7 +124,18 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(GradleBuild, new Action<GradleBuild>() {
             @Override
             void execute(GradleBuild t) {
-                t.gradleVersion.set(project.provider({project.gradle.gradleVersion}))
+                t.gradleVersion.set(project.provider({ project.gradle.gradleVersion }))
+            }
+        })
+
+        project.tasks.withType(FetchSecrets, new Action<FetchSecrets>() {
+            @Override
+            void execute(FetchSecrets t) {
+                t.secretsKey.set(extension.secretsKey)
+                t.secretsFile.set(project.provider({
+                    project.layout.buildDirectory.dir("secret/${t.name}").get().file("secrets.yml")
+                }))
+                t.resolver.set(extension.secretResolver)
             }
         })
 
@@ -139,10 +149,18 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
                 baseName = baseName.replaceAll(~/[$characterPattern]/, '')
 
+                FetchSecrets fetchSecretsTask = project.tasks.create("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
+                    t.group = "build unity"
+                    t.description = "fetches all secrets configured in ${appConfigName}"
+                    t.appConfigFile.set(appConfig)
+                }
+
                 UnityBuildPlayerTask exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
                     t.group = "build unity"
                     t.description = "exports gradle project for app config ${appConfigName}"
                     t.appConfigFile.set(appConfig)
+                    t.secretsFile.set(fetchSecretsTask.secretsFile)
+                    t.secretsKey.set(extension.secretsKey)
                 } as UnityBuildPlayerTask
 
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
@@ -154,6 +172,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
                         t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
+                        t.secretsFile.set(fetchSecretsTask.secretsFile)
+                        t.secretsKey.set(extension.secretsKey)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({
                             if (!config.isValid()) {
