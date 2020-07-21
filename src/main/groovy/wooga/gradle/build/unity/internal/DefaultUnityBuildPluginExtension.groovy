@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.internal
 
+import org.apache.commons.lang3.RandomStringUtils
 import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
@@ -29,8 +30,14 @@ import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UnityBuildPluginConsts
 import wooga.gradle.build.unity.UnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
+import wooga.gradle.build.unity.secrets.SecretResolver
 import wooga.gradle.unity.UnityPluginExtension
 
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
+import java.security.SecureRandom
+import java.security.spec.KeySpec
 import java.util.concurrent.Callable
 
 class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
@@ -50,6 +57,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final RegularFileProperty exportInitScript
     final Property<File> exportBuildDirBase
     final Property<Boolean> cleanBuildDirBeforeBuild
+
+    final Property<SecretKeySpec> secretsKey
+    final Property<SecretResolver> secretResolver
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
@@ -178,6 +188,63 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
                 return false
             }
         }))
+
+        secretsKey = project.objects.property(SecretKeySpec.class)
+
+        secretsKey.set(new MemoisationProvider<SecretKeySpec>(project.provider({
+            String keyPath = System.getenv().get(UnityBuildPluginConsts.SECRETS_KEY_ENV_VAR) ?:
+                    project.properties.get(UnityBuildPluginConsts.SECRETS_KEY_OPTION, null)
+
+            if (keyPath) {
+                return new SecretKeySpec(new File(keyPath).bytes, "AES")
+            }
+
+            KeySpec spec = new PBEKeySpec(secretsKeyPassword().chars, secretsKeySalt(), UnityBuildPluginConsts.SECRETS_KEY_ITERATION, UnityBuildPluginConsts.SECRETS_KEY_LENGTH);
+            // AES-256
+            SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            byte[] key = f.generateSecret(spec).getEncoded();
+            return new SecretKeySpec(key, "AES");
+        })))
+
+        secretResolver = project.objects.property(SecretResolver)
+    }
+
+    void setSecretsKey(SecretKeySpec key) {
+        secretsKey.set(key)
+    }
+
+    DefaultUnityBuildPluginExtension setSecretsKey(String keyFile) {
+        setSecretsKey(project.file(keyFile))
+    }
+
+    DefaultUnityBuildPluginExtension setSecretsKey(File keyFile) {
+        setSecretsKey(new SecretKeySpec(keyFile.bytes, "AES"))
+    }
+
+    @Override
+    DefaultUnityBuildPluginExtension secretsKey(SecretKeySpec key) {
+        setSecretsKey(key)
+    }
+
+    @Override
+    DefaultUnityBuildPluginExtension secretsKey(String keyFile) {
+        return setSecretsKey(keyFile)
+    }
+
+    @Override
+    DefaultUnityBuildPluginExtension secretsKey(File keyFile) {
+        return setSecretsKey(keyFile)
+    }
+
+    protected static String secretsKeyPassword() {
+        RandomStringUtils.random(20)
+    }
+
+    protected static byte[] secretsKeySalt() {
+        SecureRandom random = new SecureRandom()
+        byte[] salt = new byte[16]
+        random.nextBytes(salt)
+        salt
     }
 
     @Override

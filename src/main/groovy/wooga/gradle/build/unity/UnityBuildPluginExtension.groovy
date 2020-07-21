@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
+import wooga.gradle.build.unity.secrets.SecretResolver
 
-interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
+interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends SecretSpec {
 
     DirectoryProperty getAppConfigsDirectory()
     DirectoryProperty getOutputDirectoryBase()
@@ -40,4 +40,6 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     FileCollection getAppConfigs()
 
     ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
+
+    Property<SecretResolver> getSecretResolver()
 }
