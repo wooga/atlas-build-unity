@@ -29,15 +29,22 @@ class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
         appConfigsDir.mkdirs()
 
         def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
-        def appConfigWithSecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secrets': [
+        def appConfigWithSecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secretIds': [
                 'net_wooga_testCredential',
                 'net_wooga_testCredential2',
                 'net_wooga_testCredential3',
                 'net_wooga_testCredential4'
         ]]]
-        def appConfigWithEmptySecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secrets': []]]
+        def appConfigWithEmptySecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secretIds': []]]
 
-        ["legacyConfig": appConfig, "withSecrets": appConfigWithSecrets, "emptySecrets": appConfigWithEmptySecrets]
+        def appConfigWithAlternativeSecretsKey = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secrets': [
+                'net_wooga_testCredential',
+                'net_wooga_testCredential2',
+                'net_wooga_testCredential3',
+                'net_wooga_testCredential4'
+        ]]]
+
+        ["legacyConfig": appConfig, "withSecrets": appConfigWithSecrets, "emptySecrets": appConfigWithEmptySecrets, "alternativeSecrets": appConfigWithAlternativeSecretsKey]
                 .each { name, config ->
                     Yaml yaml = new Yaml()
                     def f = createFile("${name}.asset", appConfigsDir)
@@ -207,5 +214,48 @@ class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
 
         then:
         result.wasExecuted("fetchSecretsCustom")
+    }
+
+    def "can override lookup key to use for secret ids"() {
+        given: "a app config file with a different secret ids key"
+        buildFile << """
+            fetchSecretsCustom.appConfigFile = file('Assets/CustomConfigs/alternativeSecrets.asset')
+        """
+
+        and: "a future secrets file"
+        def secretsFile = new File(projectDir, "build/secret/fetchSecretsCustom/secrets.yml")
+        assert !secretsFile.exists()
+
+        and: "a fake resolver"
+        buildFile << """
+            fetchSecretsCustom.resolver = Resolver.withClosure {
+                if(it == "net_wooga_testCredential2") {
+                    return it.toUpperCase().bytes
+                } else {
+                    return it.toUpperCase()
+                } 
+            }
+        """.stripIndent()
+
+        when: "first run"
+        def result = runTasksSuccessfully("fetchSecretsCustom")
+
+        then:
+        !result.wasUpToDate("fetchSecretsCustom")
+        secretsFile.exists()
+        secretsFile.text == "!secrets {}\n"
+
+        when: "reconfigure secretids lookup key"
+        buildFile << """
+            fetchSecretsCustom.appConfigSecretsKey("secrets")
+        """
+
+        result = runTasksSuccessfully("fetchSecretsCustom")
+
+
+        then:
+        !result.wasUpToDate("fetchSecretsCustom")
+        secretsFile.exists()
+        secretsFile.text != "!secrets {}\n"
     }
 }

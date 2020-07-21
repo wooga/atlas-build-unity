@@ -132,6 +132,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             @Override
             void execute(FetchSecrets t) {
                 t.secretsKey.set(extension.secretsKey)
+                t.appConfigSecretsKey.set(extension.appConfigSecretsKey)
                 t.secretsFile.set(project.provider({
                     project.layout.buildDirectory.dir("secret/${t.name}").get().file("secrets.yml")
                 }))

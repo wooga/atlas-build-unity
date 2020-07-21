@@ -57,7 +57,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
             Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
-            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget, secrets: secretIds]]
+            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget, secretIds: secretIds]]
             it << yaml.dump(appConfig)
         }
 

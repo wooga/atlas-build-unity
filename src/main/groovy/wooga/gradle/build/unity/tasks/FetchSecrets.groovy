@@ -34,9 +34,20 @@ import wooga.gradle.unity.utils.GenericUnityAsset
 import javax.crypto.spec.SecretKeySpec
 
 class FetchSecrets extends DefaultTask implements SecretSpec {
-    static String SECRETS_KEY = "secrets"
+
     private GenericUnityAsset appConfig
 
+    @Input
+    final Property<String> appConfigSecretsKey
+
+    void setAppConfigSecretsKey(String key) {
+        appConfigSecretsKey.set(key)
+    }
+
+    SecretSpec appConfigSecretsKey(String key) {
+        setAppConfigSecretsKey(key)
+        return this
+    }
     @Input
     final Property<SecretKeySpec> secretsKey
 
@@ -110,8 +121,8 @@ class FetchSecrets extends DefaultTask implements SecretSpec {
     @Internal("read from appConfig file")
     List<String> getSecretIds() {
         def appConfig = getAppConfig()
-        if(appConfig.containsKey(SECRETS_KEY)) {
-            return appConfig[SECRETS_KEY] as List<String>
+        if(appConfig.containsKey(appConfigSecretsKey.get())) {
+            return appConfig[appConfigSecretsKey.get()] as List<String>
         }
         []
     }
@@ -122,6 +133,7 @@ class FetchSecrets extends DefaultTask implements SecretSpec {
         appConfigName = appConfigFile.map { FilenameUtils.removeExtension(it.asFile.name) }
         resolver = project.objects.property(SecretResolver)
         secretsKey = project.objects.property(SecretKeySpec)
+        appConfigSecretsKey = project.objects.property(String)
     }
 
     @TaskAction
