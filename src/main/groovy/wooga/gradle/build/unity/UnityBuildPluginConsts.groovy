@@ -176,6 +176,10 @@ class UnityBuildPluginConsts {
     static String SECRETS_KEY_OPTION = "unityBuild.secretsKey"
     static String SECRETS_KEY_ENV_VAR = "UNITY_BUILD_SECRETS_KEY"
 
+    static String APP_CONFIG_SECRETS_KEY_OPTION = "unityBuild.appConfigSecretsKey"
+    static String APP_CONFIG_SECRETS_KEY_ENV_VAR = "UNITY_BUILD_APP_CONFIG_SECRETS_KEY"
+    static String APP_CONFIG_SECRETS_DEFAULT = "secretIds"
+
     /**
      * Default name for the base export location.
      *

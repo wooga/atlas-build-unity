@@ -42,4 +42,9 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends
     ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
 
     Property<SecretResolver> getSecretResolver()
+
+    Property<String> getAppConfigSecretsKey()
+    void setAppConfigSecretsKey(String key)
+    T appConfigSecretsKey(String key)
+
 }

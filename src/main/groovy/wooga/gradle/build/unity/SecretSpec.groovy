@@ -14,5 +14,4 @@ interface SecretSpec<T extends SecretSpec> {
     T secretsKey(SecretKeySpec key)
     T secretsKey(String keyFile)
     T secretsKey(File keyFile)
-
 }

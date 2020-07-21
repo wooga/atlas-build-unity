@@ -27,6 +27,7 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import wooga.gradle.build.unity.SecretSpec
 import wooga.gradle.build.unity.UnityBuildPluginConsts
 import wooga.gradle.build.unity.UnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
@@ -58,6 +59,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<File> exportBuildDirBase
     final Property<Boolean> cleanBuildDirBeforeBuild
 
+    final Property<String> appConfigSecretsKey
     final Property<SecretKeySpec> secretsKey
     final Property<SecretResolver> secretResolver
 
@@ -207,6 +209,24 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         })))
 
         secretResolver = project.objects.property(SecretResolver)
+
+        appConfigSecretsKey = project.objects.property(String.class)
+        appConfigSecretsKey.set(project.provider({
+            String key = System.getenv().get(UnityBuildPluginConsts.APP_CONFIG_SECRETS_KEY_ENV_VAR) ?:
+                    project.properties.getOrDefault(UnityBuildPluginConsts.APP_CONFIG_SECRETS_KEY_OPTION, UnityBuildPluginConsts.APP_CONFIG_SECRETS_DEFAULT)
+            key
+        }))
+    }
+
+    @Override
+    void setAppConfigSecretsKey(String key) {
+        appConfigSecretsKey.set(key)
+    }
+
+    @Override
+    SecretSpec appConfigSecretsKey(String key) {
+        setAppConfigSecretsKey(key)
+        return this
     }
 
     void setSecretsKey(SecretKeySpec key) {
