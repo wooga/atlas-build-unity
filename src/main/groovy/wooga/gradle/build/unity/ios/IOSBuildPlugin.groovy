@@ -33,6 +33,7 @@ import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
 import wooga.gradle.build.unity.ios.tasks.KeychainTask
 import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
 import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
+import wooga.gradle.build.unity.ios.tasks.PodInstallTask
 import wooga.gradle.build.unity.ios.tasks.PublishTestFlight
 import wooga.gradle.build.unity.ios.tasks.XCodeArchiveTask
 import wooga.gradle.build.unity.ios.tasks.XCodeExportTask
@@ -198,11 +199,16 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.profileName = "${maybeBaseName(baseName, 'signing')}.mobileprovision"
         }
 
+        PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
+            it.projectPath = xcodeProject
+        }
+
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XCodeArchiveTask) {
-            it.dependsOn addKeychain, unlockKeychain
+            it.dependsOn addKeychain, unlockKeychain, podInstall
 
             it.provisioningProfile = importProvisioningProfiles
             it.projectPath = xcodeProject
+            it.workspacePath = podInstall.workspace
             it.buildKeychain = buildKeychain
             it.destinationDir = project.file("${project.buildDir}/archives")
         }

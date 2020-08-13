@@ -16,7 +16,7 @@ class AWSSecretsManagerResolverSpec extends SecretsResolverSpec<AWSSecretsManage
     SecretsManagerClient secretsManager
 
     @Shared
-    Region region = Region.EU_WEST_1
+    Region region = Region.EU_CENTRAL_1
 
     AWSSecretsManagerResolver resolver
 
