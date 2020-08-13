@@ -28,6 +28,7 @@ import java.util.concurrent.Callable
 class XCodeArchiveTask extends ConventionTask {
 
     private Object projectPath
+    private Object workspacePath
     private Object buildKeychain
     private Object provisioningProfile
 
@@ -80,7 +81,25 @@ class XCodeArchiveTask extends ConventionTask {
     }
 
     XCodeArchiveTask projectPath(Object path) {
-        setExportOptionsPlist(path)
+        setProjectPath(path)
+    }
+
+    @Optional
+    @InputDirectory
+    File getWorkspacePath() {
+        def workspace = project.file(workspacePath)
+        if(!workspace.exists()) {
+            return null
+        }
+        workspace
+    }
+
+    void setWorkspacePath(Object path) {
+        workspacePath = path
+    }
+
+    XCodeArchiveTask projectWorkspacePath(Object path) {
+        setWorkspacePath(path)
     }
 
     @Optional
@@ -302,7 +321,9 @@ class XCodeArchiveTask extends ConventionTask {
             arguments << it.toString()
         }
 
-        if (getProjectPath()) {
+        if(getWorkspacePath()) {
+            arguments << "-workspace" << getWorkspacePath().getPath()
+        } else if (getProjectPath()) {
             arguments << "-project" << getProjectPath().getPath()
         }
 
