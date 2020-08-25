@@ -132,7 +132,6 @@ class UnityBuildPlugin implements Plugin<Project> {
             @Override
             void execute(FetchSecrets t) {
                 t.secretsKey.set(extension.secretsKey)
-                t.appConfigSecretsKey.set(extension.appConfigSecretsKey)
                 t.secretsFile.set(project.provider({
                     project.layout.buildDirectory.dir("secret/${t.name}").get().file("secrets.yml")
                 }))
@@ -153,7 +152,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                 FetchSecrets fetchSecretsTask = project.tasks.create("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
                     t.group = "build unity"
                     t.description = "fetches all secrets configured in ${appConfigName}"
-                    t.appConfigFile.set(appConfig)
+                    t.secretIds.set(project.provider({
+                        if(config.containsKey(extension.appConfigSecretsKey.get())) {
+                            return config[extension.appConfigSecretsKey.get()] as List<String>
+                        }
+                        []
+                    }))
                 }
 
                 UnityBuildPlayerTask exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->

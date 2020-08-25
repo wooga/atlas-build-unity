@@ -224,7 +224,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     }
 
     @Override
-    SecretSpec appConfigSecretsKey(String key) {
+    DefaultUnityBuildPluginExtension appConfigSecretsKey(String key) {
         setAppConfigSecretsKey(key)
         return this
     }
