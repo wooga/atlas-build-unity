@@ -266,7 +266,6 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "1.1.0"  | "Closure"      | "1.1.0"
         "1.1.1"  | "Callable"     | "1.1.1"
         "2.0.0"  | "Object"       | "2.0.0"
-        "2.0.0"  | "List<String>" | "[2.0.0]"
 
         value = wrapValueBasedOnType(rawValue, type)
     }

@@ -17,11 +17,10 @@
 
 package wooga.gradle.build.unity.tasks
 
-import org.apache.commons.io.FilenameUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import wooga.gradle.build.unity.SecretSpec
 import wooga.gradle.build.unity.secrets.Secret
@@ -29,25 +28,34 @@ import wooga.gradle.build.unity.secrets.SecretResolver
 import wooga.gradle.build.unity.secrets.SecretResolverException
 import wooga.gradle.build.unity.secrets.internal.Resolver
 import wooga.gradle.build.unity.secrets.internal.Secrets
-import wooga.gradle.unity.utils.GenericUnityAsset
 
 import javax.crypto.spec.SecretKeySpec
 
 class FetchSecrets extends DefaultTask implements SecretSpec {
 
-    private GenericUnityAsset appConfig
-
     @Input
-    final Property<String> appConfigSecretsKey
+    final ListProperty<String> secretIds
 
-    void setAppConfigSecretsKey(String key) {
-        appConfigSecretsKey.set(key)
+    void setSecretIds(Iterable<String> value) {
+        secretIds.set(value)
     }
 
-    SecretSpec appConfigSecretsKey(String key) {
-        setAppConfigSecretsKey(key)
-        return this
+    void setSecretIds(String... value) {
+        secretIds.set(value.toList())
     }
+
+    FetchSecrets secretIds(String... value) {
+        secretIds.addAll(project.provider({ value.toList() }))
+    }
+
+    FetchSecrets secretIds(Iterable<String> value) {
+        secretIds.addAll(project.provider({ value.toList() }))
+    }
+
+    FetchSecrets secretId(String value) {
+        secretIds.add(value)
+    }
+
     @Input
     final Property<SecretKeySpec> secretsKey
 
@@ -97,54 +105,25 @@ class FetchSecrets extends DefaultTask implements SecretSpec {
         setResolver(value)
     }
 
-    @InputFile
-    final RegularFileProperty appConfigFile
-
     @OutputFile
     final RegularFileProperty secretsFile
 
-    @Internal
-    final Provider<String> appConfigName
-
-    @Internal("loaded app config asset")
-    protected GenericUnityAsset getAppConfig() {
-        if(!appConfig) {
-            appConfig = new GenericUnityAsset(appConfigFile.get().asFile)
-            if(!appConfig.isValid()) {
-                throw new StopExecutionException('provided appConfig is invalid')
-            }
-        }
-
-        appConfig
-    }
-
-    @Internal("read from appConfig file")
-    List<String> getSecretIds() {
-        def appConfig = getAppConfig()
-        if(appConfig.containsKey(appConfigSecretsKey.get())) {
-            return appConfig[appConfigSecretsKey.get()] as List<String>
-        }
-        []
-    }
-
     FetchSecrets() {
-        appConfigFile = newInputFile()
+        secretIds = project.objects.listProperty(String)
         secretsFile = newOutputFile()
-        appConfigName = appConfigFile.map { FilenameUtils.removeExtension(it.asFile.name) }
         resolver = project.objects.property(SecretResolver)
         secretsKey = project.objects.property(SecretKeySpec)
-        appConfigSecretsKey = project.objects.property(String)
     }
 
     @TaskAction
     protected void fetchSecrets() {
-        logger.info("Fetch secrets for appConfig: ${appConfigName.get()}")
+        logger.info("Fetch secrets ${secretIds.get().join(", ")}")
         Secrets secrets = new Secrets()
         def resolver = resolver.getOrNull()
         def key = secretsKey.get()
 
         if(resolver) {
-            for(String secretId in getSecretIds()) {
+            for(String secretId in secretIds.get()) {
                 logger.info("Fetch secret: ${secretId}")
                 try {
                     Secret secret = resolver.resolve(secretId)

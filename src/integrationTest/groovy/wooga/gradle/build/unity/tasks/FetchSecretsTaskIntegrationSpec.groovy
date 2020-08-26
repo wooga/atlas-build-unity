@@ -18,39 +18,13 @@
 package wooga.gradle.build.unity.tasks
 
 import org.yaml.snakeyaml.Yaml
+import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 
 class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
     def setup() {
-        def assets = new File(projectDir, "Assets")
-        def appConfigsDir = new File(assets, "CustomConfigs")
-        appConfigsDir.mkdirs()
-
-        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
-        def appConfigWithSecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secretIds': [
-                'net_wooga_testCredential',
-                'net_wooga_testCredential2',
-                'net_wooga_testCredential3',
-                'net_wooga_testCredential4'
-        ]]]
-        def appConfigWithEmptySecrets = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secretIds': []]]
-
-        def appConfigWithAlternativeSecretsKey = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android', 'secrets': [
-                'net_wooga_testCredential',
-                'net_wooga_testCredential2',
-                'net_wooga_testCredential3',
-                'net_wooga_testCredential4'
-        ]]]
-
-        ["legacyConfig": appConfig, "withSecrets": appConfigWithSecrets, "emptySecrets": appConfigWithEmptySecrets, "alternativeSecrets": appConfigWithAlternativeSecretsKey]
-                .each { name, config ->
-                    Yaml yaml = new Yaml()
-                    def f = createFile("${name}.asset", appConfigsDir)
-                    f << yaml.dump(config)
-                }
-
         buildFile << """
             ${applyPlugin(UnityBuildPlugin)}
 
@@ -60,7 +34,12 @@ class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
             import wooga.gradle.build.unity.secrets.Secret
 
             task("fetchSecretsCustom", type: wooga.gradle.build.unity.tasks.FetchSecrets) {
-                appConfigFile = file('Assets/CustomConfigs/withSecrets.asset')
+                secretIds = [   
+                                'net_wooga_testCredential',
+                                'net_wooga_testCredential2',
+                                'net_wooga_testCredential3',
+                                'net_wooga_testCredential4'
+                            ]
             }
         """.stripIndent()
     }
@@ -216,46 +195,84 @@ class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
         result.wasExecuted("fetchSecretsCustom")
     }
 
-    def "can override lookup key to use for secret ids"() {
-        given: "a app config file with a different secret ids key"
-        buildFile << """
-            fetchSecretsCustom.appConfigFile = file('Assets/CustomConfigs/alternativeSecrets.asset')
-        """
 
-        and: "a future secrets file"
-        def secretsFile = new File(projectDir, "build/secret/fetchSecretsCustom/secrets.yml")
-        assert !secretsFile.exists()
-
-        and: "a fake resolver"
+    @Unroll
+    def "can set property #property with #method"() {
+        given: "a custom fetch secrets task"
         buildFile << """
-            fetchSecretsCustom.resolver = Resolver.withClosure {
-                if(it == "net_wooga_testCredential2") {
-                    return it.toUpperCase().bytes
-                } else {
-                    return it.toUpperCase()
-                } 
+            task("fetchSecretsCustom2", type: wooga.gradle.build.unity.tasks.FetchSecrets)
+        """.stripIndent()
+
+        and: "a task to read back the value"
+        buildFile << """
+            task("readValue") {
+                doLast {
+                    println("secretIds: " + fetchSecretsCustom2.${property}.get())
+                }
             }
         """.stripIndent()
 
-        when: "first run"
-        def result = runTasksSuccessfully("fetchSecretsCustom")
-
-        then:
-        !result.wasUpToDate("fetchSecretsCustom")
-        secretsFile.exists()
-        secretsFile.text == "!secrets {}\n"
-
-        when: "reconfigure secretids lookup key"
+        and: "a set property"
         buildFile << """
-            fetchSecretsCustom.appConfigSecretsKey("secrets")
-        """
+            fetchSecretsCustom2.${method}($value)
+        """.stripIndent()
 
-        result = runTasksSuccessfully("fetchSecretsCustom")
-
+        when:
+        def result = runTasksSuccessfully("readValue")
 
         then:
-        !result.wasUpToDate("fetchSecretsCustom")
-        secretsFile.exists()
-        secretsFile.text != "!secrets {}\n"
+        outputContains(result, "secretIds: " + expectedValue.toString())
+
+        where:
+        property    | method         | rawValue           | type
+        "secretIds" | "secretIds"    | ["Test1"]          | "List<String>"
+        "secretIds" | "secretId"     | "Test1"            | "String"
+        "secretIds" | "secretIds"    | ["Test1", "Test2"] | "List<String>"
+        "secretIds" | "secretIds"    | ["Test1", "Test2"] | "String..."
+        "secretIds" | "setSecretIds" | ["Test1", "Test2"] | "List<String>"
+        "secretIds" | "setSecretIds" | ["Test1", "Test2"] | "String..."
+        value = wrapValueBasedOnType(rawValue, type)
+        expectedValue = [rawValue].flatten()
+    }
+
+    @Unroll
+    def "#method will #setType value"() {
+        given: "a custom fetch secrets task"
+        buildFile << """
+            task("fetchSecretsCustom2", type: wooga.gradle.build.unity.tasks.FetchSecrets) {
+                secretIds = ['secret1']
+            }
+        """.stripIndent()
+
+        and: "a task to read back the value"
+        buildFile << """
+            task("readValue") {
+                doLast {
+                    println("secretIds: " + fetchSecretsCustom2.${property}.get())
+                }
+            }
+        """.stripIndent()
+
+        and: "a set property"
+        buildFile << """
+            fetchSecretsCustom2.${method}($value)
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("readValue")
+
+        then:
+        outputContains(result, "secretIds: " + expectedValue.toString())
+
+        where:
+        property    | method         | rawValue           | type           | append | expectedValue
+        "secretIds" | "secretIds"    | ["Test1"]          | "List<String>" | true   | ['secret1', 'Test1']
+        "secretIds" | "secretId"     | "Test1"            | "String"       | true   | ['secret1', 'Test1']
+        "secretIds" | "secretIds"    | ["Test1", "Test2"] | "List<String>" | true   | ['secret1', 'Test1', 'Test2']
+        "secretIds" | "secretIds"    | ["Test1", "Test2"] | "String..."    | true   | ['secret1', 'Test1', 'Test2']
+        "secretIds" | "setSecretIds" | ["Test1", "Test2"] | "List<String>" | false  | ['Test1', 'Test2']
+        "secretIds" | "setSecretIds" | ["Test1", "Test2"] | "String..."    | false  | ['Test1', 'Test2']
+        setType = (append) ? 'append' : 'replace'
+        value = wrapValueBasedOnType(rawValue, type)
     }
 }
