@@ -55,6 +55,7 @@ repositories {
 dependencies {
     compile "org.gradle:gradle-tooling-api:+"
     compile 'gradle.plugin.net.wooga.gradle:atlas-unity:1.+'
+    compile 'gradle.plugin.net.wooga.gradle:atlas-secrets:0.1.0-rc.1'
     compile 'xmlwise:xmlwise:1.2.11'
     compile 'commons-codec:commons-codec:1.14'
     compile 'software.amazon.awssdk:secretsmanager:2.13.42'

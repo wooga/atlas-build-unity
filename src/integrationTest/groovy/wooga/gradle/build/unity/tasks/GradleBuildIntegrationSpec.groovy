@@ -22,8 +22,8 @@ import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
-import wooga.gradle.build.unity.secrets.internal.SecretText
-import wooga.gradle.build.unity.secrets.internal.Secrets
+import wooga.gradle.secrets.internal.SecretText
+import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
 import java.util.regex.Pattern

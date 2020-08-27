@@ -27,8 +27,9 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import wooga.gradle.build.unity.SecretSpec
-import wooga.gradle.build.unity.secrets.internal.Secrets
+
+import wooga.gradle.secrets.internal.Secrets
+import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.unity.batchMode.BuildTarget
 import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
 import wooga.gradle.unity.utils.GenericUnityAsset

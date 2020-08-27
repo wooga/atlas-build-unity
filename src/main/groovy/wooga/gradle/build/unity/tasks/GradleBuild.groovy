@@ -33,8 +33,8 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
-import wooga.gradle.build.unity.SecretSpec
-import wooga.gradle.build.unity.secrets.internal.Secrets
+import wooga.gradle.secrets.SecretSpec
+import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
 
