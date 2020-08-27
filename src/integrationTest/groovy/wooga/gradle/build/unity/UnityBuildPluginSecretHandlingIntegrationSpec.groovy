@@ -23,6 +23,10 @@ import org.yaml.snakeyaml.Yaml
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.secrets.Secret
+import wooga.gradle.secrets.SecretResolver
+import wooga.gradle.secrets.internal.SecretFile
+import wooga.gradle.secrets.internal.SecretText
 
 class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec {
 
@@ -65,11 +69,11 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
         createFile("custom.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
 
         buildFile << """
-            import wooga.gradle.build.unity.secrets.SecretResolver
-            import wooga.gradle.build.unity.secrets.Secret
-            import wooga.gradle.build.unity.secrets.internal.SecretText
-            import wooga.gradle.build.unity.secrets.internal.SecretFile
-            
+            import ${SecretResolver.name}
+            import ${Secret.name}
+            import ${SecretText.name}
+            import ${SecretFile.name}
+
             class CustomResolver implements SecretResolver {
                 Secret<?> resolve(String secretId) {
                     if(secretId.startsWith("net_wooga_secretFile")) {
@@ -80,7 +84,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
                 }
             }
 
-            unityBuild.secretResolver = new CustomResolver()
+            secrets.secretResolver = new CustomResolver()
         """.stripIndent()
 
         //to make sure our fake unity export works we need to mock a fake exported project

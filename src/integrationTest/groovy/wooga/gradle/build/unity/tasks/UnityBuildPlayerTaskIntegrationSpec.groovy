@@ -23,8 +23,8 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
-import wooga.gradle.build.unity.secrets.internal.SecretText
-import wooga.gradle.build.unity.secrets.internal.Secrets
+import wooga.gradle.secrets.internal.SecretText
+import wooga.gradle.secrets.internal.Secrets
 import wooga.gradle.unity.batchMode.BatchModeFlags
 
 import javax.crypto.spec.SecretKeySpec

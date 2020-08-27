@@ -3,7 +3,6 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.Task
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
-import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 
 class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
@@ -72,14 +71,6 @@ class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
         GradleBuild                      | "secretsKey"     | "keyPath" | false
         GradleBuild                      | "secretsKey"     | "keyPath" | true
 
-        FetchSecrets                     | "secretsKey"     | "key"     | false
-        FetchSecrets                     | "secretsKey"     | "key"     | true
-        FetchSecrets                     | "secretsKey.set" | "key"     | false
-        FetchSecrets                     | "secretsKey"     | "keyFile" | false
-        FetchSecrets                     | "secretsKey"     | "keyFile" | true
-        FetchSecrets                     | "secretsKey"     | "keyPath" | false
-        FetchSecrets                     | "secretsKey"     | "keyPath" | true
-
         UnityBuildPlayerTask             | "secretsKey"     | "key"     | false
         UnityBuildPlayerTask             | "secretsKey"     | "key"     | true
         UnityBuildPlayerTask             | "secretsKey.set" | "key"     | false
@@ -87,14 +78,6 @@ class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
         UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | true
         UnityBuildPlayerTask             | "secretsKey"     | "keyPath" | false
         UnityBuildPlayerTask             | "secretsKey"     | "keyPath" | true
-
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "key"     | false
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "key"     | true
-        DefaultUnityBuildPluginExtension | "secretsKey.set" | "key"     | false
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "keyFile" | false
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "keyFile" | true
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "keyPath" | false
-        DefaultUnityBuildPluginExtension | "secretsKey"     | "keyPath" | true
 
         method = (useSetter) ? "set${property.capitalize()}" : property
         containerTypeName = Task.isAssignableFrom(containerType) ? "task" : "extension"

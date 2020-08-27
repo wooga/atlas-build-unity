@@ -28,9 +28,13 @@ import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
-import wooga.gradle.build.unity.tasks.FetchSecrets
+
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
+import wooga.gradle.secrets.SecretSpec
+import wooga.gradle.secrets.SecretsPlugin
+import wooga.gradle.secrets.SecretsPluginExtension
+import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.utils.GenericUnityAsset
 
@@ -43,7 +47,9 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(PublishingPlugin.class)
         project.pluginManager.apply(UnityPlugin.class)
+        project.pluginManager.apply(SecretsPlugin.class)
 
+        def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
         def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME,
                                       LifecycleBasePlugin.CHECK_TASK_NAME,
@@ -128,17 +134,6 @@ class UnityBuildPlugin implements Plugin<Project> {
             }
         })
 
-        project.tasks.withType(FetchSecrets, new Action<FetchSecrets>() {
-            @Override
-            void execute(FetchSecrets t) {
-                t.secretsKey.set(extension.secretsKey)
-                t.secretsFile.set(project.provider({
-                    project.layout.buildDirectory.dir("secret/${t.name}").get().file("secrets.yml")
-                }))
-                t.resolver.set(extension.secretResolver)
-            }
-        })
-
         project.afterEvaluate {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
             extension.getAppConfigs().each { File appConfig ->
@@ -150,7 +145,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 baseName = baseName.replaceAll(~/[$characterPattern]/, '')
 
                 FetchSecrets fetchSecretsTask = project.tasks.create("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
-                    t.group = "build unity"
+                    t.group = "secrets"
                     t.description = "fetches all secrets configured in ${appConfigName}"
                     t.secretIds.set(project.provider({
                         if(config.containsKey(extension.appConfigSecretsKey.get())) {
@@ -165,7 +160,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     t.description = "exports gradle project for app config ${appConfigName}"
                     t.appConfigFile.set(appConfig)
                     t.secretsFile.set(fetchSecretsTask.secretsFile)
-                    t.secretsKey.set(extension.secretsKey)
+                    t.secretsKey.set(secretsExtension.secretsKey)
                 } as UnityBuildPlayerTask
 
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
@@ -178,7 +173,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.buildDirBase.set(extension.exportBuildDirBase)
                         t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
                         t.secretsFile.set(fetchSecretsTask.secretsFile)
-                        t.secretsKey.set(extension.secretsKey)
+                        t.secretsKey.set(secretsExtension.secretsKey)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({
                             if (!config.isValid()) {

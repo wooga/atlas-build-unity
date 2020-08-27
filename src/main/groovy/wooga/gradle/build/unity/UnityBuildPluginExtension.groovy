@@ -22,9 +22,8 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import wooga.gradle.build.unity.secrets.SecretResolver
 
-interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends SecretSpec {
+interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
     DirectoryProperty getAppConfigsDirectory()
     DirectoryProperty getOutputDirectoryBase()
@@ -40,8 +39,6 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends
     FileCollection getAppConfigs()
 
     ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
-
-    Property<SecretResolver> getSecretResolver()
 
     Property<String> getAppConfigSecretsKey()
     void setAppConfigSecretsKey(String key)
