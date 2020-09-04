@@ -33,6 +33,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     Property<String> getCommitHash()
     Property<String> getExportMethodName()
     Property<String> getDefaultAppConfigName()
+    Property<Map> getCustomArguments()
     RegularFileProperty getExportInitScript()
     Property<File> getExportBuildDirBase()
     Property<Boolean> getCleanBuildDirBeforeBuild()
