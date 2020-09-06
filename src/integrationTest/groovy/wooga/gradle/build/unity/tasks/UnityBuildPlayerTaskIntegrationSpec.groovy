@@ -134,6 +134,34 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         value = wrapValueBasedOnType(rawValue, type)
     }
 
+    @Unroll("can append custom arguments with #message with property '#property'")
+    def "can provide custom arguments"() {
+        given: "a export task with custom configuration"
+        buildFile << """
+            exportCustom {
+                ${property} = ${value}
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        expectedProperties.every { result.standardOutput.contains(it) }
+
+        where:
+        property          | rawValue                        | type  | useSetter | message
+        "customArguments" | null                            | 'Map' | true      | "null value"
+        "customArguments" | [:]                             | 'Map' | true      | "empty map"
+        "customArguments" | ['foo': 'bar']                  | 'Map' | true      | "simple map"
+        "customArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | true      | "multiple values"
+        "customArguments" | ['anInt': 22]                   | 'Map' | true      | "integer values"
+        "customArguments" | ['anInt': 22.2]                 | 'Map' | true      | "float values"
+        "customArguments" | ['aFile': File.createTempDir()] | 'Map' | true      | "file values"
+        expectedProperties = (rawValue) ? rawValue.collect({ key, value -> "${key}=${value};" }) : ""
+        value = wrapValueBasedOnType(rawValue, type)
+    }
+
     @Unroll
     def "#message buildTarget from appConfig when value is #valueType"() {
         given: "a custom app config"

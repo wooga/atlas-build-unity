@@ -46,6 +46,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<String> commitHash
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
+    final Property<Map> customArguments
     final Provider<Directory> assetsDir
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
     final RegularFileProperty exportInitScript
@@ -65,6 +66,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         commitHash = project.objects.property(String.class)
         exportMethodName = project.objects.property(String.class)
         defaultAppConfigName = project.objects.property(String.class)
+        customArguments = project.objects.property(Map.class)
         assetsDir = project.layout.directoryProperty()
         ignoreFilesForExportUpToDateCheck = project.layout.configurableFiles()
         exportInitScript = project.layout.fileProperty()

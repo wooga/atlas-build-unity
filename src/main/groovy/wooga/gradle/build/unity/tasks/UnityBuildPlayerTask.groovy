@@ -18,6 +18,7 @@
 package wooga.gradle.build.unity.tasks
 
 import org.apache.commons.io.FilenameUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.gradle.api.Transformer
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
@@ -82,6 +83,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
     void setSecretsKey(SecretKeySpec key) {
         secretsKey.set(key)
     }
+
+    @Optional
+    @Input
+    final Property<Map> customArguments
 
     UnityBuildPlayerTask setSecretsKey(String keyFile) {
         setSecretsKey(project.file(keyFile))
@@ -159,6 +164,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
         commitHash = project.objects.property(String.class)
         version = project.objects.property(String.class)
         versionCode = project.objects.property(String.class)
+        customArguments = project.objects.property(Map.class)
         secretsKey = project.objects.property(SecretKeySpec.class)
         secretsFile = newInputFile()
         secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {
@@ -201,6 +207,10 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
 
         if (commitHash.present) {
             customArgs += "commitHash=${commitHash.get()};"
+        }
+
+        if (customArguments.present) {
+            customArgs += customArguments.get().collect({ key, value -> "${key}=${value};"}).join()
         }
 
         args "-executeMethod", exportMethodName.get()

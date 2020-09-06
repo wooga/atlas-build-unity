@@ -51,6 +51,10 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
         result.standardOutput.contains(message) || result.standardError.contains(message)
     }
 
+    String wrapValueBasedOnType(Object rawValue, Class type) {
+        wrapValueBasedOnType(rawValue, type.simpleName)
+    }
+
     String wrapValueBasedOnType(Object rawValue, String type) {
         def value
         def rawValueEscaped = String.isInstance(rawValue) ? "'${rawValue}'" : rawValue
@@ -82,7 +86,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
                 }
                 break
             case "String":
-                value = "$rawValueEscaped"
+                value = "${escapedPath(rawValueEscaped.toString())}"
                 break
             case "String[]":
                 value = "'{${rawValue.collect { '"' + it + '"' }.join(",")}}'.split(',')"
@@ -95,6 +99,10 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
                 break
             case "List":
                 value = "[${rawValue.collect { '"' + it + '"' }.join(", ")}]"
+                break
+            case "Map":
+                value = "[" + rawValue.collect { k,v -> "${wrapValueBasedOnType(k, k.getClass())} : ${wrapValueBasedOnType(v, v.getClass())}" }.join(", ") + "]"
+                value = value == "[]" ? "[:]" : value
                 break
             default:
                 value = rawValue

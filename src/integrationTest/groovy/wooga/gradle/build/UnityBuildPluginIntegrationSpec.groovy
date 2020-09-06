@@ -144,6 +144,42 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         value = wrapValueBasedOnType(rawValue, type)
     }
 
+    @Unroll("can append custom arguments with #message in #location")
+    def "can set custom arguments"() {
+        given: "execute on a default project"
+        assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
+
+        def extensionKey = "unityBuild.$property"
+        def propertiesKey = "unityBuild.$property"
+        def envKey = convertPropertyToEnvName(extensionKey)
+
+        if (location == "environment") {
+            envs.set(envKey, value)
+        } else if (location == "properties") {
+            createFile("gradle.properties") << "${propertiesKey}=${value}"
+        } else if (location == "extension") {
+            buildFile << "${extensionKey} = ${escapedPath(value)}"
+        }
+
+        when:
+        def result = runTasksSuccessfully("exportAndroidCi")
+
+        then:
+        expectedProperties.every { result.standardOutput.contains(it) }
+
+        where:
+        property          | rawValue                        | type  | location    | message
+        "customArguments" | null                            | 'Map' | 'extension' | "null value"
+        "customArguments" | [:]                             | 'Map' | 'extension' | "empty map"
+        "customArguments" | ['foo': 'bar']                  | 'Map' | 'extension' | "simple map"
+        "customArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | 'extension' | "multiple values"
+        "customArguments" | ['anInt': 22]                   | 'Map' | 'extension' | "integer values"
+        "customArguments" | ['aFloat': 22.2]                | 'Map' | 'extension' | "float values"
+        "customArguments" | ['aFile': File.createTempDir()] | 'Map' | 'extension' | "file values"
+        expectedProperties = rawValue.collect({ key, value -> "${key}=${value};" })
+        value = wrapValueBasedOnType(rawValue, type)
+    }
+
     @Unroll
     def ":#taskToRun executes default export task"() {
         given: "a default gradle project"
