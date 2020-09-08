@@ -24,6 +24,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.build.unity.internal.ExecUtil
 
 import java.util.concurrent.Callable
 
@@ -191,26 +192,11 @@ class ImportProvisioningProfile extends ConventionTask {
         outputs.upToDateWhen {false}
     }
 
-    /**
-     * Finds path to executable in PATH.
-     *
-     * This function is aimed to make the whole task testable.
-     * The tests can override the PATH environment variable and
-     * point to a mock executable.
-     *
-     * @param executableName the name of the executable to find in PATH
-     * @return path to executable or executableName
-     */
-    private static String getExecutable(String executableName) {
-        def path = System.getenv("PATH").split(File.pathSeparator)
-                .collect {path -> new File(path, "fastlane")}
-                .find {path -> path.exists() && path.isFile() && path.canExecute()}
-        path? path.path : executableName
-    }
+
 
     @TaskAction
     protected void importProfiles() {
-        def executablePath = getExecutable("fastlane")
+        def executablePath = ExecUtil.getExecutable("fastlane")
         project.exec {
             executable executablePath
             args "sigh"

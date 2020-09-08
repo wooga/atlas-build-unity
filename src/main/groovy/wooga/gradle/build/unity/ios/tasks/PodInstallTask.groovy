@@ -3,6 +3,7 @@ package wooga.gradle.build.unity.ios.tasks
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.*
+import wooga.gradle.build.unity.internal.ExecUtil
 
 class PodInstallTask extends DefaultTask {
     private Object projectPath
@@ -45,8 +46,15 @@ class PodInstallTask extends DefaultTask {
 
     @TaskAction
     protected void install() {
+        def executablePath = ExecUtil.getExecutable("pod")
         project.exec {
-            executable 'pod'
+            executable executablePath
+            args 'repo'
+            args 'update'
+        }
+
+        project.exec {
+            executable executablePath
             args 'install'
         }
     }
