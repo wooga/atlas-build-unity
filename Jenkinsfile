@@ -7,6 +7,10 @@ withCredentials([
                     string(credentialsId: 'aws.secretsmanager.integration.secretkey', variable: 'secretkey'),
                 ])
 {
-    def env = ["ATLAS_AWS_INTEGRATION_ACCESS_KEY=${accesskey}", "ATLAS_AWS_INTEGRATION_SECRET_KEY=${secretkey}"]
+    def env = [
+            "ATLAS_AWS_INTEGRATION_ACCESS_KEY=${accesskey}",
+            "ATLAS_AWS_INTEGRATION_SECRET_KEY=${secretkey}",
+            "ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC=YES"
+    ]
     buildGradlePlugin plaforms: ['osx','windows', 'linux'], coverallsToken: coveralls_token, testEnvironment:env
 }
