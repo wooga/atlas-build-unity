@@ -22,6 +22,7 @@ import spock.lang.Shared
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.ios.IOSBuildPlugin
 import wooga.gradle.build.unity.ios.KeychainLookupList
+
 import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
 
 @Requires({ os.macOs })
@@ -66,7 +67,6 @@ class KeychainTaskSpec extends IntegrationSpec {
     }
 
     def setup() {
-        SecurityUtil.getKeychainConfigFile().parentFile.mkdirs()
         buildFile << """
             ${applyPlugin(IOSBuildPlugin)}
 
