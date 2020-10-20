@@ -98,6 +98,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "buildKeychain"              | KeychainTask
         "unlockKeychain"             | LockKeychainTask
         "lockKeychain"               | LockKeychainTask
+        "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
         "importProvisioningProfiles" | ImportProvisioningProfile
@@ -132,6 +133,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "buildKeychain"              | KeychainTask
         "unlockKeychain"             | LockKeychainTask
         "lockKeychain"               | LockKeychainTask
+        "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
         "importProvisioningProfiles" | ImportProvisioningProfile
