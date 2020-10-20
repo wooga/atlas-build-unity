@@ -17,12 +17,12 @@
 
 package wooga.gradle.build.unity.ios
 
-import org.junit.ClassRule
-import org.junit.contrib.java.lang.system.ProvideSystemProperty
+
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
+
 import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
 
 @Requires({ os.macOs })
@@ -69,7 +69,6 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
     }
 
     def setup() {
-        SecurityUtil.getKeychainConfigFile().parentFile.mkdirs()
         buildFile << """
             ${applyPlugin(IOSBuildPlugin)}
 
@@ -88,6 +87,11 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
         createTestCertificate(new File(projectDir, "test_ca.p12"), certPassword)
 
+        keychainLookupList.clear()
+    }
+
+    def cleanup() {
+        keychainLookupList.clear()
     }
 
     def "creates custom build keychain"() {
@@ -110,7 +114,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         def result = runTasksSuccessfully("addKeychain")
         assert !result.wasUpToDate("addKeychain")
         assert buildKeychain.exists()
-        assert SecurityUtil.keychainIsAdded(buildKeychain)
+        assert keychainLookupList.contains(buildKeychain)
 
         when:
         runTasksSuccessfully("removeKeychain")

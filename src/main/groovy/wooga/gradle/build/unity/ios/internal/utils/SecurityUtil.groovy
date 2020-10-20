@@ -17,173 +17,104 @@
 
 package wooga.gradle.build.unity.ios.internal.utils
 
-import org.w3c.dom.Document
-import org.xml.sax.InputSource
-import xmlwise.Plist
-
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.Transformer
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import javax.xml.xpath.XPath
-import javax.xml.xpath.XPathConstants
-import javax.xml.xpath.XPathFactory
-import java.nio.file.Path
+import org.apache.commons.lang3.StringUtils
 
 class SecurityUtil {
-
-    static File keychainConfigFile = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
-
-    static String DLDBSearchList = 'DLDBSearchList'
-    static String DbName = 'DbName'
-    static String GUID = 'GUID'
-    static String SubserviceType = 'SubserviceType'
-
-    static boolean keychainIsAdded(File keychain) {
-        allKeychainsAdded([keychain])
+    enum Domain {
+        user, system, common, dynamic, all
     }
 
-    static boolean allKeychainsAdded(Iterable<File> keychains) {
-        findAllKeychains(keychains).size() == keychains.size()
+    static File getLoginKeyChain() {
+        def command = ["security", "login-keychain"]
+
+        def commandOutput = executeCommand(command)
+        commandOutput.toString().trim().readLines().collect {
+            new File(StringUtils.substringBetween(it.trim(), '"'))
+        }.first()
     }
 
-    static boolean removeKeychain(File keychain) {
-        removeKeychains([keychain])
+    static File getDefaultKeyChain(Domain domain = Domain.user) {
+        def command = ["security", "default-keychain"]
+        if (domain != Domain.all) {
+            command << "-d" << domain.toString()
+        }
+
+        def commandOutput = executeCommand(command)
+        commandOutput.toString().trim().readLines().collect {
+            new File(StringUtils.substringBetween(it.trim(), '"'))
+        }.first()
     }
 
-    static boolean removeKeychains(Iterable<File> keychains) {
-        def keychainConfig = keychainConfigFile
-        def madeChanges = false
-        if (keychainConfig.exists()) {
-            def config = Plist.load(keychainConfig)
-            List<HashMap> dbSearchList = config[DLDBSearchList] as List<HashMap>
-            def keychainsToRemove = findAllKeychains(keychains)
-            if(keychainsToRemove.size() > 0) {
-                madeChanges = true
-            }
+    private static String executeCommand(command) {
+        def stdout = new StringBuilder()
+        def stderr = new StringBuilder()
 
-            dbSearchList.removeAll(findAllKeychains(keychains))
+        def p = new ProcessBuilder(command).start()
+        p.consumeProcessOutput(stdout,stderr)
 
-            if (dbSearchList.empty) {
-                keychainConfig.delete()
-            } else {
-                keychainConfigFile.text = prettyXML(Plist.toPlist(config))
-            }
+        if (p.waitFor() != 0) {
+            throw new Error("Security error\n" + stderr)
+        }
 
-            if(madeChanges && !System.getProperty("keychain.noflush")) {
-                new ProcessBuilder(["security", "list-keychains", "-d", "user", "-s"]).start().waitFor()
+        stdout
+    }
+
+    private static String listOrSetKeychains(Iterable<File> keychains = null, Domain domain = Domain.user) {
+        def command = ["security"]
+        command << "list-keychains"
+        if (domain != Domain.all) {
+            command << "-d" << domain.toString()
+        }
+
+        if (keychains != null) {
+            def k = keychains.collect { expandPath(it.canonicalPath) }.unique()
+            command << "-s"
+            for (String keychainPath : k) {
+                command << keychainPath
             }
         }
 
-        madeChanges
+        executeCommand(command)
     }
 
-    static boolean addKeychain(File keychain) {
-        addKeychains([keychain])
-    }
-
-    static boolean addKeychains(Iterable<File> keychains) {
-        if (keychains.size() == 0 || allKeychainsAdded(keychains)) {
-            return false
+    static List<File> listKeychains(Domain domain = Domain.user) {
+        def commandOutput = listOrSetKeychains(null, domain)
+        commandOutput.toString().trim().readLines().collect {
+            new File(StringUtils.substringBetween(it.trim(), '"'))
         }
+    }
 
-        def keychainConfig = keychainConfigFile
-        def config
-        if (keychainConfig.exists()) {
-            config = Plist.load(keychainConfig)
+    static void setKeychains(Iterable<File> keychains, Domain domain = Domain.user) {
+        listOrSetKeychains(keychains, domain)
+    }
+
+    static boolean keychainIsAdded(File keychain, Domain domain = Domain.user) {
+        listKeychains(domain).contains(canonical(keychain))
+    }
+
+    static void resetKeychains(Domain domain = Domain.user) {
+        def rawValue = System.getenv().get("ATLAS_BUILD_UNITY_IOS_DEFAULT_KEYCHAINS")
+        def defaultKeyChains
+        if(rawValue) {
+            defaultKeyChains = rawValue.split(File.pathSeparator).collect { canonical(new File(it)) }
         } else {
-            config = new HashMap<String, Object>()
-            config[DLDBSearchList] = new ArrayList<HashMap>()
+            defaultKeyChains = [getLoginKeyChain(), getDefaultKeyChain()].unique()
         }
-
-        def hasChanges = false
-        keychains.each { keychain ->
-            if (!keychainIsAdded(keychain)) {
-                def item = new HashMap(3)
-                item[DbName] = keychain.path
-                item[GUID] = "{87191ca3-0fc9-11d4-849a-000502b52122}".toString()
-                item[SubserviceType] = 6
-
-                (config[DLDBSearchList] as List<HashMap>).add(item)
-                hasChanges = true
-            }
-        }
-
-        if(hasChanges) {
-            keychainConfigFile.text = prettyXML(Plist.toPlist(config))
-            // flush `security list-keychains -d user -s <list>`
-            if(!System.getProperty("keychain.noflush")) {
-                new ProcessBuilder(["security", "list-keychains", "-d", "user", "-s"]).start().waitFor()
-            }
-        }
-        hasChanges
+        setKeychains(defaultKeyChains, domain)
     }
 
-    private static List<Object> findAllKeychains(Iterable<File> keychains) {
-        def keychainConfig = keychainConfigFile
-        def result = new ArrayList<>()
-        if (keychainConfig.exists()) {
-            def config = Plist.load(keychainConfig)
-            List<HashMap> dbSearchList = config[DLDBSearchList] as List<HashMap>
-            result = dbSearchList.findAll { db ->
-                File dbName = new File((String) db[DbName])
-                dbName = expandPath(dbName)
-                keychains.find { keychain ->
-                    keychain = expandPath(keychain)
-
-                    Path k = keychain.toPath()
-                    Path p = dbName.toPath()
-
-                    p = p.normalize().toAbsolutePath()
-                    k = k.normalize().toAbsolutePath()
-                    p.equals(k)
-                } != null
-            }
-        }
-        result
-    }
-
-    protected static String prettyXML(String xml) {
-
-        Document document = DocumentBuilderFactory.newInstance()
-                .newDocumentBuilder()
-                .parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))))
-
-        XPath xPath = XPathFactory.newInstance().newXPath();
-        org.w3c.dom.NodeList nodeList = (org.w3c.dom.NodeList) xPath.evaluate("//text()[normalize-space()='']",
-                document,
-                XPathConstants.NODESET)
-
-        for (int i = 0; i < nodeList.getLength(); ++i) {
-            org.w3c.dom.Node node = nodeList.item(i)
-            node.getParentNode().removeChild(node)
-        }
-
-        Transformer transformer = TransformerFactory.newInstance().newTransformer()
-        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8")
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4")
-
-        StringWriter stringWriter = new StringWriter()
-        StreamResult streamResult = new StreamResult(stringWriter)
-
-        transformer.transform(new DOMSource(document), streamResult)
-
-        stringWriter.toString()
-
-    }
-
-    protected static String expandPath(String path) {
+    static String expandPath(String path) {
         if (path.startsWith("~" + File.separator)) {
             path = System.getProperty("user.home") + path.substring(1)
         }
         path
     }
 
-    protected static File expandPath(File path) {
+    static File expandPath(File path) {
         new File(expandPath(path.path))
+    }
+
+    static File canonical(File keychain) {
+        expandPath(keychain).canonicalFile
     }
 }

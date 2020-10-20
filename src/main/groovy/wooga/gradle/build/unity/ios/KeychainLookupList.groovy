@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018 - 2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@
 package wooga.gradle.build.unity.ios
 
 import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
-import xmlwise.Plist
+import static wooga.gradle.build.unity.ios.internal.utils.SecurityUtil.listKeychains
+import static wooga.gradle.build.unity.ios.internal.utils.SecurityUtil.setKeychains
+import static wooga.gradle.build.unity.ios.internal.utils.SecurityUtil.canonical
 
-class KeychainLookupList implements List<File> {
+class KeychainLookupList implements List<File>, Set<File> {
 
     private class KeychainLookupIterator implements Iterator<File> {
         private Iterator<File> innerIterator
@@ -103,21 +105,24 @@ class KeychainLookupList implements List<File> {
         }
     }
 
-    private static String DLDBSearchList = 'DLDBSearchList'
-    private static String DbName = 'DbName'
+    private final SecurityUtil.Domain domain
+
+    KeychainLookupList(SecurityUtil.Domain domain) {
+        this.domain = domain
+    }
+
+    KeychainLookupList() {
+        this(SecurityUtil.Domain.user)
+    }
 
     @Override
     int size() {
-        def l = innerLookUpList()
-        if (l) {
-            return l.size()
-        }
-        return 0
+        listKeychains(domain).size()
     }
 
     @Override
     boolean isEmpty() {
-        return size() == 0
+        listKeychains(domain).size() == 0
     }
 
     @Override
@@ -129,76 +134,74 @@ class KeychainLookupList implements List<File> {
         }
 
         File keychain = o as File
-
-        return SecurityUtil.keychainIsAdded(keychain)
+        listKeychains(domain).contains(canonical(keychain))
     }
 
     @Override
     Iterator<File> iterator() {
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        new KeychainLookupIterator(l.iterator())
+        new KeychainLookupIterator(listKeychains(domain).iterator())
     }
 
     @Override
     Object[] toArray() {
-        return toArray(new Object[0])
+        listKeychains(domain).toArray()
     }
 
     @Override
-    <T> T[] toArray(T[] a) {
-        Objects.requireNonNull(a)
-
-        def l = innerLookUpList() ?: new ArrayList<File>()
-
-        if (a.length < l.size()) {
-            return (T[]) Arrays.copyOf(l.toArray(), l.size(), a.getClass())
-        }
-
-        System.arraycopy(l.toArray(), 0, a, 0, l.size())
-        if (a.size() > l.size()) {
-            a[l.size()] = null
-        }
-
-        return a
+    def <T> T[] toArray(T[] a) {
+        listKeychains(domain).toArray(a)
     }
 
     @Override
     boolean add(File keychain) {
-        SecurityUtil.addKeychain(keychain)
+        Objects.requireNonNull(keychain)
+        keychain = canonical(keychain)
+        def keychains = listKeychains(domain)
+        if (!keychains.contains(keychain) && keychains.add(keychain)) {
+            setKeychains(keychains, domain)
+            return true
+        }
+        false
     }
 
     @Override
-    boolean remove(Object keychain) {
-        Objects.requireNonNull(keychain)
+    boolean remove(Object o) {
+        Objects.requireNonNull(o)
 
-        if (!File.isInstance(keychain)) {
+        if (!File.isInstance(o)) {
             throw new ClassCastException("expect object of type java.io.File")
         }
 
-        File k = keychain as File
-
-        SecurityUtil.removeKeychain(k)
-        return !SecurityUtil.keychainIsAdded(k)
+        File k = canonical(o as File)
+        def keychains = listKeychains(domain)
+        if (keychains.remove(k)) {
+            setKeychains(keychains, domain)
+            return true
+        }
+        false
     }
 
     @Override
     boolean containsAll(Collection<?> c) {
-        Objects.requireNonNull(c)
-
-        for (Object o : c) {
-            if (!File.isInstance(o)) {
+        Objects.requireNonNull(c as Object)
+        def keychains = c.collect {
+            if (!File.isInstance(it)) {
                 throw new ClassCastException("expect object of type java.io.File")
             }
+            canonical(it as File)
         }
-
-        return SecurityUtil.allKeychainsAdded(c as Collection<File>)
+        listKeychains(domain).containsAll(keychains)
     }
 
     @Override
     boolean addAll(Collection<? extends File> c) {
         Objects.requireNonNull(c)
-
-        return SecurityUtil.addKeychains(c)
+        def keychains = listKeychains(domain)
+        if (keychains.addAll(c)) {
+            setKeychains(keychains, domain)
+            return true
+        }
+        false
     }
 
     @Override
@@ -208,18 +211,17 @@ class KeychainLookupList implements List<File> {
 
     @Override
     boolean removeAll(Collection<?> c) {
-        Objects.requireNonNull(c)
-        boolean modified = false
-        Iterator<?> it = iterator()
-        while (it.hasNext()) {
-            if (c.contains(it.next())) {
-
-                it.remove()
-                modified = true
+        Objects.requireNonNull(c as Object)
+        def keychainsToRemove = c.collect {
+            if (!File.isInstance(it)) {
+                throw new ClassCastException("expect object of type java.io.File")
             }
+            canonical(it as File)
         }
-
-        return modified
+        def keychains = listKeychains(domain)
+        def result = keychains.removeAll(keychainsToRemove)
+        setKeychains(keychains, domain)
+        result
     }
 
     @Override
@@ -229,14 +231,16 @@ class KeychainLookupList implements List<File> {
 
     @Override
     void clear() {
-        File keychainConfigFile = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
-        keychainConfigFile.delete()
+        reset()
+    }
+
+    void reset() {
+        SecurityUtil.resetKeychains(domain)
     }
 
     @Override
     File get(int index) {
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        l.get(index)
+        listKeychains(domain).get(index)
     }
 
     @Override
@@ -262,9 +266,7 @@ class KeychainLookupList implements List<File> {
             throw new ClassCastException("expect object of type java.io.File")
         }
 
-        File keychain = o as File
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        l.indexOf(keychain)
+        listKeychains(domain).indexOf(canonical(o as File))
     }
 
     @Override
@@ -275,9 +277,7 @@ class KeychainLookupList implements List<File> {
             throw new ClassCastException("expect object of type java.io.File")
         }
 
-        File keychain = o as File
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        l.lastIndexOf(keychain)
+        listKeychains(domain).lastIndexOf(canonical(o as File))
     }
 
     @Override
@@ -287,26 +287,19 @@ class KeychainLookupList implements List<File> {
 
     @Override
     ListIterator<File> listIterator(int index) {
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        new KeychainLookupListIterator(l.listIterator(index))
+        new KeychainLookupListIterator(listKeychains(domain).listIterator(index))
     }
 
-    //This implementation has not the desired effect for now.
     @Override
     List<File> subList(int fromIndex, int toIndex) {
-        def l = innerLookUpList() ?: new ArrayList<File>()
-        l.subList(fromIndex, toIndex)
+        listKeychains(domain).subList(fromIndex, toIndex)
     }
 
-    private static List<File> innerLookUpList() {
-        List<File> lookupList
-        File keychainConfigFile = new File(System.getProperty("user.home"), "Library/Preferences/com.apple.security.plist")
-        if (keychainConfigFile.exists()) {
-            def config = Plist.load(keychainConfigFile)
-            if (config[DLDBSearchList]) {
-                lookupList = (config[DLDBSearchList] as List<Object>).collect { new File(it[DbName] as String) }
-            }
-        }
-        lookupList
+    File getLoginKeyChain() {
+        SecurityUtil.getLoginKeyChain()
+    }
+
+    File getDefaultKeyChain() {
+        SecurityUtil.getDefaultKeyChain(domain)
     }
 }

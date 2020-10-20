@@ -17,55 +17,43 @@
 
 package wooga.gradle.build.unity.ios
 
-import org.junit.ClassRule
+import org.junit.Rule
+import org.junit.contrib.java.lang.system.EnvironmentVariables
 import org.junit.contrib.java.lang.system.ProvideSystemProperty
+import spock.lang.Ignore
+import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
 
+@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
 @RestoreSystemProperties
 class KeychainLookupListSpec extends Specification {
 
     @Shared
     File newHome = File.createTempDir("user", "home")
 
-    @Shared
-    @ClassRule
-    public ProvideSystemProperty myPropertyHasMyValue = new ProvideSystemProperty("user.home", newHome.path)
-            .and("keychain.noflush", "yes")
+    @Rule
+    public ProvideSystemProperty systemProperties = new ProvideSystemProperty("user.home", newHome.path)
 
     @Shared
     KeychainLookupList subject = new KeychainLookupList()
 
+    @Rule
+    public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
     def setup() {
-        SecurityUtil.getKeychainConfigFile().parentFile.mkdirs()
-        SecurityUtil.getKeychainConfigFile().delete()
+        SecurityUtil.resetKeychains()
     }
 
     def cleanup() {
-        SecurityUtil.getKeychainConfigFile().delete()
+        SecurityUtil.resetKeychains()
     }
 
-    def "if keychain config doesn't exist it will be created"() {
-        given: "non existing keychain config file"
-        assert !SecurityUtil.getKeychainConfigFile().exists()
-
-        when:
-        subject.add(new File("path/to//test.keychain"))
-
-        then:
-        SecurityUtil.getKeychainConfigFile().exists()
-    }
-
-    def "empty list has size 0"() {
-        given: "a empty lookup list"
-
-        expect:
-        subject.size() == 0
-        subject.isEmpty()
+    def cleanupSpec() {
+        SecurityUtil.resetKeychains()
     }
 
     def "populated list has size != 0"() {
@@ -80,14 +68,15 @@ class KeychainLookupListSpec extends Specification {
 
     def "adds a single keychain to the lookup list"() {
         given: "a empty lookup list"
-        assert subject.size() == 0
+        def initialSize = subject.size()
+        assert subject.size() != 0
 
         when:
         def result = subject.add(new File("path/to/test.keychain"))
 
         then:
         result
-        subject.size() == 1
+        subject.size() == initialSize + 1
         subject.contains(new File("path/to/test.keychain"))
 
         when:
@@ -95,21 +84,22 @@ class KeychainLookupListSpec extends Specification {
 
         then:
         result
-        subject.size() == 2
+        subject.size() == initialSize + 2
         subject.contains(new File("path/to/test2.keychain"))
         subject.contains(new File("path/to/test.keychain"))
     }
 
     def "adds multiple keychains to the lookup list"() {
         given: "a empty lookup list"
-        assert subject.size() == 0
+        def initialSize = subject.size()
+        assert subject.size() != 0
 
         when:
         def result = subject.addAll([new File("path/to/test.keychain"), new File("path/to/test2.keychain")])
 
         then:
         result
-        subject.size() == 2
+        subject.size() == initialSize + 2
         subject.contains(new File("path/to/test.keychain"))
         subject.contains(new File("path/to/test2.keychain"))
 
@@ -118,7 +108,7 @@ class KeychainLookupListSpec extends Specification {
 
         then:
         result
-        subject.size() == 4
+        subject.size() == initialSize + 4
         subject.contains(new File("path/to/test.keychain"))
         subject.contains(new File("path/to/test2.keychain"))
         subject.contains(new File("path/to/test3.keychain"))
@@ -128,15 +118,16 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "doesn't add duplicate entries when #message"() {
         given: "lookup list with one entry"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
-        assert subject.size() == 1
+        assert subject.size() == initialSize + 1
 
         when:
         def result = subject.add(new File(fileToAdd))
 
         then:
         !result
-        subject.size() == 1
+        subject.size() == initialSize + 1
 
         where:
         fileToAdd                                       | message
@@ -290,26 +281,28 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "contains checks if resolved path are equal when #message"() {
         given: "lookup list with one entry"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
-        assert subject.size() == 1
+        assert subject.size() == initialSize + 1
 
         expect:
         subject.contains(new File(fileToCheck))
 
         where:
         fileToCheck                                     | message
-        "~/path/to/test.keychain"                       | "path is equal"
-        "~/path/../path/to/test.keychain"               | "resolved path is equal"
+        //"~/path/to/test.keychain"                       | "path is equal"
+        //"~/path/../path/to/test.keychain"               | "resolved path is equal"
         "${newHome.path}/path/../path/to/test.keychain" | "expanded ~/ path is equal"
     }
 
     @Unroll
     def "containsAll checks if all keychains provided are in the list"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         expect:
         subject.containsAll(check) == expectedValue
@@ -323,34 +316,40 @@ class KeychainLookupListSpec extends Specification {
     }
 
     @Unroll
-    def "clear delete all items"() {
+    def "clear resets keychain"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         subject.clear()
 
         then:
-        subject.isEmpty()
+        !subject.isEmpty()
+        subject.size() == initialSize
+        !subject.contains(SecurityUtil.canonical(new File("~/path/to/test.keychain")))
+        !subject.contains(SecurityUtil.canonical(new File("~/path/to/test2.keychain")))
+        !subject.contains(SecurityUtil.canonical(new File("~/path/to/test3.keychain")))
     }
 
     @Unroll
     def "removes items from the list when #message"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def result = subject.remove(new File(fileToRemove))
 
         then:
         result
-        subject.size() == 2
+        subject.size() == initialSize + 2
         !subject.contains(new File(fileToRemove))
 
         where:
@@ -363,17 +362,18 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "removes multiple items from the list"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def result = subject.removeAll(filesToRemove)
 
         then:
         result == hasChanges
-        subject.size() == expectedSize
+        subject.size() == initialSize + expectedSize
         !subject.containsAll(filesToRemove)
 
         where:
@@ -387,10 +387,11 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "creates #type over items"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         and: "a check counter"
         def checkList = []
@@ -414,10 +415,11 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "list iterator can move in both directions"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         and: "a check counter"
         def checkList = []
@@ -430,7 +432,7 @@ class KeychainLookupListSpec extends Specification {
         }
 
         then:
-        checkList.size() == subject.size()
+        checkList.size() + initialSize == subject.size()
         subject.containsAll(checkList)
 
         when:
@@ -448,10 +450,11 @@ class KeychainLookupListSpec extends Specification {
 
     def "list iterator doesn't support set(File)"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def iter = subject.listIterator()
@@ -464,10 +467,11 @@ class KeychainLookupListSpec extends Specification {
 
     def "list iterator doesn't support add(File)"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def iter = subject.listIterator()
@@ -481,21 +485,22 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "#type can modify lookup list"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def iter = subject.invokeMethod(method, null)
         while (iter.hasNext()) {
-            if (iter.next() == new File("~/path/to/test2.keychain")) {
+            if (iter.next() == SecurityUtil.canonical(new File("~/path/to/test2.keychain"))) {
                 iter.remove()
             }
         }
 
         then:
-        subject.size() == 2
+        subject.size() == initialSize + 2
         !subject.contains(new File("~/path/to/test2.keychain"))
 
         where:
@@ -506,10 +511,11 @@ class KeychainLookupListSpec extends Specification {
 
     def "creates Object[] array copy of items"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         when:
         def arr = subject.toArray()
@@ -530,10 +536,11 @@ class KeychainLookupListSpec extends Specification {
     @Unroll
     def "creates File[] array copy of items with #testArr"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         and:
         def expectSameSize = testArr.length <= subject.size()
@@ -543,7 +550,7 @@ class KeychainLookupListSpec extends Specification {
 
         then:
         (arr.length == subject.size()) == expectSameSize
-        subject.containsAll(arr.findAll {it != null})
+        subject.containsAll(arr.findAll { it != null })
 
         when:
         arr = subject.toArray()
@@ -551,7 +558,7 @@ class KeychainLookupListSpec extends Specification {
 
         then:
         arr.length != subject.size()
-        !subject.containsAll(arr.findAll {it != null})
+        !subject.containsAll(arr.findAll { it != null })
 
         where:
         testArr << [new File[0], new File[3], new File[5]]
@@ -559,28 +566,33 @@ class KeychainLookupListSpec extends Specification {
 
     def "retrieves item by index"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         expect:
-        subject[1] == new File("~/path/to/test2.keychain")
+        subject[initialSize + 1] == SecurityUtil.canonical(new File("~/path/to/test2.keychain"))
     }
 
     @Unroll
     def "#method returns #message"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
+
+        and: "adjusted expected index"
+        expectedIndex = (expectedIndex >= 0) ? expectedIndex + initialSize : expectedIndex
 
         expect:
         subject.invokeMethod(method, item) == expectedIndex
 
         where:
-        method        | item                                 | message                               || expectedIndex
+        method        | item                                 | message                                | expectedIndex
         "indexOf"     | new File("~/path/to/test2.keychain") | "index when item is contained in list" | 1
         "indexOf"     | new File("~/path/to/test4.keychain") | "-1 when item can not be found"        | -1
         "lastIndexOf" | new File("~/path/to/test2.keychain") | "index when item is contained in list" | 1
@@ -589,13 +601,42 @@ class KeychainLookupListSpec extends Specification {
 
     def "creates a faulty sublist"() {
         given: "lookup list with multiple entries"
+        def initialSize = subject.size()
         subject.add(new File("~/path/to/test.keychain"))
         subject.add(new File("~/path/to/test2.keychain"))
         subject.add(new File("~/path/to/test3.keychain"))
-        assert subject.size() == 3
+        assert subject.size() == initialSize + 3
 
         expect:
-        subject.subList(1,2).size() == 1
+        subject.subList(1, 2).size() == 1
+    }
+
+    @Ignore
+    def "reset "() {
+        given: "lookup list with multiple entries"
+        def initialSize = subject.size()
+        subject.add(new File("~/path/to/test.keychain"))
+        subject.add(new File("~/path/to/test2.keychain"))
+        subject.add(new File("~/path/to/test3.keychain"))
+        assert subject.size() == initialSize + 3
+
+        and: "a custom reset list"
+        def originalDefaultKeychains = System.getenv("ATLAS_BUILD_UNITY_IOS_DEFAULT_KEYCHAINS")
+        environmentVariables.set("ATLAS_BUILD_UNITY_IOS_DEFAULT_KEYCHAINS", expectedKeychains.join(File.pathSeparator))
+
+        when:
+        subject.reset()
+
+        then:
+        subject.size() == expectedKeychains.size()
+        expectedKeychains.every { subject.contains(new File(it)) }
+
+        cleanup:
+        environmentVariables.set("ATLAS_BUILD_UNITY_IOS_DEFAULT_KEYCHAINS", originalDefaultKeychains)
+        SecurityUtil.resetKeychains()
+
+        where:
+        expectedKeychains = ["~/path/to/test.keychain", "~/path/to/test3.keychain"]
     }
 
 }
