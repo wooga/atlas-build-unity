@@ -32,7 +32,8 @@ class ListKeychainTask extends DefaultTask {
 
     enum Action {
         add,
-        remove
+        remove,
+        reset
     }
 
     private Action action
@@ -85,12 +86,26 @@ class ListKeychainTask extends DefaultTask {
         outputs.upToDateWhen(new Spec<ListKeychainTask>() {
             @Override
             boolean isSatisfiedBy(ListKeychainTask element) {
-                if(getAction() == Action.add) {
-                    def filesToCheck = getKeychains().files.findAll {it.exists()}
-                    return lookupList.containsAll(filesToCheck)
+                switch (getAction()) {
+                    case Action.add:
+                        def filesToCheck = getKeychains().files.findAll { it.exists() }
+                        return lookupList.containsAll(filesToCheck)
+                    case Action.remove:
+                        return !getKeychains().any { lookupList.contains(it) }
+                    default:
+                        return false
                 }
-                else if (getAction() == Action.remove) {
-                    return !getKeychains().any {lookupList.contains(it)}
+            }
+        })
+
+        onlyIf(new Spec<ListKeychainTask>() {
+            @Override
+            boolean isSatisfiedBy(ListKeychainTask task) {
+                switch (getAction()) {
+                    case Action.reset:
+                        return System.getenv("ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS") == "YES"
+                    default:
+                        return true
                 }
             }
         })
@@ -99,11 +114,15 @@ class ListKeychainTask extends DefaultTask {
     @TaskAction
     protected list() {
         def keychains = getKeychains().files
-
-        if (getAction() == Action.add) {
-            lookupList.addAll(keychains)
-        } else {
-            lookupList.removeAll(keychains)
+        switch (getAction()) {
+            case Action.add:
+                lookupList.addAll(keychains)
+                break
+            case Action.remove:
+                lookupList.removeAll(keychains)
+                break
+            case Action.reset:
+                lookupList.reset()
         }
     }
 }

@@ -23,9 +23,7 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 
-import wooga.gradle.build.unity.ios.internal.utils.SecurityUtil
-
-@Requires({ os.macOs })
+@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
 class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
     @Shared
@@ -87,26 +85,33 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
         createTestCertificate(new File(projectDir, "test_ca.p12"), certPassword)
 
-        keychainLookupList.clear()
+        keychainLookupList.reset()
     }
 
     def cleanup() {
-        keychainLookupList.clear()
+        keychainLookupList.reset()
     }
 
+    @Unroll("creates custom build keychain")
     def "creates custom build keychain"() {
         given: "default project"
+        environmentVariables.set("ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS", resetKeychainsEnabled ? "YES" : "NO")
 
         when:
         def result = runTasksSuccessfully("addKeychain")
 
         then:
         !result.wasUpToDate("addKeychain")
+        result.wasExecuted("resetKeychains")
+        result.wasSkipped("resetKeychains") != resetKeychainsEnabled
         buildKeychain.exists()
         keychainLookupList.contains(buildKeychain)
 
         cleanup:
         keychainLookupList.remove(buildKeychain)
+
+        where:
+        resetKeychainsEnabled << [true, false]
     }
 
     def "removes custom build keychain"() {
@@ -154,5 +159,34 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         message    || success
         "fails"    || false
         "succeeds" || true
+    }
+
+    @Unroll
+    def "task :#taskToRun resets keychains before build when #message"() {
+        given: "project which will succeed/fail the assemble task"
+        //skip these tasks to succeed the build
+        buildFile << """
+            project.xcodeArchive.onlyIf({false})
+            project.xcodeExport.onlyIf({false})
+            project.importProvisioningProfiles.onlyIf({false})
+        """.stripIndent()
+
+        and:
+        environmentVariables.set("ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS", resetEnabled ? "YES" : "NO")
+
+        when:
+        def result = runTasks("assemble")
+
+        then:
+        result.wasExecuted("resetKeychains")
+        result.wasSkipped("resetKeychains") != resetEnabled
+
+        where:
+        taskToRun     | resetEnabled
+        "assemble"    | true
+        "assemble"    | false
+        "addKeychain" | true
+        "addKeychain" | false
+        message = (resetEnabled) ? "reset is enabled" : "reset is disabled"
     }
 }

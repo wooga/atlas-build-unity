@@ -183,9 +183,15 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.keychain = buildKeychain
         }
 
+        def resetKeychains = tasks.create(maybeBaseName(baseName, "resetKeychains"), ListKeychainTask) {
+            it.action = ListKeychainTask.Action.reset
+            it.keychain buildKeychain
+        }
+
         def addKeychain = tasks.create(maybeBaseName(baseName, "addKeychain"), ListKeychainTask) {
             it.action = ListKeychainTask.Action.add
             it.keychain buildKeychain
+            dependsOn(resetKeychains)
         }
 
         def removeKeychain = tasks.create(maybeBaseName(baseName, "removeKeychain"), ListKeychainTask) {
