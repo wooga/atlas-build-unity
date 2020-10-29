@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ *
+ *
  */
 
 package wooga.gradle.xcodebuild
 
-class XcodeBuildPluginConsts {
-    static final String INVALID_XCODE_PROJECT_ERROR_MESSAGE = "xcode project path must be a valid .xcodeproj or .xcworkspace"
+import org.gradle.api.provider.Provider
+
+interface XcodeAction {
+    Provider<List<String>> getBuildArguments()
 }
