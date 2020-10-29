@@ -21,7 +21,6 @@ import spock.lang.Ignore
 import spock.lang.Issue
 import spock.lang.Requires
 import spock.lang.Unroll
-import wooga.gradle.build.IntegrationSpec
 
 /**
  * The test examples in this class are not 100% integration/functional tests.
