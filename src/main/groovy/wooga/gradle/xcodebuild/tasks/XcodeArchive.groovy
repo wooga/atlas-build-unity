@@ -19,7 +19,6 @@
 
 package wooga.gradle.xcodebuild.tasks
 
-
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile

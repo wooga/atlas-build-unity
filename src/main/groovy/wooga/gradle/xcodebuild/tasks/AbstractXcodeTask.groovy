@@ -166,7 +166,7 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
 
     @TaskAction
     protected void exec() {
-        def action = new XcodeBuildAction(project, consoleSettings, buildArguments, logFile)
+        def action = new XcodeBuildAction(project, buildArguments, logFile, consoleSettings)
         action.exec()
     }
 }

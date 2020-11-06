@@ -29,21 +29,21 @@ import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeAction
-import wooga.gradle.xcodebuild.xcpretty.Printer
-import wooga.gradle.xcodebuild.xcpretty.formatters.Simple
+import com.wooga.xcodebuild.xcpretty.Printer
+import com.wooga.xcodebuild.xcpretty.formatters.Simple
 
 class XcodeBuildAction implements XcodeAction {
 
-    final Provider<ConsoleSettings> consoleSettings
+    final Project project
     final Provider<List<String>> buildArguments
     final Provider<RegularFile> logFile
-    final Project project
+    final Provider<ConsoleSettings> consoleSettings
 
-    XcodeBuildAction(Project project, Provider<ConsoleSettings> consoleSettings, Provider<List<String>> buildArguments, Provider<RegularFile> logFile) {
+    XcodeBuildAction(Project project, Provider<List<String>> buildArguments, Provider<RegularFile> logFile, Provider<ConsoleSettings> consoleSettings) {
         this.project = project
-        this.consoleSettings = consoleSettings
         this.buildArguments = buildArguments
         this.logFile = logFile
+        this.consoleSettings = consoleSettings
     }
 
     ExecResult exec() {

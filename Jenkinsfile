@@ -20,7 +20,7 @@ withCredentials([
                     "ATLAS_AWS_INTEGRATION_ACCESS_KEY=${accesskey}",
                     "ATLAS_AWS_INTEGRATION_SECRET_KEY=${secretkey}",
                     "ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC=YES",
-                    {"DEVELOPER_DIR=${System.getenv('XCODE_12_DEVELOPER_DIR')}"}
+                    {"DEVELOPER_DIR=${XCODE_12_DEVELOPER_DIR}"}
             ]
     ]
 

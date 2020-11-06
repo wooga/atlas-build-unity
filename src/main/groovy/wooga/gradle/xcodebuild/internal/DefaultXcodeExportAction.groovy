@@ -40,7 +40,7 @@ class DefaultXcodeExportAction extends XcodeBuildAction implements CopyAction {
     final Provider<Directory> outputPath
 
     DefaultXcodeExportAction(Project project, Provider<ConsoleSettings> consoleSettings, Provider<List<String>> buildArguments, Provider<RegularFile> logFile, Provider<Directory> exportPath, Provider<Directory> outputPath) {
-        super(project, consoleSettings, buildArguments, logFile)
+        super(project, buildArguments, logFile, consoleSettings)
         this.exportPath = exportPath
         this.outputPath = outputPath
     }
