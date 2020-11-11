@@ -19,9 +19,11 @@
 
 package wooga.gradle.xcodebuild
 
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
+import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 class XcodeBuildPlugin implements Plugin<Project> {
 
@@ -30,5 +32,15 @@ class XcodeBuildPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
+
+        project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
+            @Override
+            void execute(XcodeArchive task) {
+                task.version.set(project.provider({ project.version.toString() }))
+                task.baseName.set(project.name)
+                task.extension.set("xcarchive")
+                task.destinationDir.set(project.layout.buildDirectory.dir("archives"))
+            }
+        })
     }
 }

@@ -55,11 +55,11 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
         result.standardOutput.contains(message) || result.standardError.contains(message)
     }
 
-    String wrapValueBasedOnType(Object rawValue, Class type) {
-        wrapValueBasedOnType(rawValue, type.simpleName)
+    String wrapValueBasedOnType(Object rawValue, Class type, Closure<String> fallback = null) {
+        wrapValueBasedOnType(rawValue, type.simpleName, fallback)
     }
 
-    String wrapValueBasedOnType(Object rawValue, String type) {
+    String wrapValueBasedOnType(Object rawValue, String type, Closure<String> fallback = null) {
         def value
         def rawValueEscaped = String.isInstance(rawValue) ? "'${rawValue}'" : rawValue
         def subtypeMatches = type =~ /(?<mainType>\w+)<(?<subType>[\w<>]+)>/
@@ -68,7 +68,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
         switch (type) {
             case "Closure":
                 if (subType) {
-                    value = "{${wrapValueBasedOnType(rawValue, subType)}}"
+                    value = "{${wrapValueBasedOnType(rawValue, subType, fallback)}}"
                 } else {
                     value = "{$rawValueEscaped}"
                 }
@@ -82,19 +82,19 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
             case "Provider":
                 switch (subType) {
                     case "RegularFile":
-                        value = "project.layout.file(${wrapValueBasedOnType(rawValue, "Provider<File>")})"
+                        value = "project.layout.file(${wrapValueBasedOnType(rawValue, "Provider<File>", fallback)})"
                         break
                     case "Directory":
                         value = """
                                 project.provider({
                                     def d = project.layout.directoryProperty()
-                                    d.set(${wrapValueBasedOnType(rawValue, "File")})
+                                    d.set(${wrapValueBasedOnType(rawValue, "File", fallback)})
                                     d.get()
                                 })
                         """.trim().stripIndent()
                         break
                     default:
-                        value = "project.provider(${wrapValueBasedOnType(rawValue, "Closure<${subType}>")})"
+                        value = "project.provider(${wrapValueBasedOnType(rawValue, "Closure<${subType}>", fallback)})"
                         break
                 }
                 break
@@ -102,7 +102,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
                 value = "${escapedPath(rawValueEscaped.toString())}"
                 break
             case "String[]":
-                value = "'{${rawValue.collect { '"' + it + '"' }.join(",")}}'.split(',')"
+                value = "'${rawValue.collect { it }.join(",")}'.split(',')"
                 break
             case "File":
                 value = "new File('${escapedPath(rawValue.toString())}')"
@@ -114,11 +114,11 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
                 value = "[${rawValue.collect { '"' + it + '"' }.join(", ")}]"
                 break
             case "Map":
-                value = "[" + rawValue.collect { k, v -> "${wrapValueBasedOnType(k, k.getClass())} : ${wrapValueBasedOnType(v, v.getClass())}" }.join(", ") + "]"
+                value = "[" + rawValue.collect { k, v -> "${wrapValueBasedOnType(k, k.getClass(), fallback)} : ${wrapValueBasedOnType(v, v.getClass(), fallback)}" }.join(", ") + "]"
                 value = value == "[]" ? "[:]" : value
                 break
             default:
-                value = rawValue
+                value = (fallback) ? fallback.call(type) : rawValue
         }
         value
     }

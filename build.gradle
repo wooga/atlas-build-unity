@@ -68,4 +68,6 @@ dependencies {
     testCompile('com.netflix.nebula:nebula-test:7.7.0') {
         force = true
     }
+
+    integrationTestCompile('commons-io:commons-io:2.6')
 }
