@@ -21,10 +21,15 @@ package wooga.gradle.xcodebuild.tasks
 
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFile
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Console
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeActionSpec
 import wooga.gradle.xcodebuild.config.BuildSettings
 import wooga.gradle.xcodebuild.internal.XcodeBuildAction
@@ -32,6 +37,45 @@ import wooga.gradle.xcodebuild.internal.XcodeBuildAction
 import static org.gradle.util.ConfigureUtil.configureUsing
 
 abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec {
+
+    @Console
+    final Property<ConsoleSettings> consoleSettings
+
+    @Override
+    void setConsoleSettings(ConsoleSettings value) {
+        consoleSettings.set(value)
+    }
+
+    @Override
+    void setConsoleSettings(Provider<ConsoleSettings> value) {
+        consoleSettings.set(value)
+    }
+
+    @Override
+    AbstractXcodeTask consoleSettings(ConsoleSettings value) {
+        setConsoleSettings(value)
+        this
+    }
+
+    @Override
+    AbstractXcodeTask consoleSettings(Provider<ConsoleSettings> value) {
+        setConsoleSettings(value)
+        this
+    }
+
+    @Override
+    AbstractXcodeTask consoleSettings(Closure configuration) {
+        consoleSettings(configureUsing(configuration))
+        this
+    }
+
+    @Override
+    AbstractXcodeTask consoleSettings(Action<ConsoleSettings> action) {
+        def settings = consoleSettings.getOrElse(new ConsoleSettings())
+        action.execute(settings)
+        consoleSettings.set(settings)
+        this
+    }
 
     final ListProperty<String> additionalBuildArguments
 
@@ -93,6 +137,31 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         this
     }
 
+    @Internal
+    final RegularFileProperty logFile
+
+    @Override
+    void setLogFile(File value) {
+        logFile.set(value)
+    }
+
+    @Override
+    void setLogFile(Provider<RegularFile> value) {
+        logFile.set(value)
+    }
+
+    @Override
+    AbstractXcodeTask logFile(File value) {
+        setLogFile(value)
+        this
+    }
+
+    @Override
+    AbstractXcodeTask logFile(Provider<RegularFile> value) {
+        setLogFile(value)
+        this
+    }
+
     @Override
     AbstractXcodeTask buildSettings(Action<BuildSettings> action) {
         def settings = buildSettings.getOrElse(new BuildSettings())
@@ -101,15 +170,16 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         this
     }
 
-
     AbstractXcodeTask() {
         additionalBuildArguments = project.objects.listProperty(String)
         buildSettings = project.objects.property(BuildSettings)
+        consoleSettings = project.objects.property(ConsoleSettings)
+        logFile = project.layout.fileProperty()
     }
 
     @TaskAction
     protected void exec() {
-        def action = new XcodeBuildAction(project, buildArguments)
+        def action = new XcodeBuildAction(project, buildArguments.get(), logFile.get().asFile, consoleSettings.get())
         action.exec()
     }
 }

@@ -22,5 +22,4 @@ package wooga.gradle.xcodebuild
 import org.gradle.api.provider.Provider
 
 interface XcodeAction {
-    Provider<List<String>> getBuildArguments()
 }
