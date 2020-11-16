@@ -47,10 +47,18 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
             codeSigningRequired false
             codeSigningAllowed false
         }
-
         projectPath = new File("${xcodeProject.xcodeProject}")
     }
     """.stripIndent()
+
+
+    String expectedPrettyColoredUnicodeLogOutput = """
+        ▸ \u001B[39;1mLinking\u001B[0m xcodebuildPluginTest
+        ▸ \u001B[39;1mProcessing\u001B[0m Info.plist
+        ▸ \u001B[39;1mGenerating 'xcodebuildPluginTest.app.dSYM'\u001B[0m
+        ▸ \u001B[39;1mTouching\u001B[0m xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
+        ▸ \u001B[39;1mArchive\u001B[0m Succeeded
+    """.stripIndent().trim()
 
     String expectedPrettyUnicodeLogOutput = """
         ▸ Linking xcodebuildPluginTest
@@ -108,32 +116,11 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         outputContains(result, "xcode project path must be a valid .xcodeproj or .xcworkspace")
     }
 
-    def "can provide additional build arguments"() {
-        given:
-        buildFile << workingXcodebuildTaskConfig
-
-        and: "some custom arguments"
-        buildFile << """
-        ${testTaskName}.buildArgument("-quiet")
-        ${testTaskName}.buildArguments("-enableAddressSanitizer", "YES")
-        ${testTaskName}.buildArguments("-enableThreadSanitizer", "NO")
-        """.stripIndent()
-
-        when:
-        def result = runTasks(testTaskName)
-
-        then:
-        result.success
-        outputContains(result, "-quiet")
-        outputContains(result, "-enableAddressSanitizer YES")
-        outputContains(result, "-enableThreadSanitizer NO")
-    }
-
     @Unroll("property #property sets flag #expectedCommandlineFlag")
     def "constructs build arguments"() {
         given:
         buildFile << """
-        task("customXcodeArchive", type: ${XcodeArchive.name}) {
+        task("customXcodeArchive", type: ${taskType.name}) {
             scheme = "${xcodeProject.schemeName}"
             projectPath = new File("${xcodeProject.xcodeProject.path}")
         }
@@ -173,25 +160,25 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         value = wrapValueBasedOnType(rawValue, type)
     }
 
-    @Unroll
-    def "can set property #property with #method and type #type"() {
+    @Unroll("can set property #property with #method and type #type")
+    def "can set property XcodeArchive"() {
         given: "a custom archive task"
         buildFile << """
-            task("customXcodeArchive", type: ${XcodeArchive.name})
+            task("${testTaskName}", type: ${taskType.name})
         """.stripIndent()
 
         and: "a task to read back the value"
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("property: " + customXcodeArchive.${property}.get())
+                    println("property: " + ${testTaskName}.${property}.get())
                 }
             }
         """.stripIndent()
 
         and: "a set property"
         buildFile << """
-            customXcodeArchive.${method}($value)
+            ${testTaskName}.${method}($value)
         """.stripIndent()
 
         when:
@@ -201,111 +188,83 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         outputContains(result, "property: " + expectedValue.toString())
 
         where:
-        property          | method                | rawValue                                                    | type
-        "configuration"   | "configuration"       | "Test1"                                                     | "String"
-        "configuration"   | "configuration"       | "Test2"                                                     | "Provider<String>"
-        "configuration"   | "configuration.set"   | "Test1"                                                     | "String"
-        "configuration"   | "configuration.set"   | "Test2"                                                     | "Provider<String>"
-        "configuration"   | "setConfiguration"    | "Test3"                                                     | "String"
-        "configuration"   | "setConfiguration"    | "Test4"                                                     | "Provider<String>"
+        property          | method                | rawValue     | type
+        "configuration"   | "configuration"       | "Test1"      | "String"
+        "configuration"   | "configuration"       | "Test2"      | "Provider<String>"
+        "configuration"   | "configuration.set"   | "Test1"      | "String"
+        "configuration"   | "configuration.set"   | "Test2"      | "Provider<String>"
+        "configuration"   | "setConfiguration"    | "Test3"      | "String"
+        "configuration"   | "setConfiguration"    | "Test4"      | "Provider<String>"
 
-        "clean"           | "clean"               | true                                                        | "Boolean"
-        "clean"           | "clean"               | true                                                        | "Provider<Boolean>"
-        "clean"           | "clean.set"           | true                                                        | "Boolean"
-        "clean"           | "clean.set"           | true                                                        | "Provider<Boolean>"
-        "clean"           | "setClean"            | true                                                        | "Boolean"
-        "clean"           | "setClean"            | true                                                        | "Provider<Boolean>"
+        "clean"           | "clean"               | true         | "Boolean"
+        "clean"           | "clean"               | true         | "Provider<Boolean>"
+        "clean"           | "clean.set"           | true         | "Boolean"
+        "clean"           | "clean.set"           | true         | "Provider<Boolean>"
+        "clean"           | "setClean"            | true         | "Boolean"
+        "clean"           | "setClean"            | true         | "Provider<Boolean>"
 
-        "scheme"          | "scheme"              | "Test1"                                                     | "String"
-        "scheme"          | "scheme"              | "Test2"                                                     | "Provider<String>"
-        "scheme"          | "scheme.set"          | "Test1"                                                     | "String"
-        "scheme"          | "scheme.set"          | "Test2"                                                     | "Provider<String>"
-        "scheme"          | "setScheme"           | "Test3"                                                     | "String"
-        "scheme"          | "setScheme"           | "Test4"                                                     | "Provider<String>"
+        "scheme"          | "scheme"              | "Test1"      | "String"
+        "scheme"          | "scheme"              | "Test2"      | "Provider<String>"
+        "scheme"          | "scheme.set"          | "Test1"      | "String"
+        "scheme"          | "scheme.set"          | "Test2"      | "Provider<String>"
+        "scheme"          | "setScheme"           | "Test3"      | "String"
+        "scheme"          | "setScheme"           | "Test4"      | "Provider<String>"
 
-        "teamId"          | "teamId"              | "Test1"                                                     | "String"
-        "teamId"          | "teamId"              | "Test2"                                                     | "Provider<String>"
-        "teamId"          | "teamId.set"          | "Test1"                                                     | "String"
-        "teamId"          | "teamId.set"          | "Test2"                                                     | "Provider<String>"
-        "teamId"          | "setTeamId"           | "Test3"                                                     | "String"
-        "teamId"          | "setTeamId"           | "Test4"                                                     | "Provider<String>"
+        "teamId"          | "teamId"              | "Test1"      | "String"
+        "teamId"          | "teamId"              | "Test2"      | "Provider<String>"
+        "teamId"          | "teamId.set"          | "Test1"      | "String"
+        "teamId"          | "teamId.set"          | "Test2"      | "Provider<String>"
+        "teamId"          | "setTeamId"           | "Test3"      | "String"
+        "teamId"          | "setTeamId"           | "Test4"      | "Provider<String>"
 
-        "derivedDataPath" | "derivedDataPath"     | "/some/path"                                                | "File"
-        "derivedDataPath" | "derivedDataPath"     | "/some/path"                                                | "Provider<Directory>"
-        "derivedDataPath" | "derivedDataPath.set" | "/some/path"                                                | "File"
-        "derivedDataPath" | "derivedDataPath.set" | "/some/path"                                                | "Provider<Directory>"
-        "derivedDataPath" | "setDerivedDataPath"  | "/some/path"                                                | "File"
-        "derivedDataPath" | "setDerivedDataPath"  | "/some/path"                                                | "Provider<Directory>"
+        "derivedDataPath" | "derivedDataPath"     | "/some/path" | "File"
+        "derivedDataPath" | "derivedDataPath"     | "/some/path" | "Provider<Directory>"
+        "derivedDataPath" | "derivedDataPath.set" | "/some/path" | "File"
+        "derivedDataPath" | "derivedDataPath.set" | "/some/path" | "Provider<Directory>"
+        "derivedDataPath" | "setDerivedDataPath"  | "/some/path" | "File"
+        "derivedDataPath" | "setDerivedDataPath"  | "/some/path" | "Provider<Directory>"
 
-        "buildKeychain"   | "buildKeychain"       | "/some/path"                                                | "File"
-        "buildKeychain"   | "buildKeychain"       | "/some/path"                                                | "Provider<RegularFile>"
-        "buildKeychain"   | "buildKeychain.set"   | "/some/path"                                                | "File"
-        "buildKeychain"   | "buildKeychain.set"   | "/some/path"                                                | "Provider<RegularFile>"
-        "buildKeychain"   | "setBuildKeychain"    | "/some/path"                                                | "File"
-        "buildKeychain"   | "setBuildKeychain"    | "/some/path"                                                | "Provider<RegularFile>"
+        "buildKeychain"   | "buildKeychain"       | "/some/path" | "File"
+        "buildKeychain"   | "buildKeychain"       | "/some/path" | "Provider<RegularFile>"
+        "buildKeychain"   | "buildKeychain.set"   | "/some/path" | "File"
+        "buildKeychain"   | "buildKeychain.set"   | "/some/path" | "Provider<RegularFile>"
+        "buildKeychain"   | "setBuildKeychain"    | "/some/path" | "File"
+        "buildKeychain"   | "setBuildKeychain"    | "/some/path" | "Provider<RegularFile>"
 
-        "projectPath"     | "projectPath"         | "/some/path"                                                | "File"
-        "projectPath"     | "projectPath"         | "/some/path"                                                | "Provider<Directory>"
-        "projectPath"     | "projectPath.set"     | "/some/path"                                                | "File"
-        "projectPath"     | "projectPath.set"     | "/some/path"                                                | "Provider<Directory>"
-        "projectPath"     | "setProjectPath"      | "/some/path"                                                | "File"
-        "projectPath"     | "setProjectPath"      | "/some/path"                                                | "Provider<Directory>"
+        "projectPath"     | "projectPath"         | "/some/path" | "File"
+        "projectPath"     | "projectPath"         | "/some/path" | "Provider<Directory>"
+        "projectPath"     | "projectPath.set"     | "/some/path" | "File"
+        "projectPath"     | "projectPath.set"     | "/some/path" | "Provider<Directory>"
+        "projectPath"     | "setProjectPath"      | "/some/path" | "File"
+        "projectPath"     | "setProjectPath"      | "/some/path" | "Provider<Directory>"
 
-        "archiveName"     | "archiveName"         | "Test1"                                                     | "String"
-        "archiveName"     | "archiveName"         | "Test2"                                                     | "Provider<String>"
-        "archiveName"     | "archiveName.set"     | "Test1"                                                     | "String"
-        "archiveName"     | "archiveName.set"     | "Test2"                                                     | "Provider<String>"
-        "archiveName"     | "setArchiveName"      | "Test3"                                                     | "String"
-        "archiveName"     | "setArchiveName"      | "Test4"                                                     | "Provider<String>"
+        "archiveName"     | "archiveName"         | "Test1"      | "String"
+        "archiveName"     | "archiveName"         | "Test2"      | "Provider<String>"
+        "archiveName"     | "archiveName.set"     | "Test1"      | "String"
+        "archiveName"     | "archiveName.set"     | "Test2"      | "Provider<String>"
+        "archiveName"     | "setArchiveName"      | "Test3"      | "String"
+        "archiveName"     | "setArchiveName"      | "Test4"      | "Provider<String>"
 
-        "baseName"        | "baseName"            | "Test1"                                                     | "String"
-        "baseName"        | "baseName"            | "Test2"                                                     | "Provider<String>"
-        "baseName"        | "baseName.set"        | "Test1"                                                     | "String"
-        "baseName"        | "baseName.set"        | "Test2"                                                     | "Provider<String>"
-        "baseName"        | "setBaseName"         | "Test3"                                                     | "String"
-        "baseName"        | "setBaseName"         | "Test4"                                                     | "Provider<String>"
+        "baseName"        | "baseName"            | "Test1"      | "String"
+        "baseName"        | "baseName"            | "Test2"      | "Provider<String>"
+        "baseName"        | "baseName.set"        | "Test1"      | "String"
+        "baseName"        | "baseName.set"        | "Test2"      | "Provider<String>"
+        "baseName"        | "setBaseName"         | "Test3"      | "String"
+        "baseName"        | "setBaseName"         | "Test4"      | "Provider<String>"
 
-        "appendix"        | "appendix"            | "Test1"                                                     | "String"
-        "appendix"        | "appendix"            | "Test2"                                                     | "Provider<String>"
-        "appendix"        | "appendix.set"        | "Test1"                                                     | "String"
-        "appendix"        | "appendix.set"        | "Test2"                                                     | "Provider<String>"
-        "appendix"        | "setAppendix"         | "Test3"                                                     | "String"
-        "appendix"        | "setAppendix"         | "Test4"                                                     | "Provider<String>"
+        "appendix"        | "appendix"            | "Test1"      | "String"
+        "appendix"        | "appendix"            | "Test2"      | "Provider<String>"
+        "appendix"        | "appendix.set"        | "Test1"      | "String"
+        "appendix"        | "appendix.set"        | "Test2"      | "Provider<String>"
+        "appendix"        | "setAppendix"         | "Test3"      | "String"
+        "appendix"        | "setAppendix"         | "Test4"      | "Provider<String>"
 
-        "version"         | "version"             | "Test1"                                                     | "String"
-        "version"         | "version"             | "Test2"                                                     | "Provider<String>"
-        "version"         | "version.set"         | "Test1"                                                     | "String"
-        "version"         | "version.set"         | "Test2"                                                     | "Provider<String>"
-        "version"         | "setVersion"          | "Test3"                                                     | "String"
-        "version"         | "setVersion"          | "Test4"                                                     | "Provider<String>"
-
-        "extension"       | "extension"           | "Test1"                                                     | "String"
-        "extension"       | "extension"           | "Test2"                                                     | "Provider<String>"
-        "extension"       | "extension.set"       | "Test1"                                                     | "String"
-        "extension"       | "extension.set"       | "Test2"                                                     | "Provider<String>"
-        "extension"       | "setExtension"        | "Test3"                                                     | "String"
-        "extension"       | "setExtension"        | "Test4"                                                     | "Provider<String>"
-
-        "classifier"      | "classifier"          | "Test1"                                                     | "String"
-        "classifier"      | "classifier"          | "Test2"                                                     | "Provider<String>"
-        "classifier"      | "classifier.set"      | "Test1"                                                     | "String"
-        "classifier"      | "classifier.set"      | "Test2"                                                     | "Provider<String>"
-        "classifier"      | "setClassifier"       | "Test3"                                                     | "String"
-        "classifier"      | "setClassifier"       | "Test4"                                                     | "Provider<String>"
-
-        "destinationDir"  | "destinationDir"      | "/some/path"                                                | "File"
-        "destinationDir"  | "destinationDir"      | "/some/path"                                                | "Provider<Directory>"
-        "destinationDir"  | "destinationDir.set"  | "/some/path"                                                | "File"
-        "destinationDir"  | "destinationDir.set"  | "/some/path"                                                | "Provider<Directory>"
-        "destinationDir"  | "setDestinationDir"   | "/some/path"                                                | "File"
-        "destinationDir"  | "setDestinationDir"   | "/some/path"                                                | "Provider<Directory>"
-
-        "buildSettings"   | "buildSettings"       | '[SOME_SETTING=some/value]'                                 | "BuildSettings"
-        "buildSettings"   | "buildSettings"       | '[SOME_SETTING=some/value, MORE_SETTINGS=some/other/value]' | "Provider<BuildSettings>"
-        "buildSettings"   | "buildSettings.set"   | '[SOME_SETTING=some/value]'                                 | "BuildSettings"
-        "buildSettings"   | "buildSettings.set"   | '[SOME_SETTING=some/value, MORE_SETTINGS=some/other/value]' | "Provider<BuildSettings>"
-        "buildSettings"   | "setBuildSettings"    | '[SOME_SETTING=some/value]'                                 | "BuildSettings"
-        "buildSettings"   | "setBuildSettings"    | '[SOME_SETTING=some/value, MORE_SETTINGS=some/other/value]' | "Provider<BuildSettings>"
+        "version"         | "version"             | "Test1"      | "String"
+        "version"         | "version"             | "Test2"      | "Provider<String>"
+        "version"         | "version.set"         | "Test1"      | "String"
+        "version"         | "version.set"         | "Test2"      | "Provider<String>"
+        "version"         | "setVersion"          | "Test3"      | "String"
+        "version"         | "setVersion"          | "Test4"      | "Provider<String>"
 
         value = wrapValueBasedOnType(rawValue, type) { type ->
             switch (type) {
@@ -368,7 +327,7 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
     def "creates property #property from destination and archive name"() {
         given: "a custom archive task"
         buildFile << """
-            task("customXcodeArchive", type: ${XcodeArchive.name}) {
+            task("${testTaskName}", type: ${XcodeArchive.name}) {
                 archiveName("test-0.0.0.xcarchive")
                 destinationDir(file("/some/path"))
             }
@@ -378,7 +337,7 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("xcArchivePath: '" + customXcodeArchive.${property}.get() + "'")
+                    println("xcArchivePath: '" + ${testTaskName}.${property}.get() + "'")
                 }
             }
         """.stripIndent()
@@ -392,119 +351,5 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         where:
         property        | archiveName            | destinationDir | expectedXcArchivePath
         "xcArchivePath" | "test-0.0.0.xcarchive" | "/some/path"   | "/some/path/test-0.0.0.xcarchive"
-    }
-
-    @Unroll("constructs archive name #expectedValue from baseName: #baseName, appendix: #appendix version: #version classifier: #classifier extension: extension archiveName: #archiveName")
-    def "set archive name"() {
-        given: "a custom archive task"
-        buildFile << """
-            task("customXcodeArchive", type: ${XcodeArchive.name})
-        """.stripIndent()
-
-        and: "a custom project name"
-        settingsFile.text = """
-        rootProject.name='${defaultBaseName}'
-        """.trim().stripIndent()
-
-        and: "a custom project version"
-        buildFile << """
-            version = '${defaultVersion}'
-        """.stripIndent()
-
-        and: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("archiveName: '" + customXcodeArchive.archiveName.get() + "'")
-                }
-            }
-        """.stripIndent()
-
-        and: "a set propertis"
-        archiveNameParts.each {
-            if (it.value != _) {
-                buildFile << """
-            customXcodeArchive.${it.key}(${wrapValueBasedOnType(it.value, "String")})
-            """.stripIndent()
-            }
-        }
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-
-        outputContains(result, "archiveName: '" + expectedValue.toString() + "'")
-
-        where:
-        baseName | appendix | version | classifier | extension | archiveName  | expectedArchivePattern
-        _        | null     | _       | null       | _         | _            | "#baseName-#version.#extension"
-        null     | null     | _       | null       | _         | _            | "#version.#extension"
-        'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#appendix-#version-#classifier.#extension"
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier"
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier"
-        'test'   | 'suite'  | '0.1.0' | null       | 'xml'     | _            | "#baseName-#appendix-#version.#extension"
-        'test'   | 'suite'  | '0.1.0' | null       | null      | _            | "#baseName-#appendix-#version"
-        'test'   | 'suite'  | null    | 'case'     | 'xml'     | _            | "#baseName-#appendix-#classifier.#extension"
-        'test'   | 'suite'  | null    | null       | 'xml'     | _            | "#baseName-#appendix.#extension"
-        'test'   | 'suite'  | null    | null       | null      | _            | "#baseName-#appendix"
-        'test'   | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#version-#classifier.#extension"
-        'test'   | null     | '0.1.0' | null       | 'xml'     | _            | "#baseName-#version.#extension"
-        'test'   | null     | '0.1.0' | null       | null      | _            | "#baseName-#version"
-        'test'   | null     | null    | 'case'     | 'xml'     | _            | "#baseName-#classifier.#extension"
-        'test'   | null     | null    | null       | 'xml'     | _            | "#baseName.#extension"
-        'test'   | null     | null    | null       | null      | _            | "#baseName"
-        null     | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#appendix-#version-#classifier.#extension"
-        null     | 'suite'  | null    | 'case'     | 'xml'     | _            | "#appendix-#classifier.#extension"
-        null     | 'suite'  | null    | 'case'     | null      | _            | "#appendix-#classifier"
-        null     | 'suite'  | null    | null       | 'xml'     | _            | "#appendix.#extension"
-        null     | 'suite'  | null    | null       | null      | _            | "#appendix"
-        null     | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#version-#classifier.#extension"
-        null     | null     | '0.1.0' | null       | 'xml'     | _            | "#version.#extension"
-        null     | null     | '0.1.0' | null       | null      | _            | "#version"
-        null     | null     | null    | 'case'     | 'xml'     | _            | "#classifier.#extension"
-        null     | null     | null    | 'case'     | null      | _            | "#classifier"
-        null     | null     | null    | null       | 'xml'     | _            | ".#extension"
-        null     | null     | null    | null       | null      | _            | ""
-        _        | null     | _       | null       | _         | 'customName' | 'customName'
-        null     | null     | _       | null       | _         | 'customName' | 'customName'
-        'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | 'customName' | 'customName'
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | 'customName' | 'customName'
-        'test'   | 'suite'  | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
-        'test'   | 'suite'  | '0.1.0' | null       | null      | 'customName' | 'customName'
-        'test'   | 'suite'  | null    | 'case'     | 'xml'     | 'customName' | 'customName'
-        'test'   | 'suite'  | null    | null       | 'xml'     | 'customName' | 'customName'
-        'test'   | 'suite'  | null    | null       | null      | 'customName' | 'customName'
-        'test'   | null     | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
-        'test'   | null     | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
-        'test'   | null     | '0.1.0' | null       | null      | 'customName' | 'customName'
-        'test'   | null     | null    | 'case'     | 'xml'     | 'customName' | 'customName'
-        'test'   | null     | null    | null       | 'xml'     | 'customName' | 'customName'
-        'test'   | null     | null    | null       | null      | 'customName' | 'customName'
-        null     | 'suite'  | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
-        null     | 'suite'  | null    | 'case'     | 'xml'     | 'customName' | 'customName'
-        null     | 'suite'  | null    | 'case'     | null      | 'customName' | 'customName'
-        null     | 'suite'  | null    | null       | 'xml'     | 'customName' | 'customName'
-        null     | 'suite'  | null    | null       | null      | 'customName' | 'customName'
-        null     | null     | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
-        null     | null     | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
-        null     | null     | '0.1.0' | null       | null      | 'customName' | 'customName'
-        null     | null     | null    | 'case'     | 'xml'     | 'customName' | 'customName'
-        null     | null     | null    | 'case'     | null      | 'customName' | 'customName'
-        null     | null     | null    | null       | 'xml'     | 'customName' | 'customName'
-        null     | null     | null    | null       | null      | 'customName' | 'customName'
-
-        defaultVersion = '0.0.0'
-        defaultBaseName = 'atlasBuildIos'
-        defaultExtension = 'xcarchive'
-
-        expectedValue = expectedArchivePattern.replace('#baseName', (baseName == _ ? defaultBaseName : baseName ?: '').toString())
-                .replace('#version', (version == _ ? defaultVersion : version ?: '').toString())
-                .replace('#extension', (extension == _ ? defaultExtension : extension ?: '').toString())
-                .replace('#appendix', (appendix ?: '').toString())
-                .replace('#classifier', (classifier ?: '').toString())
-
-        archiveNameParts = ['baseName': baseName, 'version': version, 'appendix': appendix, 'extension': extension, 'classifier': classifier, 'archiveName': archiveName]
     }
 }

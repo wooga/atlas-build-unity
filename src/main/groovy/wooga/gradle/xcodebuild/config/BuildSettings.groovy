@@ -19,13 +19,21 @@
 
 package wooga.gradle.xcodebuild.config
 
+import sun.invoke.empty.Empty
+
 class BuildSettings implements GroovyInterceptable {
 
-    final Map<String, List<String>> rawSettings
+    private final Map<String, List<String>> rawSettings
 
     BuildSettings() {
-        rawSettings = [:]
+        this(new HashMap<String, List<String>>())
     }
+
+    private BuildSettings(Map<String, List<String>> rawSettings) {
+        this.rawSettings = rawSettings
+    }
+
+    static EMPTY = new BuildSettings()
 
     BuildSettings otherCodeSignFlags(String flag) {
         if (!rawSettings["OTHER_CODE_SIGN_FLAGS"]) {
@@ -33,6 +41,10 @@ class BuildSettings implements GroovyInterceptable {
         }
         rawSettings["OTHER_CODE_SIGN_FLAGS"] << flag
         this
+    }
+
+    BuildSettings clone() {
+        new BuildSettings(rawSettings)
     }
 
     BuildSettings otherCodeSignFlags(String flag, String value) {
@@ -82,7 +94,7 @@ class BuildSettings implements GroovyInterceptable {
             }).join(' ')
 
             "${key}=${value}".toString()
-        }
+        }.sort()
     }
 
     @Override
