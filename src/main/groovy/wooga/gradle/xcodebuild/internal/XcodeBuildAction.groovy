@@ -19,32 +19,55 @@
 
 package wooga.gradle.xcodebuild.internal
 
+import com.wooga.xcodebuild.xcpretty.Printer
+import com.wooga.xcodebuild.xcpretty.formatters.Simple
 import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.api.provider.Provider
+import org.gradle.internal.io.LineBufferingOutputStream
+import org.gradle.internal.io.TextStream
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
+import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeAction
 
 class XcodeBuildAction implements XcodeAction {
 
     final Project project
-    final Provider<List<String>> buildArguments
+    final List<String> buildArguments
+    final File logFile
+    final ConsoleSettings consoleSettings
 
-    XcodeBuildAction(Project project, Provider<List<String>> buildArguments) {
+    XcodeBuildAction(Project project, List<String> buildArguments, File logFile, ConsoleSettings consoleSettings) {
         this.project = project
         this.buildArguments = buildArguments
+        this.logFile = logFile
+        this.consoleSettings = consoleSettings
     }
 
     ExecResult exec() {
+        TextStream handler = new ForkTextStream()
+
+        def outStream = new LineBufferingOutputStream(handler)
+        def logWriter = System.out.newPrintWriter()
+        if (logFile) {
+            logFile.parentFile.mkdirs()
+            handler.addWriter(logFile.newPrintWriter())
+        }
+
+        if (consoleSettings.prettyPrint) {
+            handler.addWriter(new Printer(new Simple(consoleSettings.useUnicode, consoleSettings.hasColors()), logWriter))
+        } else {
+            handler.addWriter(logWriter)
+        }
+
         project.exec(new Action<ExecSpec>() {
             @Override
             void execute(ExecSpec exec) {
                 exec.with {
                     executable "/usr/bin/xcrun"
-                    args = buildArguments.get()
-                    errorOutput = System.err
-                    standardOutput = System.out
+                    args = buildArguments
+                    errorOutput = outStream
+                    standardOutput = outStream
                 }
             }
         })

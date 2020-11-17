@@ -20,11 +20,33 @@
 package wooga.gradle.xcodebuild
 
 import org.gradle.api.Action
+import org.gradle.api.file.RegularFile
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 interface XcodeActionSpec<T extends XcodeActionSpec> extends XcodeAction {
+    Provider<List<String>> getBuildArguments()
+
+    Property<ConsoleSettings> getConsoleSettings()
+
+    void setConsoleSettings(ConsoleSettings value)
+    void setConsoleSettings(Provider<ConsoleSettings> value)
+
+    T consoleSettings(ConsoleSettings value)
+    T consoleSettings(Provider<ConsoleSettings> value)
+
+    T consoleSettings(Closure configuration)
+    T consoleSettings(Action<ConsoleSettings> action)
+
+    RegularFileProperty getLogFile()
+
+    void setLogFile(File value)
+    void setLogFile(Provider<RegularFile> value)
+
+    T logFile(File value)
+    T logFile(Provider<RegularFile> value)
 
     void setAdditionalBuildArguments(Iterable<String> value)
     void setAdditionalBuildArguments(Provider<? extends Iterable<String>> value)

@@ -16,6 +16,49 @@
 
 package wooga.gradle.xcodebuild
 
-interface XcodeBuildPluginExtension {
+import org.gradle.api.Action
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 
+interface XcodeBuildPluginExtension<T extends XcodeBuildPluginExtension> {
+    DirectoryProperty getLogsDir()
+
+    void setLogsDir(File value)
+
+    void setLogsDir(Provider<Directory> value)
+
+    T logsDir(File value)
+
+    T logsDir(Provider<Directory> value)
+
+    DirectoryProperty getDerivedDataPath()
+
+    void setDerivedDataPath(File value)
+
+    void setDerivedDataPath(Provider<Directory> value)
+
+    T derivedDataPath(File value)
+
+    T derivedDataPath(Provider<Directory> value)
+
+    DirectoryProperty  getXarchivesDir()
+
+    void setXarchivesDir(File value)
+    void setXarchivesDir(Provider<Directory> value)
+
+    T xarchivesDir(File value)
+    T xarchivesDir(Provider<Directory> value)
+
+    Property<ConsoleSettings> getConsoleSettings()
+
+    void setConsoleSettings(ConsoleSettings value)
+    void setConsoleSettings(Provider<ConsoleSettings> value)
+
+    T consoleSettings(ConsoleSettings value)
+    T consoleSettings(Provider<ConsoleSettings> value)
+
+    T consoleSettings(Closure configuration)
+    T consoleSettings(Action<ConsoleSettings> action)
 }

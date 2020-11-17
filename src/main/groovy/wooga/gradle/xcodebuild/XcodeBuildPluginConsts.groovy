@@ -16,6 +16,39 @@
 
 package wooga.gradle.xcodebuild
 
+import wooga.gradle.xcodebuild.internal.PropertyLookup
+
 class XcodeBuildPluginConsts {
     static final String INVALID_XCODE_PROJECT_ERROR_MESSAGE = "xcode project path must be a valid .xcodeproj or .xcworkspace"
+
+    /**
+     * Gradle property lookup object with values for fetching the default xcodebuild logs directiory.
+     *
+     * @environmentVariable "XCODEBUILD_LOGS_DIR"
+     * @propertyName "xcodebuild.logsDir"
+     * @defaultValue "logs"
+     * @see wooga.gradle.xcodebuild.XcodeBuildPluginExtension#getLogsDir()
+     */
+    static final PropertyLookup LOGS_DIR_LOOKUP = new PropertyLookup("XCODEBUILD_LOGS_DIR", "xcodebuild.logsDir", "logs")
+
+    /**
+     * Gradle property lookup object with values to fetch default derived data path.
+     *
+     * @environmentVariable "XCODEBUILD_DERIVED_DATA_PATH"
+     * @propertyName "xcodebuild.derivedDataPath"
+     * @defaultValue "derivedData"
+     * @see wooga.gradle.xcodebuild.XcodeBuildPluginExtension#getDerivedDataPath()
+     */
+    static final PropertyLookup DERIVED_DATA_PATH_LOOKUP = new PropertyLookup("XCODEBUILD_DERIVED_DATA_PATH", "xcodebuild.derivedDataPath", "derivedData")
+
+
+    /**
+     * Gradle property lookup object with values to fetch default xarchives path.
+     *
+     * @environmentVariable "XCODEBUILD_XARCHIVES_DIR"
+     * @propertyName "xcodebuild.xarchivesDir"
+     * @defaultValue "archives"
+     * @see wooga.gradle.xcodebuild.XcodeBuildPluginExtension#getXarchivesDir()
+     */
+    static final PropertyLookup XARCHIVES_DIR_LOOKUP = new PropertyLookup("XCODEBUILD_XARCHIVES_DIR", "xcodebuild.xarchivesDir", "archives")
 }

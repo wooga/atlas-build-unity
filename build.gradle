@@ -59,6 +59,9 @@ dependencies {
     compile 'xmlwise:xmlwise:1.2.11'
     compile 'commons-codec:commons-codec:1.14'
     compile 'software.amazon.awssdk:secretsmanager:2.13.42'
+    compile('com.wooga.xcodebuild:xcpretty:1.+') {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
     testCompile 'org.apache.commons:commons-text:1.8'
     testCompile 'com.github.stefanbirkner:system-rules:1.18.0'
     testCompile('com.nagternal:spock-genesis:0.6.0') {

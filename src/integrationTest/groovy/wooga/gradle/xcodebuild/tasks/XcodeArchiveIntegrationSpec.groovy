@@ -24,32 +24,56 @@ import org.junit.ClassRule
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.xcodebuild.XcodeBuildIntegrationSpec
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 @Requires({ os.macOs })
-class XcodeArchiveIntegrationSpec extends XcodeBuildIntegrationSpec {
+class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
 
     @Shared
     @ClassRule
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
+    Class taskType = XcodeArchive
+
+    String testTaskName = "customExport"
+
+    String workingXcodebuildTaskConfig = """
+    task ${testTaskName}(type: ${taskType.name}) {
+        scheme = "${xcodeProject.schemeName}"
+        baseName = "custom"
+        version = "0.1.0"
+        buildSettings {
+            codeSignIdentity ""
+            codeSigningRequired false
+            codeSigningAllowed false
+        }
+
+        projectPath = new File("${xcodeProject.xcodeProject}")
+    }
+    """.stripIndent()
+
+    String expectedPrettyUnicodeLogOutput = """
+        ▸ Linking xcodebuildPluginTest
+        ▸ Processing Info.plist
+        ▸ Generating 'xcodebuildPluginTest.app.dSYM'
+        ▸ Touching xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
+        ▸ Archive Succeeded
+        """.stripIndent().trim()
+
+    String expectedPrettyLogOutput = """
+        > Linking xcodebuildPluginTest
+        > Processing Info.plist
+        > Generating 'xcodebuildPluginTest.app.dSYM'
+        > Touching xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
+        > Archive Succeeded
+        """.stripIndent().trim()
+
     @Unroll
     def "creates archive from #type"() {
         given:
+        buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        task customExport(type: ${XcodeArchive.name}) {
-            scheme = "${xcodeProject.schemeName}"
-            baseName = "custom"
-            version = "0.1.0"
-            buildSettings {
-                codeSignIdentity ""
-                codeSigningRequired false
-                codeSigningAllowed false
-            }
-
-            projectPath = new File("${path}")
-        }
+        ${testTaskName}.projectPath = new File("${path}")
         """.stripIndent()
 
         and: "a future xcarchive"
@@ -57,7 +81,7 @@ class XcodeArchiveIntegrationSpec extends XcodeBuildIntegrationSpec {
         assert !archive.exists()
 
         when:
-        def result = runTasks("customExport")
+        def result = runTasks(testTaskName)
 
         then:
         result.success
@@ -72,23 +96,13 @@ class XcodeArchiveIntegrationSpec extends XcodeBuildIntegrationSpec {
 
     def "fails when project is not a valid .xcodeprj or .xcworkspace"() {
         given:
+        buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        task customExport(type: ${XcodeArchive.name}) {
-            scheme = "${xcodeProject.schemeName}"
-            baseName = "custom"
-            version = "0.1.0"
-            buildSettings {
-                codeSignIdentity ""
-                codeSigningRequired false
-                codeSigningAllowed false
-            }
-
-            projectPath = new File("${File.createTempDir("someProject",".project")}")
-        }
+        ${testTaskName}.projectPath = new File("${File.createTempDir("someProject", ".project")}")
         """.stripIndent()
 
         when:
-        def result = runTasksWithFailure("customExport")
+        def result = runTasksWithFailure(testTaskName)
 
         then:
         outputContains(result, "xcode project path must be a valid .xcodeproj or .xcworkspace")
@@ -96,30 +110,17 @@ class XcodeArchiveIntegrationSpec extends XcodeBuildIntegrationSpec {
 
     def "can provide additional build arguments"() {
         given:
-        buildFile << """
-        task customExport(type: ${XcodeArchive.name}) {
-            scheme = "${xcodeProject.schemeName}"
-            baseName = "custom"
-            version = "0.1.0"
-            buildSettings {
-                codeSignIdentity ""
-                codeSigningRequired false
-                codeSigningAllowed false
-            }
-
-            projectPath = new File("${xcodeProject.xcodeProject.path}")
-        }
-        """.stripIndent()
+        buildFile << workingXcodebuildTaskConfig
 
         and: "some custom arguments"
         buildFile << """
-        customExport.buildArgument("-quiet")
-        customExport.buildArguments("-enableAddressSanitizer", "YES")
-        customExport.buildArguments("-enableThreadSanitizer", "NO")
+        ${testTaskName}.buildArgument("-quiet")
+        ${testTaskName}.buildArguments("-enableAddressSanitizer", "YES")
+        ${testTaskName}.buildArguments("-enableThreadSanitizer", "NO")
         """.stripIndent()
 
         when:
-        def result = runTasks("customExport")
+        def result = runTasks(testTaskName)
 
         then:
         result.success
@@ -310,7 +311,7 @@ class XcodeArchiveIntegrationSpec extends XcodeBuildIntegrationSpec {
             switch (type) {
                 case BuildSettings.class.simpleName:
                     return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
-                        def parts = it.split("=")
+                        List<String> parts = it.split("=")
                         ".put('${parts[0].trim()}', '${parts[1].trim()}')"
                     }).join("")
                 default:

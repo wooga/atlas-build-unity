@@ -22,16 +22,29 @@ package wooga.gradle.xcodebuild
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.logging.configuration.ConsoleOutput
+import org.gradle.api.provider.Provider
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
+import wooga.gradle.xcodebuild.internal.PropertyLookup
+import wooga.gradle.xcodebuild.tasks.AbstractXcodeTask
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
+
+import static wooga.gradle.xcodebuild.XcodeBuildPluginConsts.*
 
 class XcodeBuildPlugin implements Plugin<Project> {
 
     static final String EXTENSION_NAME = "xcodebuild"
+    private Project project
 
     @Override
     void apply(Project project) {
-        project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
+        this.project = project
+        def extension = project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
+
+        extension.logsDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(LOGS_DIR_LOOKUP)))
+        extension.derivedDataPath.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(DERIVED_DATA_PATH_LOOKUP)))
+        extension.xarchivesDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(XARCHIVES_DIR_LOOKUP)))
+        extension.consoleSettings.set(ConsoleSettings.fromGradleOutput(project.gradle.startParameter.consoleOutput))
 
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
@@ -39,8 +52,32 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.version.set(project.provider({ project.version.toString() }))
                 task.baseName.set(project.name)
                 task.extension.set("xcarchive")
-                task.destinationDir.set(project.layout.buildDirectory.dir("archives"))
+                task.destinationDir.set(extension.xarchivesDir)
+                task.derivedDataPath.set(extension.derivedDataPath.dir(task.name))
             }
         })
+
+        project.tasks.withType(AbstractXcodeTask.class, new Action<AbstractXcodeTask>() {
+            @Override
+            void execute(AbstractXcodeTask task) {
+                task.logFile.set(extension.logsDir.file("${task.name}.log"))
+                task.consoleSettings.set(extension.consoleSettings)
+            }
+        })
+    }
+
+    private Provider<String> lookupValueInEnvAndPropertiesProvider(PropertyLookup lookup) {
+        lookupValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
+    }
+
+    private Provider<String> lookupValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
+        project.provider({
+            lookupValueInEnvAndProperties(env, property, defaultValue)
+        })
+    }
+
+    protected String lookupValueInEnvAndProperties(String env, String property, String defaultValue = null) {
+        System.getenv().get(env) ?:
+                project.properties.getOrDefault(property, defaultValue)
     }
 }

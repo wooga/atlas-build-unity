@@ -26,4 +26,6 @@ abstract class XcodeBuildIntegrationSpec extends IntegrationSpec {
           ${applyPlugin(XcodeBuildPlugin)}
        """.stripIndent()
    }
+
+
 }

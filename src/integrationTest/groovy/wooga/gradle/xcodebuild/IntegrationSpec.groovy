@@ -51,6 +51,28 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
         }
     }
 
+    enum PropertyLocation {
+        none, script, property, env
+
+        String reason() {
+            switch (this) {
+                case script:
+                    return "value is provided in script"
+                case property:
+                    return "value is provided in props"
+                case env:
+                    return "value is set in env"
+                default:
+                    return "no value was configured"
+            }
+        }
+    }
+
+    String envNameFromProperty(String extensionName, String property) {
+        "${extensionName.toUpperCase()}_${property.replaceAll(/([A-Z])/, "_\$1").toUpperCase()}"
+    }
+
+
     Boolean outputContains(ExecutionResult result, String message) {
         result.standardOutput.contains(message) || result.standardError.contains(message)
     }
