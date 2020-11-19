@@ -19,8 +19,6 @@
 
 package wooga.gradle.xcodebuild.internal
 
-import org.gradle.api.Nullable
-import org.gradle.internal.io.TextStream
 
 class ForkTextStream implements TextStream {
 
@@ -48,7 +46,7 @@ class ForkTextStream implements TextStream {
     }
 
     @Override
-    void endOfStream(@Nullable Throwable failure) {
+    void endOfStream(Throwable failure) {
         writerList.each {
             try {
                 it.close()
