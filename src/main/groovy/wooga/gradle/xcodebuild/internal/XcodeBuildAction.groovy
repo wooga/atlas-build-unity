@@ -23,8 +23,6 @@ import com.wooga.xcodebuild.xcpretty.Printer
 import com.wooga.xcodebuild.xcpretty.formatters.Simple
 import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.internal.io.LineBufferingOutputStream
-import org.gradle.internal.io.TextStream
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 import wooga.gradle.xcodebuild.ConsoleSettings
