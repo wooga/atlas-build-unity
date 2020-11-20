@@ -164,7 +164,7 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
 
     @Override
     AbstractXcodeTask buildSettings(Action<BuildSettings> action) {
-        def settings = buildSettings.getOrElse(new BuildSettings())
+        def settings = buildSettings.getOrElse(BuildSettings.EMPTY).clone() as BuildSettings
         action.execute(settings)
         buildSettings.set(settings)
         this

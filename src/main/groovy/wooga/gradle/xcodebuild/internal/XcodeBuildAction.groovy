@@ -64,7 +64,6 @@ class XcodeBuildAction implements XcodeAction {
                 exec.with {
                     executable "/usr/bin/xcrun"
                     args = buildArguments
-                    errorOutput = outStream
                     standardOutput = outStream
                 }
             }

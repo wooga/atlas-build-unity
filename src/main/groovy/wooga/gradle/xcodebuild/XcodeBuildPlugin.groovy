@@ -26,7 +26,9 @@ import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.api.provider.Provider
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
 import wooga.gradle.xcodebuild.internal.PropertyLookup
+import wooga.gradle.xcodebuild.tasks.AbstractXcodeArchiveTask
 import wooga.gradle.xcodebuild.tasks.AbstractXcodeTask
+import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 import static wooga.gradle.xcodebuild.XcodeBuildPluginConsts.*
@@ -49,11 +51,24 @@ class XcodeBuildPlugin implements Plugin<Project> {
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
             void execute(XcodeArchive task) {
+                task.extension.set("xcarchive")
+                task.derivedDataPath.set(extension.derivedDataPath.dir(task.name))
+            }
+        })
+
+        project.tasks.withType(ExportArchive.class, new Action<ExportArchive>() {
+            @Override
+            void execute(ExportArchive task) {
+                task.extension.set("ipa")
+            }
+        })
+
+        project.tasks.withType(AbstractXcodeArchiveTask.class, new Action<AbstractXcodeArchiveTask>() {
+            @Override
+            void execute(AbstractXcodeArchiveTask task) {
                 task.version.set(project.provider({ project.version.toString() }))
                 task.baseName.set(project.name)
-                task.extension.set("xcarchive")
                 task.destinationDir.set(extension.xarchivesDir)
-                task.derivedDataPath.set(extension.derivedDataPath.dir(task.name))
             }
         })
 

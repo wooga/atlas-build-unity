@@ -3,6 +3,7 @@ package wooga.gradle.xcodebuild.tasks
 import spock.lang.Unroll
 import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeBuildIntegrationSpec
+import wooga.gradle.xcodebuild.config.BuildSettings
 
 abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpec {
 
@@ -40,22 +41,34 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         outputContains(result, "property: " + testValue.toString())
 
         where:
-        property          | method                | rawValue               | expectedValue                                                          | type
-        "logFile"         | "logFile"             | "/some/path/test1.log" | _                                                                      | "File"
-        "logFile"         | "logFile"             | "/some/path/test2.log" | _                                                                      | "Provider<RegularFile>"
-        "logFile"         | "logFile.set"         | "/some/path/test3.log" | _                                                                      | "File"
-        "logFile"         | "logFile.set"         | "/some/path/test4.log" | _                                                                      | "Provider<RegularFile>"
-        "logFile"         | "setLogFile"          | "/some/path/test5.log" | _                                                                      | "File"
-        "logFile"         | "setLogFile"          | "/some/path/test6.log" | _                                                                      | "Provider<RegularFile>"
-        "consoleSettings" | "consoleSettings.set" | "plain"                | "ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}"  | "ConsoleSettings"
-        "consoleSettings" | "consoleSettings.set" | "rich"                 | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}"  | "Provider<ConsoleSettings>"
-        "consoleSettings" | "consoleSettings"     | "verbose"              | "ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}" | "ConsoleSettings"
-        "consoleSettings" | "consoleSettings"     | "auto"                 | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}"    | "Provider<ConsoleSettings>"
+        property          | method                | rawValue                                                    | expectedValue                                                          | type
+        "logFile"         | "logFile"             | "/some/path/test1.log"                                      | _                                                                      | "File"
+        "logFile"         | "logFile"             | "/some/path/test2.log"                                      | _                                                                      | "Provider<RegularFile>"
+        "logFile"         | "logFile.set"         | "/some/path/test3.log"                                      | _                                                                      | "File"
+        "logFile"         | "logFile.set"         | "/some/path/test4.log"                                      | _                                                                      | "Provider<RegularFile>"
+        "logFile"         | "setLogFile"          | "/some/path/test5.log"                                      | _                                                                      | "File"
+        "logFile"         | "setLogFile"          | "/some/path/test6.log"                                      | _                                                                      | "Provider<RegularFile>"
+        "consoleSettings" | "consoleSettings.set" | "plain"                                                     | "ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}"  | "ConsoleSettings"
+        "consoleSettings" | "consoleSettings.set" | "rich"                                                      | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}"  | "Provider<ConsoleSettings>"
+        "consoleSettings" | "consoleSettings"     | "verbose"                                                   | "ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}" | "ConsoleSettings"
+        "consoleSettings" | "consoleSettings"     | "auto"                                                      | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}"    | "Provider<ConsoleSettings>"
+        "buildSettings"   | "buildSettings"       | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
+        "buildSettings"   | "buildSettings"       | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
+        "buildSettings"   | "buildSettings.set"   | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
+        "buildSettings"   | "buildSettings.set"   | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
+        "buildSettings"   | "setBuildSettings"    | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
+        "buildSettings"   | "setBuildSettings"    | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
 
         value = wrapValueBasedOnType(rawValue, type, { type ->
             switch (type) {
                 case ConsoleSettings.class.simpleName:
                     return "${ConsoleSettings.class.name}.fromGradleOutput(org.gradle.api.logging.configuration.ConsoleOutput.${rawValue.toString().capitalize()})"
+
+                case BuildSettings.class.simpleName:
+                    return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
+                        List<String> parts = it.split("=")
+                        ".put('${parts[0].trim()}', '${parts[1].trim()}')"
+                    }).join("")
                 default:
                     return rawValue
             }
@@ -134,7 +147,7 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         expectedValue = rawValue
     }
 
-    def "task :#taskname writes log output"() {
+    def "task :#testTaskName writes log output"() {
         given:
         buildFile << workingXcodebuildTaskConfig
 
@@ -154,6 +167,8 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
 
     abstract String getExpectedPrettyUnicodeLogOutput()
 
+    abstract String getExpectedPrettyColoredUnicodeLogOutput()
+
     @Unroll("prints #logType xcodebuild log to console when #reason")
     def "prints xcodebuild log to console"() {
         given: "export task with pretty print enabled"
@@ -163,7 +178,7 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
             consoleSettings {
                 prettyPrint = ${usePrettyPrint}
                 useUnicode = ${useUniCode}
-                colorize = "never"
+                colorize = "${colorize}"
             }
         }
         """.stripIndent()
@@ -176,24 +191,44 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         def result = runTasks(testTaskName)
 
         then:
-        if (usePrettyPrint) {
-            if (useUniCode) {
-                outputContains(result, expectedPrettyUnicodeLogOutput)
-            } else {
-                outputContains(result, expectedPrettyLogOutput)
-            }
-            !outputContains(result, logFile.text)
-        } else {
-            !outputContains(result, expectedPrettyUnicodeLogOutput)
-            !outputContains(result, expectedPrettyLogOutput)
-            outputContains(result, logFile.text)
+        def expectedPrintOutput = ""
+        if (usePrettyPrint && useUniCode && colorize == ConsoleSettings.ColorOption.always) {
+            expectedPrintOutput = expectedPrettyColoredUnicodeLogOutput
+        } else if (usePrettyPrint && useUniCode && colorize == ConsoleSettings.ColorOption.never) {
+            expectedPrintOutput = expectedPrettyUnicodeLogOutput
+        } else if (usePrettyPrint && !useUniCode) {
+            expectedPrintOutput = expectedPrettyLogOutput
         }
 
+        outputContains(result, expectedPrintOutput)
+        outputContains(result, logFile.text) == !usePrettyPrint
+
         where:
-        usePrettyPrint | useUniCode | logType         | reason
-        true           | true       | "short unicode" | "pretty print and unicode is enabled"
-        true           | false      | "short ascii"   | "pretty print is enabled"
-        false          | true       | "full ascii"    | "pretty print is disabled"
-        false          | false      | "full ascii"    | "pretty print and unicode is disabled"
+        usePrettyPrint | useUniCode | colorize                           | logType                 | reason
+        true           | true       | ConsoleSettings.ColorOption.always | "short colored unicode" | "pretty print and unicode and colorize is enabled"
+        true           | true       | ConsoleSettings.ColorOption.never  | "short unicode"         | "pretty print and unicode is enabled"
+        true           | false      | ConsoleSettings.ColorOption.never  | "short ascii"           | "pretty print is enabled"
+        false          | true       | ConsoleSettings.ColorOption.never  | "full ascii"            | "pretty print is disabled"
+        false          | false      | ConsoleSettings.ColorOption.never  | "full ascii"            | "pretty print and unicode is disabled"
+    }
+
+    def "can provide additional build arguments"() {
+        given:
+        buildFile << workingXcodebuildTaskConfig
+
+        and: "some custom arguments"
+        buildFile << """
+        ${testTaskName}.buildArgument("-quiet")
+        ${testTaskName}.buildArguments("-enableAddressSanitizer", "YES")
+        ${testTaskName}.buildArguments("-enableThreadSanitizer", "NO")
+        """.stripIndent()
+
+        when:
+        def result = runTasks(testTaskName)
+
+        then:
+        outputContains(result, "-quiet")
+        outputContains(result, "-enableAddressSanitizer YES")
+        outputContains(result, "-enableThreadSanitizer NO")
     }
 }
