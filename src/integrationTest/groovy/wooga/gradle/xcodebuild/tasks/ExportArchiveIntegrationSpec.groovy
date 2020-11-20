@@ -5,6 +5,7 @@ import org.junit.ClassRule
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 @Requires({ os.macOs })
@@ -189,6 +190,58 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
             }
         }
         expectedValue = rawValue
+    }
+
+    def "can register as publish artifact"() {
+        given: "a subproject with xcode build setup"
+        def subProjectDir = addSubproject(subProjectName)
+        def subProjectBuildFile = new File(subProjectDir, "build.gradle")
+        subProjectBuildFile << """
+            plugins {
+                id "base"
+            }
+    
+            ${applyPlugin(XcodeBuildPlugin)}
+            ${workingXcodebuildTaskConfig}
+            configurations {
+                archives
+            }
+    
+            configurations['default'].extendsFrom(configurations.archives)
+    
+            project.artifacts {
+                archives(${testTaskName}.publishArtifact) {
+                    it.type = "iOS application archive"
+                }
+            }
+        """.stripIndent()
+
+        and: "the main project pulling a dependency"
+        buildFile << """
+            configurations.maybeCreate('archives')
+    
+            dependencies {
+                archives project(':${subProjectName}')
+            }
+            
+            task run (type: Copy) {
+                from(configurations.archives)
+                into("${projectDir}/build/outputs")
+            }
+        """.stripIndent()
+
+        and: "the export options plist file in the correct directory"
+        def exportPlist = createFile("exportOptions.plist", subProjectDir)
+        exportPlist.text = exportOptions.text
+
+        when:
+        def result = runTasks("run")
+
+        then:
+        result.wasExecuted(":${subProjectName}:${testTaskName}")
+
+        where:
+        subProjectName = "xcodeProject"
     }
 
     @Requires({ env.TEST_TEAM_ID })
