@@ -127,6 +127,30 @@ class DefaultXcodeBuildPluginExtension implements XcodeBuildPluginExtension {
         this
     }
 
+    final DirectoryProperty debugSymbolsDir
+
+    @Override
+    void setDebugSymbolsDir(File value) {
+        debugSymbolsDir.set(value)
+    }
+
+    @Override
+    void setDebugSymbolsDir(Provider<Directory> value) {
+        debugSymbolsDir.set(value)
+    }
+
+    @Override
+    DefaultXcodeBuildPluginExtension debugSymbolsDir(File value) {
+        setDebugSymbolsDir(value)
+        this
+    }
+
+    @Override
+    DefaultXcodeBuildPluginExtension debugSymbolsDir(Provider<Directory> value) {
+        setDebugSymbolsDir(value)
+        this
+    }
+
     @Override
     XcodeBuildPluginExtension consoleSettings(Closure configuration) {
         consoleSettings(configureUsing(configuration))
@@ -146,6 +170,7 @@ class DefaultXcodeBuildPluginExtension implements XcodeBuildPluginExtension {
         logsDir = project.layout.directoryProperty()
         derivedDataPath = project.layout.directoryProperty()
         xarchivesDir = project.layout.directoryProperty()
+        debugSymbolsDir = project.layout.directoryProperty()
         consoleSettings = project.objects.property(ConsoleSettings)
     }
 }

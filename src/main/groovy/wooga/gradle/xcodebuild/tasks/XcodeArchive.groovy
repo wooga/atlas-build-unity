@@ -19,6 +19,7 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+import org.gradle.api.Transformer
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
@@ -224,6 +225,7 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         project.files(xcArchivePath)
     }
 
+    @OutputDirectory
     final Provider<Directory> xcArchivePath
 
     @Input
@@ -240,7 +242,12 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         derivedDataPath = project.layout.directoryProperty()
         buildKeychain = project.layout.fileProperty()
 
-        xcArchivePath = archiveName.map({ destinationDir.get().dir(it) })
+        xcArchivePath = destinationDir.map(new Transformer<Directory, Directory>() {
+            @Override
+            Directory transform(Directory directory) {
+                directory.dir(archiveName.get())
+            }
+        })
 
         buildArguments = project.provider({
             List<String> arguments = new ArrayList<String>()

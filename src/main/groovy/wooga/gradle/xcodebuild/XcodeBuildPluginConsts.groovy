@@ -51,4 +51,14 @@ class XcodeBuildPluginConsts {
      * @see wooga.gradle.xcodebuild.XcodeBuildPluginExtension#getXarchivesDir()
      */
     static final PropertyLookup XARCHIVES_DIR_LOOKUP = new PropertyLookup("XCODEBUILD_XARCHIVES_DIR", "xcodebuild.xarchivesDir", "archives")
+
+    /**
+     * Gradle property lookup object with values for default debug symbols output path.
+     *
+     * @environmentVariable "XCODEBUILD_DEBUG_SYMBOLS_DIR"
+     * @propertyName "xcodebuild.debugSymbolsDir"
+     * @defaultValue "symbols"
+     * @see wooga.gradle.xcodebuild.XcodeBuildPluginExtension#getDebugSymbolsDir()
+     */
+    static final PropertyLookup DEBUG_SYMBOLS_DIR_LOOKUP = new PropertyLookup("XCODEBUILD_DEBUG_SYMBOLS_DIR", "xcodebuild.debugSymbolsDir", "symbols")
 }

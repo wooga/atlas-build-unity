@@ -17,10 +17,11 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
 
     Class taskType = ExportArchive
 
-    String testTaskName = "customExportArchive"
+    String archiveTaskName = "xcodeArchive"
+    String testTaskName = archiveTaskName + "Export"
 
     String workingXcodebuildTaskConfig = """
-    task exportArchive(type: ${XcodeArchive.name}) {
+    task ${archiveTaskName}(type: ${XcodeArchive.name}) {
         scheme = "${xcodeProject.schemeName}"
         baseName = "custom"
         version = "0.1.0"
@@ -36,11 +37,9 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         projectPath = new File("${xcodeProject.xcodeProject}")
     }
 
-    task ${testTaskName}(type: ${taskType.name}) {
-        dependsOn exportArchive
+    ${testTaskName} {
         baseName = "custom"
         version = "0.1.0"
-        xcArchivePath = exportArchive.xcArchivePath
         exportOptionsPlist = file("exportOptions.plist")
     }
     """.stripIndent()
@@ -258,6 +257,7 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
 
         then:
         result.success
+        result.wasExecuted(archiveTaskName)
         archive.exists()
         archive.isFile()
     }
