@@ -20,16 +20,26 @@
 package wooga.gradle.xcodebuild.tasks
 
 import org.gradle.api.Action
+import org.gradle.api.artifacts.PublishArtifact
 import org.gradle.api.file.*
+import org.gradle.api.internal.tasks.DefaultTaskDependency
+import org.gradle.api.internal.tasks.TaskResolver
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SkipWhenEmpty
+import org.gradle.api.tasks.TaskDependency
 import wooga.gradle.xcodebuild.XcodeExportActionSpec
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActionSpec {
+
+    protected final PublishArtifact internalPublishArtifact
+
+    PublishArtifact getPublishArtifact() {
+        internalPublishArtifact
+    }
 
     final RegularFileProperty exportOptionsPlist
 
@@ -115,6 +125,8 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
             arguments.addAll(buildSettings.toList())
             arguments
         })
+
+        internalPublishArtifact = new IPAPublishArtifact(this)
     }
 
     @Override
@@ -134,5 +146,53 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
                 }
             }
         })
+    }
+
+    private class IPAPublishArtifact implements PublishArtifact {
+
+        @Override
+        String getName() {
+            exportTask.archiveName.get()
+        }
+
+        @Override
+        String getExtension() {
+            "ipa"
+        }
+
+        @Override
+        String getType() {
+            "zip"
+        }
+
+        @Override
+        String getClassifier() {
+            exportTask.classifier.getOrNull()
+        }
+
+        @Override
+        File getFile() {
+            exportTask.outputPath.get().asFile
+        }
+
+        @Override
+        Date getDate() {
+            null
+        }
+
+        def taskDependency
+
+        @Override
+        TaskDependency getBuildDependencies() {
+            taskDependency
+        }
+
+        private final ExportArchive exportTask
+
+        IPAPublishArtifact(ExportArchive exportTask) {
+            this.exportTask = exportTask
+            taskDependency = new DefaultTaskDependency(exportTask.project.tasks as TaskResolver)
+            taskDependency.add(exportTask)
+        }
     }
 }
