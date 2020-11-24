@@ -51,6 +51,14 @@ interface XcodeBuildPluginExtension<T extends XcodeBuildPluginExtension> {
     T xarchivesDir(File value)
     T xarchivesDir(Provider<Directory> value)
 
+    DirectoryProperty getDebugSymbolsDir()
+
+    void setDebugSymbolsDir(File value)
+    void setDebugSymbolsDir(Provider<Directory> value)
+
+    T debugSymbolsDir(File value)
+    T debugSymbolsDir(Provider<Directory> value)
+
     Property<ConsoleSettings> getConsoleSettings()
 
     void setConsoleSettings(ConsoleSettings value)
