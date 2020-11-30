@@ -38,7 +38,7 @@ import static wooga.gradle.xcodebuild.XcodeBuildPluginConsts.*
 class XcodeBuildPlugin implements Plugin<Project> {
 
     static final String EXTENSION_NAME = "xcodebuild"
-    static final String ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX = "ArchiveDSYMs"
+    static final String ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX = "DSYMs"
     static final String EXPORT_ARCHIVE_TASK_POSTFIX = "Export"
     private Project project
 

@@ -138,7 +138,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         //skip these tasks to succeed the build
         buildFile << """
             project.xcodeArchive.onlyIf({${!success}})
-            project.xcodeExport.onlyIf({${!success}})
+            project.xcodeArchiveExport.onlyIf({${!success}})
             project.importProvisioningProfiles.onlyIf({${!success}})
         """.stripIndent()
 
@@ -167,7 +167,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         //skip these tasks to succeed the build
         buildFile << """
             project.xcodeArchive.onlyIf({false})
-            project.xcodeExport.onlyIf({false})
+            project.xcodeArchiveExport.onlyIf({false})
             project.importProvisioningProfiles.onlyIf({false})
         """.stripIndent()
 

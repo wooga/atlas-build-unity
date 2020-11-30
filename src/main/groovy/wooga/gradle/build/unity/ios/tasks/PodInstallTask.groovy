@@ -17,8 +17,9 @@ class PodInstallTask extends DefaultTask {
         projectPath = path
     }
 
-    XCodeArchiveTask projectPath(Object path) {
+    PodInstallTask projectPath(Object path) {
         setProjectPath(path)
+        this
     }
 
     @InputFiles

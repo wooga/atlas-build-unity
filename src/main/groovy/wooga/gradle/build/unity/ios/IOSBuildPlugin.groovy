@@ -27,16 +27,11 @@ import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
-import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
-import wooga.gradle.build.unity.ios.tasks.ArchiveDsymTask
-import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
-import wooga.gradle.build.unity.ios.tasks.KeychainTask
-import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
-import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
-import wooga.gradle.build.unity.ios.tasks.PodInstallTask
-import wooga.gradle.build.unity.ios.tasks.PublishTestFlight
-import wooga.gradle.build.unity.ios.tasks.XCodeArchiveTask
-import wooga.gradle.build.unity.ios.tasks.XCodeExportTask
+import wooga.gradle.build.unity.ios.tasks.*
+import wooga.gradle.xcodebuild.XcodeBuildPlugin
+import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
+import wooga.gradle.xcodebuild.tasks.ExportArchive
+import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 class IOSBuildPlugin implements Plugin<Project> {
 
@@ -53,51 +48,26 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         project.pluginManager.apply(BasePlugin.class)
+        project.pluginManager.apply(XcodeBuildPlugin.class)
         project.pluginManager.apply(PublishingPlugin.class)
+
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
 
         //register some defaults
-        project.tasks.withType(XCodeArchiveTask.class, new Action<XCodeArchiveTask>() {
+        project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
-            void execute(XCodeArchiveTask task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
-                conventionMapping.map("clean", { false })
-                conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/archives")
-                })
-                conventionMapping.map("baseName", { project.name })
-                conventionMapping.map("extension", { "xcarchive" })
-                conventionMapping.map("scheme", { extension.getScheme() })
-                conventionMapping.map("configuration", { extension.getConfiguration() })
-                conventionMapping.map("teamId", { extension.getTeamId() })
+            void execute(XcodeArchive task) {
+                task.clean(false)
+                task.scheme.set(project.provider({ extension.getScheme() }))
+                task.configuration.set(project.provider({ extension.getConfiguration() }))
+                task.teamId.set(project.provider({ extension.getTeamId() }))
             }
         })
 
-        project.tasks.withType(ArchiveDsymTask.class, new Action<ArchiveDsymTask>() {
+        project.tasks.withType(ExportArchive.class, new Action<ExportArchive>() {
             @Override
-            void execute(ArchiveDsymTask task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
-                conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/symbols")
-                })
-                conventionMapping.map("baseName", { project.name })
-                conventionMapping.map("classifier", { "dSYM" })
-                conventionMapping.map("extension", { "zip" })
-            }
-        })
-
-        project.tasks.withType(XCodeExportTask.class, new Action<XCodeExportTask>() {
-            @Override
-            void execute(XCodeExportTask task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
-                conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/ipas")
-                })
-                conventionMapping.map("baseName", { project.name })
-                conventionMapping.map("extension", { "ipa" })
+            void execute(ExportArchive task) {
+                task.exportOptionsPlist.set(project.file("exportOptions.plist"))
             }
         })
 
@@ -209,23 +179,21 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.projectPath = xcodeProject
         }
 
-        def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XCodeArchiveTask) {
-            it.dependsOn addKeychain, unlockKeychain, podInstall
-
-            it.provisioningProfile = importProvisioningProfiles
-            it.projectPath = xcodeProject
-            it.workspacePath = podInstall.workspace
-            it.buildKeychain = buildKeychain
-            it.destinationDir = project.file("${project.buildDir}/archives")
+        def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XcodeArchive) {
+            it.dependsOn addKeychain, unlockKeychain, podInstall, importProvisioningProfiles
+            it.projectPath.set(project.provider({
+                def d = project.layout.buildDirectory.get()
+                if (podInstall.workspace.exists()) {
+                    return d.dir(podInstall.workspace.path)
+                }
+                return d.dir(xcodeProject.path)
+            }))
+            it.buildKeychain = buildKeychain.outputPath
         }
 
-        def xcodeExport = tasks.create(maybeBaseName(baseName, "xcodeExport"), XCodeExportTask) {
-            it.exportOptionsPlist project.file("exportOptions.plist")
-            it.xcarchivePath xcodeArchive
-        }
-
+        ExportArchive xcodeExport = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX) as ExportArchive
         def publishTestFlight = tasks.create(maybeBaseName(baseName, "publishTestFlight"), PublishTestFlight) {
-            it.ipa xcodeExport
+            it.ipa xcodeExport.outputPath
             it.group = PublishingPlugin.PUBLISH_TASK_GROUP
             it.description = "Upload binary to TestFlightApp"
         }
@@ -233,7 +201,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         project.afterEvaluate(new Action<Project>() {
             @Override
             void execute(Project _) {
-                if(extension.publishToTestFlight) {
+                if (extension.publishToTestFlight) {
                     def lifecyclePublishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
                     lifecyclePublishTask.dependsOn(publishTestFlight)
                 }
@@ -243,10 +211,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         removeKeychain.mustRunAfter([xcodeArchive, xcodeExport])
         lockKeychain.mustRunAfter([xcodeArchive, xcodeExport])
 
-        def archiveDSYM = tasks.create(maybeBaseName(baseName, "archiveDSYM"), ArchiveDsymTask) {
-            it.dependsOn xcodeArchive
-            it.from({project.file("${xcodeArchive.getArchivePath()}/dSYMs")})
-        }
+        def archiveDSYM = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX) as ArchiveDebugSymbols
 
         def collectOutputs = tasks.create(maybeBaseName(baseName, "collectOutputs"), Sync) {
             it.from(xcodeExport, archiveDSYM)
@@ -254,7 +219,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         project.artifacts {
-            archives(xcodeExport) {
+            archives(xcodeExport.publishArtifact) {
                 it.type = "iOS application archive"
             }
             archives(archiveDSYM) {

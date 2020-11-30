@@ -7,13 +7,10 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
-import wooga.gradle.build.unity.ios.tasks.ImportProvisioningProfile
-import wooga.gradle.build.unity.ios.tasks.KeychainTask
-import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
-import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
-import wooga.gradle.build.unity.ios.tasks.PublishTestFlight
-import wooga.gradle.build.unity.ios.tasks.XCodeArchiveTask
-import wooga.gradle.build.unity.ios.tasks.XCodeExportTask
+import wooga.gradle.build.unity.ios.tasks.*
+import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
+import wooga.gradle.xcodebuild.tasks.ExportArchive
+import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 @Requires({ os.macOs })
 class IOSBuildPluginSpec extends ProjectSpec {
@@ -102,8 +99,9 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
         "importProvisioningProfiles" | ImportProvisioningProfile
-        "xcodeArchive"               | XCodeArchiveTask
-        "xcodeExport"                | XCodeExportTask
+        "xcodeArchive"               | XcodeArchive
+        "xcodeArchiveExport"         | ExportArchive
+        "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
         "publishTestFlight"          | PublishTestFlight
     }
 
@@ -137,8 +135,9 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
         "importProvisioningProfiles" | ImportProvisioningProfile
-        "xcodeArchive"               | XCodeArchiveTask
-        "xcodeExport"                | XCodeExportTask
+        "xcodeArchive"               | XcodeArchive
+        "xcodeArchiveExport"         | ExportArchive
+        "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
         "publishTestFlight"          | PublishTestFlight
 
         xcodeProjectNames = ["first", "second", "third"]
