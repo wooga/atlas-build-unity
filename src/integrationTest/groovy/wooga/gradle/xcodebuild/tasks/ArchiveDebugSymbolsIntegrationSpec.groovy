@@ -31,7 +31,7 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
     String archiveTaskName = "xcodeArchive"
-    String testTaskName = archiveTaskName + "ArchiveDSYMs"
+    String testTaskName = archiveTaskName + "DSYMs"
 
     String workingXcodebuildTaskConfig = """
     task ${archiveTaskName}(type: ${XcodeArchive.name}) {
@@ -65,7 +65,7 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
         assert !dsymArchive.exists()
 
         when:
-        def result = runTasksSuccessfully("xcodeArchiveArchiveDSYMs")
+        def result = runTasksSuccessfully("xcodeArchiveDSYMs")
 
         then:
         result.success

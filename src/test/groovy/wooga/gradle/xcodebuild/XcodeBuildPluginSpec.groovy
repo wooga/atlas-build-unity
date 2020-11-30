@@ -56,9 +56,9 @@ class XcodeBuildPluginSpec extends ProjectSpec {
         taskType.isInstance(task2)
 
         where:
-        taskType      | taskSuffix
-        ExportArchive | "Export"
-        ArchiveDebugSymbols | "ArchiveDSYMs"
+        taskType            | taskSuffix
+        ExportArchive       | "Export"
+        ArchiveDebugSymbols | "DSYMs"
         taskNames = ["xcodeArchive", "xcodeArchive2"]
         expectedTaskNames = taskNames.collect { it + taskSuffix }
     }
