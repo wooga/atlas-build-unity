@@ -23,17 +23,15 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Transformer
+import org.gradle.api.artifacts.ConfigurablePublishArtifact
+import org.gradle.api.artifacts.dsl.ArtifactHandler
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
 import wooga.gradle.xcodebuild.internal.PropertyLookup
-import wooga.gradle.xcodebuild.tasks.AbstractXcodeArchiveTask
-import wooga.gradle.xcodebuild.tasks.AbstractXcodeTask
-import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
-import wooga.gradle.xcodebuild.tasks.ExportArchive
-import wooga.gradle.xcodebuild.tasks.XcodeArchive
+import wooga.gradle.xcodebuild.tasks.*
 
 import static wooga.gradle.xcodebuild.XcodeBuildPluginConsts.*
 
@@ -50,11 +48,16 @@ class XcodeBuildPlugin implements Plugin<Project> {
         def extension = project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
         def tasks = project.tasks
 
+        project.pluginManager.apply(BasePlugin.class)
+
         extension.logsDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(LOGS_DIR_LOOKUP)))
         extension.derivedDataPath.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(DERIVED_DATA_PATH_LOOKUP)))
         extension.xarchivesDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(XARCHIVES_DIR_LOOKUP)))
         extension.debugSymbolsDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(DEBUG_SYMBOLS_DIR_LOOKUP)))
         extension.consoleSettings.set(ConsoleSettings.fromGradleOutput(project.gradle.startParameter.consoleOutput))
+
+        def archives = project.configurations.maybeCreate('archives')
+        project.configurations['default'].extendsFrom(archives)
 
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
@@ -67,7 +70,7 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.derivedDataPath.set(extension.derivedDataPath.dir(task.name))
 
                 //each XcodeArchive task creates an archive symbols task
-                tasks.create(task.name + ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX, ArchiveDebugSymbols) {
+                def archiveDysim = tasks.create(task.name + ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX, ArchiveDebugSymbols) {
                     it.dependsOn(task)
                     it.from(task.xcArchivePath.map(new Transformer<Directory, Directory>() {
                         @Override
@@ -79,10 +82,30 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 }
 
                 //each XcodeArchive task creates an exportArchive task
-                tasks.create(task.name + EXPORT_ARCHIVE_TASK_POSTFIX, ExportArchive) {
+                def exportArchive = tasks.create(task.name + EXPORT_ARCHIVE_TASK_POSTFIX, ExportArchive) {
                     it.dependsOn(task)
                     it.xcArchivePath(task.xcArchivePath)
                 }
+
+                //add artifacts as publish artifacts
+                project.artifacts(new Action<ArtifactHandler>() {
+                    @Override
+                    void execute(ArtifactHandler artifactHandler) {
+                        artifactHandler.add("archives", exportArchive.publishArtifact, new Action<ConfigurablePublishArtifact>() {
+                            @Override
+                            void execute(ConfigurablePublishArtifact configurablePublishArtifact) {
+                                configurablePublishArtifact.type = "iOS application archive"
+                            }
+                        })
+
+                        artifactHandler.add("archives", archiveDysim, new Action<ConfigurablePublishArtifact>() {
+                            @Override
+                            void execute(ConfigurablePublishArtifact configurablePublishArtifact) {
+                                configurablePublishArtifact.type = "iOS application symbols"
+                            }
+                        })
+                    }
+                })
             }
         })
 
