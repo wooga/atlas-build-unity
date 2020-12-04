@@ -17,11 +17,11 @@
 package wooga.gradle.fastlane.tasks
 
 import spock.lang.Unroll
-import wooga.gradle.fastlane.FastlaneSpec
+import wooga.gradle.fastlane.FastlaneIntegrationSpec
 import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.config.BuildSettings
 
-abstract class AbstractFastlaneTaskIntegrationSpec extends FastlaneSpec {
+abstract class AbstractFastlaneTaskIntegrationSpec extends FastlaneIntegrationSpec {
 
     abstract String getTestTaskName()
 
