@@ -8,6 +8,8 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.*
+import wooga.gradle.fastlane.tasks.PilotUpload
+import wooga.gradle.fastlane.tasks.SighRenew
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
@@ -98,11 +100,11 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
-        "importProvisioningProfiles" | ImportProvisioningProfile
+        "importProvisioningProfiles" | SighRenew
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive
         "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
-        "publishTestFlight"          | PublishTestFlight
+        "publishTestFlight"          | PilotUpload
     }
 
     @Unroll()
@@ -134,11 +136,11 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
-        "importProvisioningProfiles" | ImportProvisioningProfile
+        "importProvisioningProfiles" | SighRenew
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive
         "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
-        "publishTestFlight"          | PublishTestFlight
+        "publishTestFlight"          | PilotUpload
 
         xcodeProjectNames = ["first", "second", "third"]
         taskNames = ["first", "second", "third"].collect { it + taskName.capitalize() }
