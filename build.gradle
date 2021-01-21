@@ -73,5 +73,6 @@ dependencies {
         force = true
     }
 
+    integrationTestCompile(project(path: ':lib:macos-security', configuration: 'archives'))
     integrationTestCompile('commons-io:commons-io:2.6')
 }
