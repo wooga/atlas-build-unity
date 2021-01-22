@@ -49,6 +49,8 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
             this.gradleVersion = gradleVersion
             fork = true
         }
+
+        environmentVariables.clear("FASTLANE_USERNAME", "FASTLANE_PASSWORD")
     }
 
     enum PropertyLocation {
