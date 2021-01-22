@@ -28,6 +28,10 @@ import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.*
+import wooga.gradle.fastlane.FastlanePlugin
+import wooga.gradle.fastlane.FastlanePluginExtension
+import wooga.gradle.fastlane.tasks.PilotUpload
+import wooga.gradle.fastlane.tasks.SighRenew
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
@@ -49,9 +53,11 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(XcodeBuildPlugin.class)
+        project.pluginManager.apply(FastlanePlugin.class)
         project.pluginManager.apply(PublishingPlugin.class)
 
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
+        def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
 
         //register some defaults
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
@@ -85,30 +91,51 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
-        project.tasks.withType(ImportProvisioningProfile.class, new Action<ImportProvisioningProfile>() {
+        project.tasks.withType(SighRenew.class, new Action<SighRenew>() {
             @Override
-            void execute(ImportProvisioningProfile task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("username", { extension.fastlaneCredentials.username })
-                conventionMapping.map("password", { extension.fastlaneCredentials.password })
-                conventionMapping.map("teamId", { extension.getTeamId() })
-                conventionMapping.map("appIdentifier", { extension.getAppIdentifier() })
-                conventionMapping.map("destinationDir", { task.getTemporaryDir() })
-                conventionMapping.map("provisioningName", { extension.getProvisioningName() })
-                conventionMapping.map("adhoc", { extension.getAdhoc() })
-                conventionMapping.map("profileName", { 'signing.mobileprovision' })
+            void execute(SighRenew task) {
+                task.username.set(project.provider({
+                    if (extension.fastlaneCredentials.username) {
+                        return extension.fastlaneCredentials.username
+                    }
+                    fastlaneExtension.username.getOrNull()
+                }))
+
+                task.password.set(project.provider({
+                    if (extension.fastlaneCredentials.password) {
+                        return extension.fastlaneCredentials.password
+                    }
+                    fastlaneExtension.password.getOrNull()
+                }))
+
+                task.teamId.set(project.provider({ extension.getTeamId() }))
+                task.appIdentifier.set(project.provider({ extension.getAppIdentifier() }))
+                task.destinationDir.set(task.temporaryDir)
+                task.provisioningName.set(project.provider({ extension.getProvisioningName() }))
+                task.adhoc.set(project.provider({ extension.getAdhoc() }))
+                task.fileName.set('signing.mobileprovision')
             }
         })
 
-        project.tasks.withType(PublishTestFlight.class, new Action<PublishTestFlight>() {
+        project.tasks.withType(PilotUpload.class, new Action<PilotUpload>() {
             @Override
-            void execute(PublishTestFlight task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("username", { extension.fastlaneCredentials.username })
-                conventionMapping.map("password", { extension.fastlaneCredentials.password })
-                conventionMapping.map("devPortalTeamId", { extension.getTeamId() })
-                conventionMapping.map("appIdentifier", { extension.getAppIdentifier() })
-                conventionMapping.map("ipa", { extension.getAppIdentifier() })
+            void execute(PilotUpload task) {
+                task.username.set(project.provider({
+                    if (extension.fastlaneCredentials.username) {
+                        return extension.fastlaneCredentials.username
+                    }
+                    fastlaneExtension.username.getOrNull()
+                }))
+
+                task.password.set(project.provider({
+                    if (extension.fastlaneCredentials.password) {
+                        return extension.fastlaneCredentials.password
+                    }
+                    fastlaneExtension.password.getOrNull()
+                }))
+
+                task.devPortalTeamId.set(project.provider({ extension.getTeamId() }))
+                task.appIdentifier.set(project.provider({ extension.getAppIdentifier() }))
             }
         })
 
@@ -169,10 +196,10 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.keychain buildKeychain
         }
 
-        def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), ImportProvisioningProfile) {
+        def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
             it.dependsOn addKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.profileName = "${maybeBaseName(baseName, 'signing')}.mobileprovision"
+            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString() )
         }
 
         PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
@@ -192,8 +219,8 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         ExportArchive xcodeExport = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX) as ExportArchive
-        def publishTestFlight = tasks.create(maybeBaseName(baseName, "publishTestFlight"), PublishTestFlight) {
-            it.ipa xcodeExport.outputPath
+        def publishTestFlight = tasks.create(maybeBaseName(baseName, "publishTestFlight"), PilotUpload) {
+            it.ipa.set(xcodeExport.outputPath)
             it.group = PublishingPlugin.PUBLISH_TASK_GROUP
             it.description = "Upload binary to TestFlightApp"
         }
