@@ -120,7 +120,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
     }
 
     @Unroll("can set property #property with #method and type #type")
-    def "can set property XcodeArchive"() {
+    def "can set property SighRenew"() {
         given: "a task to read back the value"
         buildFile << """
             task("readValue") {
