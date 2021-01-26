@@ -25,4 +25,5 @@
  */
 
 rootProject.name = 'atlas-build-unity'
+include ':lib:spock-macos-keychain-extension'
 include ':lib:macos-security'

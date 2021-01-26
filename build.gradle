@@ -74,5 +74,8 @@ dependencies {
     }
 
     integrationTestCompile(project(path: ':lib:macos-security', configuration: 'archives'))
+    integrationTestCompile(project(path: ':lib:spock-macos-keychain-extension', configuration: 'archives')) {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
     integrationTestCompile('commons-io:commons-io:2.6')
 }
