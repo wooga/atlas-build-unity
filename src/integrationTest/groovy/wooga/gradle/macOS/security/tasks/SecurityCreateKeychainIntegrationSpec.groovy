@@ -17,12 +17,11 @@
 
 package wooga.gradle.macOS.security.tasks
 
+import com.wooga.security.MacOsKeychain
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
-import wooga.gradle.build.unity.ios.IOSBuildPlugin
-import wooga.gradle.fastlane.tasks.PilotUpload
 
 @Requires({ os.macOs })
 class SecurityCreateKeychainIntegrationSpec extends IntegrationSpec {
@@ -91,6 +90,44 @@ class SecurityCreateKeychainIntegrationSpec extends IntegrationSpec {
         then:
         !outputContains(result, "-p ${keychainPassword}")
         outputContains(result, "-p ****")
+    }
+
+    @Unroll
+    def "can set keychain settings for created keychain"() {
+        given: "custom lock settings"
+        if (lockKeychainWhenSleep != _) {
+            buildFile << """
+            ${testTaskName}.lockKeychainWhenSleep = ${lockKeychainWhenSleep}
+            """.stripIndent()
+        }
+
+        if (lockKeychainAfterTimeout != _) {
+            buildFile << """
+            ${testTaskName}.lockKeychainAfterTimeout = ${lockKeychainAfterTimeout}
+            """.stripIndent()
+        }
+
+        when:
+        def result = runTasksSuccessfully(testTaskName)
+
+        then:
+        def keychain = new MacOsKeychain(buildKeychain, keychainPassword)
+        if (lockKeychainAfterTimeout != _) {
+            keychain.timeout == lockKeychainAfterTimeout
+        }
+
+        if (lockKeychainWhenSleep != _) {
+            keychain.lockWhenSystemSleeps == lockKeychainWhenSleep
+        }
+
+        where:
+        lockKeychainWhenSleep | lockKeychainAfterTimeout
+        true                  | _
+        false                 | _
+        _                     | -1
+        _                     | 1000
+        true                  | 1000
+        false                 | -1
     }
 
     @Unroll("can set property #property with #method and type #type")
