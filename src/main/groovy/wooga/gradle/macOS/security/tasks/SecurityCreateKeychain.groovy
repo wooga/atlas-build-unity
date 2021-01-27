@@ -16,6 +16,7 @@
 
 package wooga.gradle.macOS.security.tasks
 
+import com.wooga.security.MacOsKeychain
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
@@ -23,6 +24,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
 import wooga.gradle.macOS.security.internal.SecurityKeychainSettingsSpec
 
 class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements SecurityKeychainSettingsSpec {
@@ -113,10 +115,9 @@ class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements 
     @Internal
     final Provider<RegularFile> tempLockFile
 
-    @Internal
-    final Provider<List<String>> securityCommands
-
     SecurityCreateKeychain() {
+        lockKeychainWhenSleep.set(null)
+        lockKeychainAfterTimeout.set(null)
         baseName = project.objects.property(String)
         extension = project.objects.property(String)
         fileName = project.objects.property(String)
@@ -133,17 +134,22 @@ class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements 
         tempLockFile = destinationDir.file(fileName.map({
             getTempKeychainFileName(it)
         }))
+    }
 
-       securityCommands = project.provider({
-            List<String> commands = new ArrayList()
-            commands << "create-keychain -p '${password.get()}' ${keychain.get()}"
-            commands << "unlock-keychain -p '${password.get()}' ${keychain.get()}"
-            def keychainSettingsArgs = getKeychainSettingsArguments()
-            if(!keychainSettingsArgs.isEmpty()) {
-                commands << "set-keychain-settings ${getKeychainSettingsArguments().join(" ")} ${keychain.get()}"
-            }
+    @TaskAction
+    protected void createKeychain() {
+        MacOsKeychain keychain = MacOsKeychain.create(keychain.get().asFile, password.get())
+        keychain.unlock()
+        if (lockKeychainWhenSleep.isPresent()) {
+            keychain.lockWhenSystemSleeps = lockKeychainWhenSleep.get()
+        }
+        if (lockKeychainAfterTimeout.isPresent()) {
+            keychain.timeout = lockKeychainAfterTimeout.get()
+        }
 
-            commands
-        })
+        def lockFile = tempLockFile.get().asFile
+        if (lockFile.exists()) {
+            lockFile.delete()
+        }
     }
 }
