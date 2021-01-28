@@ -17,25 +17,15 @@
 package wooga.gradle.macOS.security.tasks
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.TaskAction
-import wooga.gradle.macOS.security.InteractiveSecurityActionSpec
-import wooga.gradle.macOS.security.internal.InteractiveSecurityAction
 
 import java.security.MessageDigest
 
-abstract class AbstractInteractiveSecurityTask extends DefaultTask implements InteractiveSecurityActionSpec {
-
+abstract class AbstractInteractiveSecurityTask extends DefaultTask {
     static String getTempKeychainFileName(String keychainName) {
         MessageDigest digest = MessageDigest.getInstance("SHA-1")
         digest.update(keychainName.getBytes("ASCII"))
         byte[] passwordDigest = digest.digest()
         String hexString = passwordDigest.collect { String.format('%02x', it) }.join()
         ".fl${hexString.substring(0, 8).toUpperCase()}"
-    }
-
-    @TaskAction
-    protected void exec() {
-        def action = new InteractiveSecurityAction(project, securityCommands.get(), tempLockFile.get().asFile)
-        action.exec()
     }
 }
