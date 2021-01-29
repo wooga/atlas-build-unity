@@ -31,6 +31,11 @@ trait MultiKeychainCommand<T extends SecurityCommand> {
         this as T
     }
 
+    T withKeychains(Iterable<File> value) {
+        this.keychains.addAll(value)
+        this as T
+    }
+
     List<String> getMultiKeychainsArgument() {
         def arguments = []
         if (!keychains.empty) {
