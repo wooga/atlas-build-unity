@@ -42,7 +42,7 @@ class AddGenericPasswordSpec extends AddPasswordSpec<AddGenericPassword> {
 
         where:
         property  | value | expectedExeption               | message
-        "service" | null  | IllegalArgumentException.class | "is null"
+        "service" | null  | NullPointerException.class     | "is null"
         "service" | ""    | IllegalArgumentException.class | "is empty"
         reason = "provided ${property} ${message}"
         messagePattern = /provided ${property}.*${message}/

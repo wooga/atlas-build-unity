@@ -49,7 +49,7 @@ class FindInternetPasswordSpec extends FindPasswordSpec<FindInternetPassword> {
 
         where:
         property | value | expectedExeption               | message
-        "server" | null  | IllegalArgumentException.class | "is null"
+        "server" | null  | NullPointerException.class     | "is null"
         "server" | ""    | IllegalArgumentException.class | "is empty"
         reason = "provided ${property} ${message}"
         messagePattern = /provided ${property}.*${message}/

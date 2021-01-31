@@ -56,7 +56,7 @@ abstract class FindPasswordSpec<T extends SecurityCommand> extends SecurityComma
         "keychains" | [new File("/some/file")] | IllegalArgumentException.class | "does not exist"
         "keychains" | [File.createTempDir()]   | IllegalArgumentException.class | "is not a file"
 
-        "account"   | null                     | IllegalArgumentException.class | "is null"
+        "account"   | null                     | NullPointerException.class     | "is null"
         "account"   | ""                       | IllegalArgumentException.class | "is empty"
         reason = "provided ${property} ${message}"
         propertyPattern = property == "keychains" ? "keychain" : property

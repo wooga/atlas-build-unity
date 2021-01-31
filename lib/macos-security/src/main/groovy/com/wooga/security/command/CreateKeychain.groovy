@@ -67,7 +67,7 @@ class CreateKeychain extends SecurityCommand<MacOsKeychain> {
         arguments << "-p" << password
 
         if (!location) {
-            throw new IllegalArgumentException("provided location is null")
+            throw new NullPointerException("provided location is null")
         }
 
         arguments << location.path

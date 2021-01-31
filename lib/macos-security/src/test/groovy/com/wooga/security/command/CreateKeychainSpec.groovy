@@ -67,11 +67,11 @@ class CreateKeychainSpec extends SecurityCommandSpec<CreateKeychain> {
         e.message.contains(message)
 
         where:
-        property   | value         | expectedExeption               | message                                         | command
-        "password" | "is null"     | IllegalArgumentException.class | "provided password is null"                     | new CreateKeychain(null, createTempKeychainLocation())
-        "location" | "is null"     | IllegalArgumentException.class | "provided location is null"                     | new CreateKeychain(keychainPassword, null)
-        "location" | "a directory" | IOException.class              | "A keychain with the same name already exists." | new CreateKeychain(keychainPassword, File.createTempDir())
-        "location" | "exists"      | IOException.class              | "A keychain with the same name already exists." | new CreateKeychain(keychainPassword, File.createTempDir())
+        property   | value         | expectedExeption           | message                                         | command
+        "password" | "is null"     | NullPointerException.class | "provided password is null"                     | new CreateKeychain(null, createTempKeychainLocation())
+        "location" | "is null"     | NullPointerException.class | "provided location is null"                     | new CreateKeychain(keychainPassword, null)
+        "location" | "a directory" | IOException.class          | "A keychain with the same name already exists." | new CreateKeychain(keychainPassword, File.createTempDir())
+        "location" | "exists"      | IOException.class          | "A keychain with the same name already exists." | new CreateKeychain(keychainPassword, File.createTempDir())
         reason = "property '${property}' '${value}'"
     }
 

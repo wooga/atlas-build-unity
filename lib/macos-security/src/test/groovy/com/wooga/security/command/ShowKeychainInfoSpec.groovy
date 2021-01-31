@@ -55,7 +55,7 @@ class ShowKeychainInfoSpec extends SecurityCommandSpec<ShowKeychainInfo> {
 
         where:
         property   | expectedExeption               | message          | command
-        "keychain" | IllegalArgumentException.class | "is null"        | new ShowKeychainInfo((File) null)
+        "keychain" | NullPointerException.class     | "is null"        | new ShowKeychainInfo((File) null)
         "keychain" | IllegalArgumentException.class | "does not exist" | new ShowKeychainInfo(new File("/some/file"))
         "keychain" | IllegalArgumentException.class | "is not a file"  | new ShowKeychainInfo(File.createTempDir())
 
