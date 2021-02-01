@@ -30,6 +30,7 @@ group "com.wooga.security"
 dependencies {
     implementation 'org.codehaus.groovy:groovy-all:2.4.15'
     testImplementation 'org.spockframework:spock-core:1.2-groovy-2.4'
+    testImplementation 'com.github.stefanbirkner:system-rules:1.18.0'
 }
 List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
 if (cliTasks.contains("rc")) {

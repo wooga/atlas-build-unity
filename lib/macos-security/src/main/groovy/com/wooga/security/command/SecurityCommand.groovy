@@ -118,4 +118,11 @@ abstract class SecurityCommand<T> {
             validateKeychainProperty(it)
         }
     }
+
+    static String expandPath(String path) {
+        if (path.startsWith("~" + File.separator)) {
+            path = System.getProperty("user.home") + path.substring(1)
+        }
+        path
+    }
 }

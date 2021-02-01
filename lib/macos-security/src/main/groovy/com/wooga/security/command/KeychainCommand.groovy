@@ -33,7 +33,7 @@ trait KeychainCommand<T extends SecurityCommand> {
     List<String> getMandatoryKeychainArguments() {
         def arguments = []
         SecurityCommand.validateKeychainProperty(keychain)
-        arguments << "-k" << keychain.path
+        arguments << "-k" << SecurityCommand.expandPath(keychain.canonicalPath)
         arguments
     }
 
@@ -41,7 +41,7 @@ trait KeychainCommand<T extends SecurityCommand> {
         def arguments = []
         if (keychain) {
             SecurityCommand.validateKeychainProperty(keychain)
-            arguments << keychain.path
+            arguments << SecurityCommand.expandPath(keychain.canonicalPath)
         }
         arguments
     }
