@@ -87,7 +87,7 @@ abstract class SecurityCommand<T> {
 
     static void validateStringProperty(String value, String propertyName) {
         if (value == null) {
-            throw new IllegalArgumentException("provided ${propertyName} is null")
+            throw new NullPointerException("provided ${propertyName} is null")
         }
 
         if (value.isEmpty()) {
@@ -97,7 +97,7 @@ abstract class SecurityCommand<T> {
 
     static void validateFileProperty(File file, String propertyName) {
         if (!file) {
-            throw new IllegalArgumentException("provided ${propertyName} is null")
+            throw new NullPointerException("provided ${propertyName} is null")
         }
 
         if (!file.exists()) {

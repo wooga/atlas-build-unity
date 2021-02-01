@@ -50,10 +50,10 @@ abstract class AddPasswordSpec<T extends SecurityCommand> extends SecurityComman
         "keychain" | new File("/some/file") | IllegalArgumentException.class | "does not exist"
         "keychain" | File.createTempDir()   | IllegalArgumentException.class | "is not a file"
 
-        "account"  | null                   | IllegalArgumentException.class | "is null"
+        "account"  | null                   | NullPointerException.class     | "is null"
         "account"  | ""                     | IllegalArgumentException.class | "is empty"
 
-        "password" | null                   | IllegalArgumentException.class | "is null"
+        "password" | null                   | NullPointerException.class     | "is null"
         "password" | ""                     | IllegalArgumentException.class | "is empty"
         reason = "provided ${property} ${message}"
         messagePattern = /provided ${property}.*${message}/

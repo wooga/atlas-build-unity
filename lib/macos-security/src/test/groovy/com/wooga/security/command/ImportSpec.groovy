@@ -91,11 +91,11 @@ class ImportSpec extends SecurityCommandSpec<Import> {
 
         where:
         property    | value                  | expectedExeption               | message
-        "keychain"  | null                   | IllegalArgumentException.class | "is null"
+        "keychain"  | null                   | NullPointerException.class     | "is null"
         "keychain"  | new File("/some/file") | IllegalArgumentException.class | "does not exist"
         "keychain"  | File.createTempDir()   | IllegalArgumentException.class | "is not a file"
 
-        "inputFile" | null                   | IllegalArgumentException.class | "is null"
+        "inputFile" | null                   | NullPointerException.class     | "is null"
         "inputFile" | new File("/some/file") | IllegalArgumentException.class | "does not exist"
         "inputFile" | File.createTempDir()   | IllegalArgumentException.class | "is not a file"
 
