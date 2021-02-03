@@ -25,4 +25,3 @@
  */
 
 rootProject.name = 'atlas-build-unity'
-include ':lib:spock-macos-keychain-extension'
