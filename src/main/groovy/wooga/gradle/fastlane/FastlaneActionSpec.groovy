@@ -39,4 +39,12 @@ interface FastlaneActionSpec<T extends FastlaneActionSpec> {
     T argument(String argument)
     T arguments(String... arguments)
     T arguments(Iterable<String> arguments)
+
+    RegularFileProperty getApiKeyPath()
+
+    void setApiKeyPath(File value)
+    void setApiKeyPath(Provider<RegularFile> value)
+
+    T apiKeyPath(File value)
+    T apiKeyPath(Provider<RegularFile> value)
 }

@@ -21,7 +21,9 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.fastlane.FastlaneActionSpec
 import wooga.gradle.fastlane.internal.FastlaneAction
@@ -83,9 +85,36 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActio
         return this
     }
 
+    @Optional
+    @InputFile
+    final RegularFileProperty apiKeyPath
+
+    @Override
+    void setApiKeyPath(File value) {
+        apiKeyPath.set(value)
+    }
+
+    @Override
+    void setApiKeyPath(Provider<RegularFile> value) {
+        apiKeyPath.set(value)
+    }
+
+    @Override
+    AbstractFastlaneTask apiKeyPath(File value) {
+        setApiKeyPath(value)
+        this
+    }
+
+    @Override
+    AbstractFastlaneTask apiKeyPath(Provider<RegularFile> value) {
+        setApiKeyPath(value)
+        this
+    }
+
     AbstractFastlaneTask() {
         additionalArguments = project.objects.listProperty(String)
         logFile = project.layout.fileProperty()
+        apiKeyPath = project.layout.fileProperty()
     }
 
     @TaskAction

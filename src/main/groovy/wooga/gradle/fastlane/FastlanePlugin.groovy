@@ -19,9 +19,11 @@ package wooga.gradle.fastlane
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.provider.Provider
 import wooga.gradle.fastlane.internal.DefaultFastlanePluginExtension
+import wooga.gradle.fastlane.tasks.AbstractFastlaneTask
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
 import wooga.gradle.fastlane.internal.PropertyLookup
@@ -42,6 +44,14 @@ class FastlanePlugin implements Plugin<Project> {
 
         extension.username.set(lookupValueInEnvAndPropertiesProvider(USERNAME_LOOKUP))
         extension.password.set(lookupValueInEnvAndPropertiesProvider(PASSWORD_LOOKUP))
+        extension.apiKeyPath.set(lookupFileValueInEnvAndPropertiesProvider(API_KEY_PATH_LOOKUP))
+
+        project.tasks.withType(AbstractFastlaneTask, new Action<AbstractFastlaneTask>() {
+            @Override
+            void execute(AbstractFastlaneTask task) {
+                task.apiKeyPath.set(extension.apiKeyPath)
+            }
+        })
 
         project.tasks.withType(SighRenew, new Action<SighRenew>() {
             @Override
@@ -70,10 +80,24 @@ class FastlanePlugin implements Plugin<Project> {
         lookupValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
     }
 
+    private Provider<RegularFile> lookupFileValueInEnvAndPropertiesProvider(PropertyLookup lookup) {
+        lookupFileValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
+    }
+
     private Provider<String> lookupValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
         project.provider({
             lookupValueInEnvAndProperties(env, property, defaultValue)
         })
+    }
+
+    private Provider<RegularFile> lookupFileValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
+        project.layout.file(project.provider({
+            def path = lookupValueInEnvAndProperties(env, property, defaultValue)
+            if (path) {
+                return new File(path)
+            }
+            null
+        }))
     }
 
     protected String lookupValueInEnvAndProperties(String env, String property, String defaultValue = null) {

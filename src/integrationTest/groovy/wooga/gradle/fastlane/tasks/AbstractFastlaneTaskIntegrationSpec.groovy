@@ -56,13 +56,19 @@ abstract class AbstractFastlaneTaskIntegrationSpec extends FastlaneIntegrationSp
         outputContains(result, "property: " + testValue.toString())
 
         where:
-        property  | method        | rawValue               | expectedValue | type
-        "logFile" | "logFile"     | "/some/path/test1.log" | _             | "File"
-        "logFile" | "logFile"     | "/some/path/test2.log" | _             | "Provider<RegularFile>"
-        "logFile" | "logFile.set" | "/some/path/test3.log" | _             | "File"
-        "logFile" | "logFile.set" | "/some/path/test4.log" | _             | "Provider<RegularFile>"
-        "logFile" | "setLogFile"  | "/some/path/test5.log" | _             | "File"
-        "logFile" | "setLogFile"  | "/some/path/test6.log" | _             | "Provider<RegularFile>"
+        property     | method           | rawValue               | expectedValue | type
+        "logFile"    | "logFile"        | "/some/path/test1.log" | _             | "File"
+        "logFile"    | "logFile"        | "/some/path/test2.log" | _             | "Provider<RegularFile>"
+        "logFile"    | "logFile.set"    | "/some/path/test3.log" | _             | "File"
+        "logFile"    | "logFile.set"    | "/some/path/test4.log" | _             | "Provider<RegularFile>"
+        "logFile"    | "setLogFile"     | "/some/path/test5.log" | _             | "File"
+        "logFile"    | "setLogFile"     | "/some/path/test6.log" | _             | "Provider<RegularFile>"
+        "apiKeyPath" | "apiKeyPath"     | "/some/path/key1.json" | _             | "File"
+        "apiKeyPath" | "apiKeyPath"     | "/some/path/key2.json" | _             | "Provider<RegularFile>"
+        "apiKeyPath" | "apiKeyPath.set" | "/some/path/key3.json" | _             | "File"
+        "apiKeyPath" | "apiKeyPath.set" | "/some/path/key4.json" | _             | "Provider<RegularFile>"
+        "apiKeyPath" | "setApiKeyPath"  | "/some/path/key5.json" | _             | "File"
+        "apiKeyPath" | "setApiKeyPath"  | "/some/path/key6.json" | _             | "Provider<RegularFile>"
 
 
         value = wrapValueBasedOnType(rawValue, type, { type ->
