@@ -36,7 +36,7 @@ if (cliTasks.contains("rc")) {
 
 dependencies {
     implementation ('org.spockframework:spock-core:1.2-groovy-2.4')
-    api project(path: ':lib:macos-security', configuration: 'archives')
+    api 'com.wooga.security:macos-security:1.0.0'
 }
 
 repositories {
