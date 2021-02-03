@@ -1,0 +1,41 @@
+package wooga.gradle.macOS.security.tasks
+
+import jdk.nashorn.internal.ir.annotations.Ignore
+import spock.lang.Requires
+
+@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
+class SecurityResetKeychainSearchListIntegrationSpec extends KeychainSearchListSpec {
+    String testTaskName = "resetKeychainSearchList"
+    Class taskType = SecurityResetKeychainSearchList
+
+    @Ignore
+    def "can reset keychain lookup list"() {
+        given: "a default keychain"
+        def defaultLookupList = keychainSearchList.collect()
+
+        and: "some keychains added"
+        keychainSearchList.addAll(keychains.collect { it.location })
+
+        when:
+        runTasksSuccessfully(testTaskName)
+
+        then:
+        keychainSearchList.collect() == defaultLookupList
+
+        where:
+        keychains                                       | message
+        [buildKeychain, buildKeychain2, buildKeychain3] | "multiple keychains"
+    }
+
+    def "skip reset if ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS is not set to YES"() {
+        given: "environment setting disabled"
+        environmentVariables.set('ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS', "NO")
+        fork = true
+
+        when:
+        def result = runTasksSuccessfully(testTaskName)
+
+        then:
+        result.wasSkipped(testTaskName)
+    }
+}

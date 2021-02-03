@@ -73,7 +73,7 @@ dependencies {
         force = true
     }
 
-    compile('com.wooga.security:macos-security:1.+') {
+    compile('com.wooga.security:macos-security:1.1.+') {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
     }
 

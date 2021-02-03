@@ -107,6 +107,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec{
                 value = "${rawValue.collect { '"' + it + '"' }.join(", ")}"
                 break
             case "List":
+            case "Iterable":
                 value = "[${rawValue.collect { '"' + it + '"' }.join(", ")}]"
                 break
             case "Map":
