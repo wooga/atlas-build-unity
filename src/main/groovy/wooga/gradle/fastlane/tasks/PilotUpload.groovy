@@ -302,6 +302,10 @@ class PilotUpload extends AbstractFastlaneTask {
                 arguments << "--itc_provider" << itcProvider.get()
             }
 
+            if (apiKeyPath.present) {
+                arguments << "--api-key-path" << apiKeyPath.get().asFile.path
+            }
+
             arguments << "--skip_submission" << (skipSubmission.present && skipSubmission.get()).toString()
             arguments << "--skip_waiting_for_build_processing" << (skipWaitingForBuildProcessing.present && skipWaitingForBuildProcessing.get()).toString()
             arguments << "--ipa" << ipa.get().asFile.path

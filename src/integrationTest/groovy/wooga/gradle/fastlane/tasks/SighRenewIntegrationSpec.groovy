@@ -84,6 +84,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         "fileName"                        | "fileName.set"                        | "test2.mobileprovisioning" | "String"       || "--filename test2.mobileprovisioning"
         "destinationDir"                  | "destinationDir.set"                  | "/some/path"               | "File"         || "--output_path /some/path"
         "additionalArguments"             | "setAdditionalArguments"              | ["--verbose", "--foo bar"] | "List<String>" || "--verbose --foo bar"
+        "apiKeyPath"                      | "apiKeyPath.set"                      | "/path/to/key.json"        | "File"         || "--api-key-path /path/to/key.json"
         value = wrapValueBasedOnType(rawValue, type)
         valueMessage = (rawValue != _) ? "with value ${value}" : "without value"
     }

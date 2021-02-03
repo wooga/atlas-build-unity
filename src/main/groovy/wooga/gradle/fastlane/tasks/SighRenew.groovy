@@ -313,6 +313,10 @@ class SighRenew extends AbstractFastlaneTask {
                 arguments << "--provisioning_name" << provisioningName.get()
             }
 
+            if (apiKeyPath.present) {
+                arguments << "--api-key-path" << apiKeyPath.get().asFile.path
+            }
+
             arguments << "--adhoc" << (adhoc.present && adhoc.get()).toString()
             arguments << "--readonly" << (readOnly.present && readOnly.get()).toString()
             arguments << "--ignore_profiles_with_different_name" << (ignoreProfilesWithDifferentName.present && ignoreProfilesWithDifferentName.get()).toString()

@@ -16,7 +16,8 @@
 
 package wooga.gradle.fastlane
 
-
+import org.gradle.api.file.RegularFile
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 
@@ -36,4 +37,12 @@ interface FastlanePluginExtension<T extends FastlanePluginExtension> {
 
     T password(String value)
     T password(Provider<String> value)
+
+    RegularFileProperty getApiKeyPath()
+
+    void setApiKeyPath(File value)
+    void setApiKeyPath(Provider<RegularFile> value)
+
+    T apiKeyPath(File value)
+    T apiKeyPath(Provider<RegularFile> value)
 }

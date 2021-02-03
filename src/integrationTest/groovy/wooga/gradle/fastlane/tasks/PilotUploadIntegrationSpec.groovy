@@ -80,6 +80,7 @@ class PilotUploadIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         "skipWaitingForBuildProcessing" | _                                   | _                          | "Boolean"      || "--skip_waiting_for_build_processing false"
         "ipa"                           | "ipa.set"                           | "/path/to/test2.ipa"       | "File"         || "--ipa /path/to/test2.ipa"
         "additionalArguments"           | "setAdditionalArguments"            | ["--verbose", "--foo bar"] | "List<String>" || "--verbose --foo bar"
+        "apiKeyPath"                    | "apiKeyPath.set"                    | "/path/to/key.json"        | "File"         || "--api-key-path /path/to/key.json"
         value = wrapValueBasedOnType(rawValue, type)
         valueMessage = (rawValue != _) ? "with value ${value}" : "without value"
     }
