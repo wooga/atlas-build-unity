@@ -36,6 +36,7 @@ import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
+import wooga.gradle.xcodebuild.config.ExportOptions
 
 class IOSBuildPlugin implements Plugin<Project> {
 
@@ -216,11 +217,33 @@ class IOSBuildPlugin implements Plugin<Project> {
         removeKeychain.doLast {
             Runtime.getRuntime().removeShutdownHook(shutdownHook)
         }
-        def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
-            it.dependsOn addKeychain, unlockKeychain
-            it.finalizedBy removeKeychain, lockKeychain
-            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString() )
+
+        def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles")) {
         }
+
+        def exportOptionsFile = project.file("exportOptions.plist")
+        if (exportOptionsFile.exists()) {
+            def exportOptions = ExportOptions.open(project.file(exportOptionsFile))
+            exportOptions.provisioningProfiles.each { bundleId, profileName ->
+                def taskName = "importProvisioningProfile.${bundleId}"
+                tasks.create(maybeBaseName(baseName, taskName) , SighRenew) {
+                    it.dependsOn addKeychain, unlockKeychain
+                    it.finalizedBy removeKeychain, lockKeychain
+                    it.fileName.set("${maybeBaseName(baseName, "signing${bundleId}")}.mobileprovision".toString() )
+                    it.provisioningName = profileName
+                    it.appIdentifier = bundleId
+                    importProvisioningProfiles.dependsOn it
+                }
+            }
+        } else {
+            tasks.create(maybeBaseName(baseName, "importProvisioningProfile"), SighRenew) {
+                it.dependsOn addKeychain, unlockKeychain
+                it.finalizedBy removeKeychain, lockKeychain
+                it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
+                importProvisioningProfiles.dependsOn it
+            }
+        }
+
 
         PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
             it.projectPath = xcodeProject

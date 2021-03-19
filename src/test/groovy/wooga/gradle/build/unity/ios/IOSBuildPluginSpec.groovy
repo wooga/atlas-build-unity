@@ -69,6 +69,9 @@ class IOSBuildPluginSpec extends ProjectSpec {
     @Shared
     File xcProjectConfig
 
+    @Shared
+    File exportOptions
+
     @Unroll()
     def 'Creates xcode task #taskName when project contains single xcode project'(String taskName, Class taskType) {
         given:
@@ -87,6 +90,9 @@ class IOSBuildPluginSpec extends ProjectSpec {
         project.afterEvaluate {
             task = project.tasks.findByName(taskName)
         }
+        IOSBuildPluginExtension extension = project.extensions.findByName(IOSBuildPlugin.EXTENSION_NAME) as IOSBuildPluginExtension
+        extension.appIdentifier("net.wooga.xcodebuildPluginTest")
+        extension.provisioningName("xcodebuildPluginTest")
 
         then:
         project.evaluate()
@@ -100,7 +106,8 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
-        "importProvisioningProfiles" | SighRenew
+        "importProvisioningProfiles" | Task
+        "importProvisioningProfile"  | SighRenew
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive
         "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
@@ -136,7 +143,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "resetKeychains"             | ListKeychainTask
         "addKeychain"                | ListKeychainTask
         "removeKeychain"             | ListKeychainTask
-        "importProvisioningProfiles" | SighRenew
+        "importProvisioningProfiles" | Task
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive
         "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
@@ -146,8 +153,69 @@ class IOSBuildPluginSpec extends ProjectSpec {
         taskNames = ["first", "second", "third"].collect { it + taskName.capitalize() }
     }
 
+    def 'Creates provisioningProfile tasks when project contains exportOptions.plist'(String taskName, Class taskType) {
+        given:
+        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+        assert !project.tasks.findByName(taskName)
+
+        and: "a dummpy xcode project"
+        xcProject = new File(projectDir, "test.xcodeproj")
+        xcProject.mkdirs()
+        xcProjectConfig = new File(xcProject, "project.pbxproj")
+        xcProjectConfig << ""
+        exportOptions = new File(projectDir,"exportOptions.plist")
+        exportOptions << """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>teamID</key>
+            <string>Team</string>
+            <key>method</key>
+            <string>development</string>
+
+            <key>provisioningProfiles</key>
+            <dict>
+                <key>net.wooga.xcodebuildPluginTest</key>
+                <string>xcodebuildPluginTest</string>
+                <key>net.wooga.xcodebuildPluginTest.Two</key>
+                <string>xcodebuildPluginTest two</string>
+            </dict>
+        </dict>
+        </plist>
+        """.stripIndent().trim()
+
+        when:
+        project.plugins.apply(PLUGIN_NAME)
+        def task
+        project.afterEvaluate {
+            task = project.tasks.findByName(taskName)
+        }
+
+        then:
+        project.evaluate()
+        taskType.isInstance(task)
+
+        where:
+        taskName                     | taskType
+        "buildKeychain"              | KeychainTask
+        "unlockKeychain"             | LockKeychainTask
+        "lockKeychain"               | LockKeychainTask
+        "resetKeychains"             | ListKeychainTask
+        "addKeychain"                | ListKeychainTask
+        "removeKeychain"             | ListKeychainTask
+        "importProvisioningProfiles" | Task
+        "importProvisioningProfile.net.wooga.xcodebuildPluginTest" | SighRenew
+        "importProvisioningProfile.net.wooga.xcodebuildPluginTest.Two" | SighRenew
+        "xcodeArchive"               | XcodeArchive
+        "xcodeArchiveExport"         | ExportArchive
+        "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
+        "publishTestFlight"          | PilotUpload
+    }
+
     @Unroll()
     def "task #taskName #message on task #dependedTask when publishToTestflight is #publishToTestflight"() {
+
         given: "a dummpy xcode project"
         xcProject = new File(projectDir, "test.xcodeproj")
         xcProject.mkdirs()
