@@ -38,6 +38,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
         ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            it << UNITY_ASSET_HEADER
+            it << "\n"
             Yaml yaml = new Yaml()
             it << yaml.dump(appConfig)
         }
@@ -169,7 +171,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def appConfigsDir = new File(assets, "CustomConfigs")
 
         def appConfigFile = createFile('buildTarget_config.asset', appConfigsDir)
-        appConfigFile.text = "MonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
+        appConfigFile.text = "${UNITY_ASSET_HEADER}\nMonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
 
         and: "the app config configured"
         buildFile << """
