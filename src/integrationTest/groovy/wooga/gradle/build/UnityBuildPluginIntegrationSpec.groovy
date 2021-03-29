@@ -27,6 +27,7 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
+import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
