@@ -58,7 +58,7 @@ dependencies {
     compile 'xmlwise:xmlwise:1.2.11'
     compile 'commons-codec:commons-codec:1.14'
     testCompile 'org.apache.commons:commons-text:1.8'
-    testCompile 'com.github.stefanbirkner:system-rules:1.18.0'
+    testCompile 'com.github.stefanbirkner:system-rules:1.19.0'
     testCompile('com.nagternal:spock-genesis:0.6.0') {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
     }
