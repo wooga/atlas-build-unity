@@ -21,7 +21,7 @@ class PropertyLookup {
     final String property
     final String defaultValue
 
-    PropertyLookup(String env, String property, String defaultValue) {
+    PropertyLookup(String env, String property, String defaultValue = null) {
         this.env = env
         this.property = property
         this.defaultValue = defaultValue

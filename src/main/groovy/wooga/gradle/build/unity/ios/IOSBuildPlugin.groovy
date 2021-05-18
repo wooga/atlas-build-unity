@@ -196,6 +196,26 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.keychain buildKeychain
         }
 
+        def shutdownHook = new Thread({
+            System.err.println("shutdown hook called")
+            System.err.flush()
+            if(addKeychain.didWork) {
+                System.err.println("task ${addKeychain.name} did run. Execute ${removeKeychain.name} shutdown action")
+                removeKeychain.shutdown()
+            } else {
+                System.err.println("no actions to be executed")
+                System.err.flush()
+            }
+            System.err.flush()
+        })
+
+        addKeychain.doLast {
+            Runtime.getRuntime().addShutdownHook(shutdownHook)
+        }
+
+        removeKeychain.doLast {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook)
+        }
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
             it.dependsOn addKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain

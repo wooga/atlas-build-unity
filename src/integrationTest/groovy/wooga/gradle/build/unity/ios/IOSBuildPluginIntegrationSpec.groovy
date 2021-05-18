@@ -17,9 +17,11 @@
 
 package wooga.gradle.build.unity.ios
 
-
+import nebula.test.functional.ExecutionResult
+import net.wooga.system.ProcessList
 import spock.lang.Requires
 import spock.lang.Shared
+import spock.lang.Timeout
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 
@@ -131,6 +133,65 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         cleanup:
         keychainLookupList.remove(buildKeychain)
     }
+
+    @Timeout(value = 10)
+    @Unroll
+    def "#removes custom build keychain when shutdown with signal #signal"() {
+        given: "a basic fork setup"
+        fork = true
+        and: "a different gradle version to recognize the daemon PID"
+        gradleVersion = gradleDaemonVersion
+
+        and: "a long running task"
+        buildFile << """
+            task longRunningTask {
+                doLast {
+                    System.sleep(5 * 1000 * 60)
+                }
+            }
+        """.stripIndent()
+
+        when:
+        ExecutionResult result
+        def t = new Thread({
+            result = runTasks("addKeychain", "longRunningTask")
+        })
+
+        t.start()
+
+        //wait for the process to spawn
+        def pids = ProcessList.waitForProcess { it.contains("org.gradle.launcher.daemon.bootstrap.GradleDaemon ${gradleDaemonVersion}") }
+
+        //wait for keychain to be added
+        while (!keychainLookupList.contains(buildKeychain)) {
+            sleep(1000)
+        }
+
+        pids.each {
+            ProcessList.kill(it, signal)
+        }
+        t.join()
+
+        then:
+        result != null
+        !result.success
+        keychainLookupList.contains(buildKeychain) != removeKeychain
+
+        cleanup:
+        keychainLookupList.remove(buildKeychain)
+
+        where:
+        signal                  | removeKeychain
+        ProcessList.Signal.HUP  | true
+        //ProcessList.Signal.INT  | true
+        ProcessList.Signal.ABRT | false
+        ProcessList.Signal.KILL | false
+        ProcessList.Signal.ALRM | false
+        ProcessList.Signal.TERM | true
+        gradleDaemonVersion = "4.10.2"
+        removes = removeKeychain ? "runs shutdown hook and removes" : "keeps"
+    }
+
 
     @Unroll
     def "removes custom build keychain when build #message"() {

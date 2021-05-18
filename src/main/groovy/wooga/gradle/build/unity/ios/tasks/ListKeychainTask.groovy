@@ -111,6 +111,16 @@ class ListKeychainTask extends DefaultTask {
         })
     }
 
+    void shutdown() {
+        if(!this.didWork) {
+            System.err.println("task ${this.name} did not run yet. Force execution")
+            list()
+        } else {
+            System.err.println("task ${this.name} did run.")
+        }
+        System.err.flush()
+    }
+
     @TaskAction
     protected list() {
         def keychains = getKeychains().files
