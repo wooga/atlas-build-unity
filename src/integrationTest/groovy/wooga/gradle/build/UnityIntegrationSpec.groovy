@@ -53,6 +53,12 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         unityTestLocation
     }
 
+    public static final String UNITY_ASSET_HEADER = """
+            %YAML 1.1
+            %TAG !u! tag:unity3d.com,2011:
+            --- !u!114 &11400000
+            """.stripIndent().trim()
+
     def setup() {
         String osName = System.getProperty("os.name").toLowerCase()
         unityMainDirectory = projectDir

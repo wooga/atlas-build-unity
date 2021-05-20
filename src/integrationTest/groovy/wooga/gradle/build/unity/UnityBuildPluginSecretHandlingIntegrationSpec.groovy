@@ -19,7 +19,6 @@ package wooga.gradle.build.unity
 
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
-import org.yaml.snakeyaml.Yaml
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
@@ -27,6 +26,7 @@ import wooga.gradle.secrets.Secret
 import wooga.gradle.secrets.SecretResolver
 import wooga.gradle.secrets.internal.SecretFile
 import wooga.gradle.secrets.internal.SecretText
+import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec {
 
@@ -59,14 +59,11 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
         appConfigsDir.mkdirs()
 
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
-            Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
-            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget, secretIds: secretIds]]
-            it << yaml.dump(appConfig)
+            unityAsset(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget, secretIds: secretIds]]).write(it)
         }
 
-        Yaml yaml = new Yaml()
-        createFile("custom.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
+        unityAsset(['MonoBehaviour': ['bundleId': 'net.wooga.test']]).write(createFile("custom.asset", appConfigsDir))
 
         buildFile << """
             import ${SecretResolver.name}
@@ -141,7 +138,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
 
     def "task :#taskToRun sends secret texts as environment variables"() {
         given: "future printEnvOutput"
-        def envOutput = new File(projectDir,"build/export/android_ci/project/build/env.txt")
+        def envOutput = new File(projectDir, "build/export/android_ci/project/build/env.txt")
         assert !envOutput.exists()
 
         when:

@@ -116,7 +116,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
 
         then:
         result.standardOutput.contains("foo executed")
-        result.standardOutput.contains(new File(".gradle/daemon/${gradleVersion}").path)
+        result.standardOutput.contains(new File("/daemon/${gradleVersion}").path)
         where:
         gradleVersion << ["4.0", "4.10", "5.0"]
     }

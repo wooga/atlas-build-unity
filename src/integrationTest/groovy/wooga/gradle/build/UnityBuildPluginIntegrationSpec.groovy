@@ -27,6 +27,7 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.unity.batchMode.BatchModeFlags
 import wooga.gradle.unity.batchMode.BuildTarget
+import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
@@ -43,6 +44,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         appConfigsDir.mkdirs()
 
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            it << UNITY_ASSET_HEADER
+            it << "\n"
             Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
             def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
@@ -50,7 +53,12 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         }
 
         Yaml yaml = new Yaml()
-        createFile("custom.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
+        def appconfig = createFile("custom.asset", appConfigsDir)
+        appconfig << UNITY_ASSET_HEADER
+        appconfig << "\n"
+        appconfig << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
+
+
     }
 
     @Unroll
