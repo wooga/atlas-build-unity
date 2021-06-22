@@ -129,7 +129,7 @@ class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements 
             it
         }))
 
-        destinationDir = project.layout.directoryProperty()
+        destinationDir = project.objects.directoryProperty()
         keychain = destinationDir.file(fileName)
         tempLockFile = destinationDir.file(fileName.map({
             getTempKeychainFileName(it)

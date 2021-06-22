@@ -245,7 +245,7 @@ class PilotUpload extends AbstractFastlaneTask {
     final Provider<Map<String, String>> environment
 
     PilotUpload() {
-        ipa = project.layout.fileProperty()
+        ipa = project.objects.fileProperty()
         appIdentifier = project.objects.property(String)
         teamId = project.objects.property(String)
         devPortalTeamId = project.objects.property(String)

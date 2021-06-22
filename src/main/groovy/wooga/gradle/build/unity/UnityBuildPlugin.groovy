@@ -36,7 +36,7 @@ import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
-import wooga.gradle.unity.utils.GenericUnityAsset
+import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
 
@@ -73,7 +73,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 task.customArguments.set(extension.customArguments)
                 task.inputFiles.from({
 
-                    def assetsDir = new File(task.getProjectPath(), "Assets")
+                    def assetsDir = task.projectDirectory.dir("Assets")
                     def assetsFileTree = project.fileTree(assetsDir)
 
                     def includeSpec = new Spec<FileTreeElement>() {
@@ -95,7 +95,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                                  * @return The path. Never returns null.
                                  */
                                 if (task.getBuildPlatform()) {
-                                    status = path.contains("plugins/" + task.getBuildPlatform().toLowerCase())
+                                    status = path.contains("plugins/" + task.getBuildPlatform().get())
                                 } else {
                                     status = true
                                 }
@@ -115,11 +115,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                     assetsFileTree.include(includeSpec)
                     assetsFileTree.exclude(excludeSpec)
 
-                    def projectSettingsDir = new File(task.getProjectPath(), "ProjectSettings")
+
+                    def projectSettingsDir = task.projectDirectory.dir("ProjectSettings")
                     def projectSettingsFileTree = project.fileTree(projectSettingsDir)
                     projectSettingsFileTree.exclude(excludeSpec)
 
-                    def packageManagerDir = new File(task.getProjectPath(), "UnityPackageManager")
+                    def packageManagerDir = task.projectDirectory.dir("UnityPackageManager")
                     def packageManagerDirFileTree = project.fileTree(packageManagerDir)
                     packageManagerDirFileTree.exclude(excludeSpec)
 
@@ -139,7 +140,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
             extension.getAppConfigs().each { File appConfig ->
                 def appConfigName = FilenameUtils.removeExtension(appConfig.name)
-                def config = new GenericUnityAsset(appConfig)
+                def config = new GenericUnityAssetFile(appConfig)
 
                 def characterPattern = ':_\\-<>|*\\\\?/ '
                 def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }

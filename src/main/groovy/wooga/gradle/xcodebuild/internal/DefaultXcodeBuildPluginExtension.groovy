@@ -167,10 +167,10 @@ class DefaultXcodeBuildPluginExtension implements XcodeBuildPluginExtension {
 
     DefaultXcodeBuildPluginExtension(Project project) {
         this.project = project
-        logsDir = project.layout.directoryProperty()
-        derivedDataPath = project.layout.directoryProperty()
-        xarchivesDir = project.layout.directoryProperty()
-        debugSymbolsDir = project.layout.directoryProperty()
+        logsDir = project.objects.directoryProperty()
+        derivedDataPath = project.objects.directoryProperty()
+        xarchivesDir = project.objects.directoryProperty()
+        debugSymbolsDir = project.objects.directoryProperty()
         consoleSettings = project.objects.property(ConsoleSettings)
     }
 }

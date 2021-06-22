@@ -84,7 +84,7 @@ class SecurityLockKeychainIntegrationSpec extends IntegrationSpec {
         expectedValue = rawValue
     }
 
-    @Unroll("method :#method #message")
+    @Unroll("method #method #message")
     def "method alters keychains property"() {
         given: "a task to read back the value"
         buildFile << """

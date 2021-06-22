@@ -163,7 +163,7 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         expectedValue = rawValue
     }
 
-    def "task :#testTaskName writes log output"() {
+    def "task #testTaskName writes log output"() {
         given:
         buildFile << workingXcodebuildTaskConfig
 

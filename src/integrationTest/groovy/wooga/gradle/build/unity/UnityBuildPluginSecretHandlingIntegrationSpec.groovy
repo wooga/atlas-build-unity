@@ -136,7 +136,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
         "assembleAndroidCi" | "fetchSecretsAndroidCi"
     }
 
-    def "task :#taskToRun sends secret texts as environment variables"() {
+    def "task #taskToRun sends secret texts as environment variables"() {
         given: "future printEnvOutput"
         def envOutput = new File(projectDir, "build/export/android_ci/project/build/env.txt")
         assert !envOutput.exists()
@@ -178,11 +178,11 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
     }
 
     @Unroll
-    def "task :#taskToRun deletes secret files after invocation when #message"() {
+    def "task #taskToRun deletes secret files after invocation when #message"() {
         given:
         if (!taskSucceeds) {
             buildFile << """
-                unity.unityPath(file("${escapedPath(unityFailTestLocation.path)}"))
+                unity.unityPath.set(file("${escapedPath(unityFailTestLocation.path)}"))
             """.stripIndent()
         }
         when:

@@ -74,7 +74,7 @@ class SecurityUnlockKeychain extends AbstractInteractiveSecurityTask {
 
     SecurityUnlockKeychain() {
         this.password = project.objects.property(String)
-        this.keychain = project.layout.fileProperty()
+        this.keychain = project.objects.fileProperty()
 
         outputs.upToDateWhen(new Spec<Task>() {
             @Override

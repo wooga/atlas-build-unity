@@ -214,18 +214,20 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         subProjectBuildFile << """
             ${applyPlugin(XcodeBuildPlugin)}
             ${workingXcodebuildTaskConfig}
+
+            version = '1.0.0'
         """.stripIndent()
 
         and: "the main project pulling a dependency"
         buildFile << """
-            configurations.maybeCreate('archives')
+            configurations.maybeCreate('test')
     
             dependencies {
-                archives project(':${subProjectName}')
+                test project(':${subProjectName}')
             }
             
             task run (type: Copy) {
-                from(configurations.archives)
+                from(configurations.test)
                 into("${projectDir}/build/outputs")
             }
         """.stripIndent()

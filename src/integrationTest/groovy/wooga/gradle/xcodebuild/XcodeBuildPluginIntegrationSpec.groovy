@@ -33,7 +33,7 @@ class XcodeBuildPluginIntegrationSpec extends XcodeBuildIntegrationSpec {
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
     @Unroll()
-    def "extension property :#property returns '#testValue' if #reason"() {
+    def "extension property #property returns '#testValue' if #reason"() {
         given:
         buildFile << """
             task(custom) {

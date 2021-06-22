@@ -63,6 +63,7 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
     }
 
     @Input
+    @Optional
     final Property<Boolean> clean
 
     @Override
@@ -163,8 +164,13 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         this
     }
 
-    @InputDirectory
     final DirectoryProperty projectPath
+
+    @SkipWhenEmpty
+    @InputDirectory
+    DirectoryProperty getProjectPath() {
+        projectPath
+    }
 
     @InputFiles
     protected getInputFiles() {
@@ -187,7 +193,6 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         this
     }
 
-    @SkipWhenEmpty
     @Override
     XcodeArchive projectPath(Provider<Directory> value) {
         setProjectPath(value)
@@ -238,9 +243,9 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         teamId = project.objects.property(String)
         clean = project.objects.property(Boolean)
 
-        projectPath = project.layout.directoryProperty()
-        derivedDataPath = project.layout.directoryProperty()
-        buildKeychain = project.layout.fileProperty()
+        projectPath = project.objects.directoryProperty()
+        derivedDataPath = project.objects.directoryProperty()
+        buildKeychain = project.objects.fileProperty()
 
         xcArchivePath = destinationDir.map(new Transformer<Directory, Directory>() {
             @Override

@@ -25,8 +25,9 @@ import spock.genesis.transform.Iterations
 import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.unity.batchMode.BatchModeFlags
-import wooga.gradle.unity.batchMode.BuildTarget
+import wooga.gradle.unity.models.BuildTarget
+import wooga.gradle.unity.models.UnityCommandLineOption
+
 import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
@@ -62,7 +63,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def ":#taskToRun calls Unity export method with buildType fetched from appConfig"() {
+    def "#taskToRun calls Unity export method with buildType fetched from appConfig"() {
         given: "a project with multiple appConfigs"
         and: "a custom appConfig without buildTarget"
 
@@ -75,13 +76,13 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun         | expectedParameters
-        "exportAndroidCi" | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.android}"
-        "exportIosCi"     | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.ios}"
-        "exportWebGLCi"   | "${BatchModeFlags.BUILD_TARGET} ${BuildTarget.webgl}"
+        "exportAndroidCi" | "${UnityCommandLineOption.buildTarget.flag} ${BuildTarget.android}"
+        "exportIosCi"     | "${UnityCommandLineOption.buildTarget.flag} ${BuildTarget.ios}"
+        "exportWebGLCi"   | "${UnityCommandLineOption.buildTarget.flag} ${BuildTarget.webgl}"
     }
 
     @Unroll
-    def ":#taskToRun calls Unity export method without buildType when not contained in appConfig"() {
+    def "#taskToRun calls Unity export method without buildType when not contained in appConfig"() {
         given: "a project with multiple appConfigs"
         and: "a custom appConfig without buildTarget"
 
@@ -94,7 +95,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun      | expectedParameters
-        "exportCustom" | "${BatchModeFlags.BUILD_TARGET}"
+        "exportCustom" | "${UnityCommandLineOption.buildTarget}"
     }
 
     String convertPropertyToEnvName(String property) {
@@ -189,7 +190,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def ":#taskToRun executes default export task"() {
+    def "#taskToRun executes default export task"() {
         given: "a default gradle project"
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
@@ -216,7 +217,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     public final EnvironmentVariables envs = new EnvironmentVariables()
 
     @Unroll
-    def ":#taskToRun executes override default #override in #location with #value task"() {
+    def "#taskToRun executes override default #override in #location with #value task"() {
         given: "a default gradle project with adjusted default platform/environment settings"
         def extensionKey = 'unityBuild.defaultAppConfigName'
         def propertiesKey = 'unityBuild.defaultAppConfigName'
@@ -276,8 +277,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.wasExecuted(expectedExportTask)
         result.wasExecuted(handleTaskName)
 
-        def expectedVersion = version ?: "4.8"
-        def error = "Could not execute build using Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
+        def expectedVersion = version ?: "6.9"
+        def error = "Could not execute build using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
         // we expecting this task to fail because its not a real integration test
         // but gradle should have attempted to run the exported gradle project with the configured version
         // we simply check if the error contains the correct gradle version
@@ -320,7 +321,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @IgnoreIf({ os.windows })
     @Iterations(100)
     @Unroll
-    def "generates task :#expectedTaskName from app config name #appConfigName"() {
+    def "generates task #expectedTaskName from app config name #appConfigName"() {
         given: "a project with custom app config directory"
         def assets = new File(projectDir, "Assets")
         def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigsCustom")

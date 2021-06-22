@@ -73,7 +73,7 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
             group = 'test'
             ${applyPlugin(UnityBuildPlugin)}
          
-            unity.unityPath(file("${escapedPath(unityTestLocation.path)}"))
+            unity.unityPath.set(file("${escapedPath(unityTestLocation.path)}"))
         """.stripIndent()
 
         //create Assets dir with some files

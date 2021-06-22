@@ -25,7 +25,7 @@ import wooga.gradle.fastlane.tasks.SighRenew
 class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
 
     @Unroll()
-    def "extension property :#property returns '#testValue' if #reason"() {
+    def "extension property #property returns '#testValue' if #reason"() {
         given:
         buildFile << """
             task(custom) {

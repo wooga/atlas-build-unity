@@ -122,8 +122,8 @@ class ImportCodeSigningIdentity extends DefaultTask {
     }
 
     ImportCodeSigningIdentity() {
-        keychain = project.layout.fileProperty()
-        p12 = project.layout.fileProperty()
+        keychain = project.objects.fileProperty()
+        p12 = project.objects.fileProperty()
         passphrase = project.objects.property(String)
         signingIdentity = project.objects.property(String)
         ignoreInvalidSigningIdentity = project.objects.property(Boolean)

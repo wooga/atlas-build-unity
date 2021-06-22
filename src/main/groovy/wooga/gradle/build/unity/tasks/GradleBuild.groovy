@@ -17,8 +17,10 @@
 
 package wooga.gradle.build.unity.tasks
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.gradle.api.DefaultTask
 import org.gradle.api.Transformer
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -40,36 +42,65 @@ import javax.crypto.spec.SecretKeySpec
 
 class GradleBuild extends DefaultTask implements SecretSpec {
 
+    private final DirectoryProperty dir = project.objects.directoryProperty()
+
     @Internal
-    final DirectoryProperty dir = project.layout.directoryProperty()
+    DirectoryProperty getDir() {
+        dir
+    }
+
+    private final ListProperty<String> tasks = project.objects.listProperty(String.class)
 
     @Input
-    final ListProperty<String> tasks = project.objects.listProperty(String.class)
+    ListProperty<String> getTasks() {
+        tasks
+    }
+
+    private final RegularFileProperty initScript
 
     @Optional
     @InputFile
-    final RegularFileProperty initScript
+    RegularFileProperty getInitScript() {
+        initScript
+    }
 
-    @Optional
-    @Internal
-    final Property<File> buildDirBase
+    private final Property<File> buildDirBase
 
     @Internal
-    final Property<Boolean> cleanBuildDirBeforeBuild
+    Property<File> getBuildDirBase() {
+        buildDirBase
+    }
 
-    @Optional
+    private final Property<Boolean> cleanBuildDirBeforeBuild
+
     @Internal
+    Property<Boolean> getCleanBuildDirBeforeBuild() {
+        cleanBuildDirBeforeBuild
+    }
+
     private final Provider<File> projectCacheDir
 
-    @Input
-    final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
+    private final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
 
     @Input
-    final Property<String> gradleVersion = project.objects.property(String.class)
+    ListProperty<String> getBuildArguments() {
+        buildArguments
+    }
+
+    private final Property<String> gradleVersion = project.objects.property(String.class)
+
+    @Input
+    Property<String> getGradleVersion() {
+        gradleVersion
+    }
+
+    private final Property<SecretKeySpec> secretsKey
 
     @Optional
     @Input
-    final Property<SecretKeySpec> secretsKey
+    Property<SecretKeySpec> getSecretsKey() {
+        secretsKey
+    }
 
     void setSecretsKey(SecretKeySpec key) {
         secretsKey.set(key)
@@ -98,19 +129,21 @@ class GradleBuild extends DefaultTask implements SecretSpec {
         return setSecretsKey(keyFile)
     }
 
+    private final RegularFileProperty secretsFile
+
     @Optional
     @InputFile
-    final RegularFileProperty secretsFile
+    RegularFileProperty getSecretsFile() {
+        secretsFile
+    }
 
-    @Optional
-    @Internal
     protected final Provider<Secrets> secrets
 
-    @Internal
     protected final Provider<Secrets.EnvironmentSecrets> environmentSecrets
 
     final Map<String, Object> environment
 
+    @Internal
     Map<String, Object> getEnvironment() {
         environment
     }
@@ -131,13 +164,13 @@ class GradleBuild extends DefaultTask implements SecretSpec {
     }
 
     GradleBuild() {
-        initScript = project.layout.fileProperty()
+        initScript = project.objects.fileProperty()
         buildDirBase = project.objects.property(File)
         projectCacheDir = buildDirBase.map({it -> new File(it, ".gradle")})
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
 
         secretsKey = project.objects.property(SecretKeySpec.class)
-        secretsFile = newInputFile()
+        secretsFile = project.objects.fileProperty()
         secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {
             @Override
             Secrets transform(RegularFile secretsFile) {
@@ -223,7 +256,8 @@ class GradleBuild extends DefaultTask implements SecretSpec {
                 .useGradleVersion(gradleVersion.get())
                 .connect()
 
-        environment(environmentSecrets.get())
+        def secrets = environmentSecrets.get()
+        environment(secrets)
 
         try {
             connection.newBuild()
@@ -235,6 +269,7 @@ class GradleBuild extends DefaultTask implements SecretSpec {
                     .setStandardError(System.err)
                     .run()
         } finally {
+            secrets.clear()
             connection.close()
         }
     }

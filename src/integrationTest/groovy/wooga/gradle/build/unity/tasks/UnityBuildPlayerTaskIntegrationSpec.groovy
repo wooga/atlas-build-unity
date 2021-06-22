@@ -25,7 +25,7 @@ import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
-import wooga.gradle.unity.batchMode.BatchModeFlags
+import wooga.gradle.unity.models.UnityCommandLineOption
 
 import javax.crypto.spec.SecretKeySpec
 
@@ -182,9 +182,9 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("exportCustom")
 
         then:
-        result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET}") == shouldContainBuildTargetFlag
+        result.standardOutput.contains(" ${UnityCommandLineOption.buildTarget.flag}") == shouldContainBuildTargetFlag
         if (shouldContainBuildTargetFlag) {
-            result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET} ${batchModeBuildTarget}")
+            result.standardOutput.contains(" ${UnityCommandLineOption.buildTarget.flag} ${batchModeBuildTarget}")
         }
 
         where:

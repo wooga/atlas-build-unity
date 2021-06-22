@@ -270,7 +270,7 @@ class SighRenew extends AbstractFastlaneTask {
         adhoc = project.objects.property(Boolean)
         readOnly = project.objects.property(Boolean)
         ignoreProfilesWithDifferentName = project.objects.property(Boolean)
-        destinationDir = project.layout.directoryProperty()
+        destinationDir = project.objects.directoryProperty()
         mobileProvisioningProfile = destinationDir.file(fileName)
 
         environment = project.provider({

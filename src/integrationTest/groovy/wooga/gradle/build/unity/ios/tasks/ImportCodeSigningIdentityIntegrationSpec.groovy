@@ -44,7 +44,7 @@ class ImportCodeSigningIdentityIntegrationSpec extends IntegrationSpec {
 
         then:
         result.success == taskSuccessfull
-        result.standardOutput.contains(expectedLogMessage)
+        outputContains(result, expectedLogMessage)
 
         where:
         testSigningIdentity        | signingIdentity          | ignoreInvalidSigningIdentities || taskSuccessfull | reason                                           | logMessage

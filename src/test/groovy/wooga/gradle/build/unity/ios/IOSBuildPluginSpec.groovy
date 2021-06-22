@@ -70,7 +70,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
     File xcProjectConfig
 
     @Unroll()
-    def 'Creates xcode task :#taskName when project contains single xcode project'(String taskName, Class taskType) {
+    def 'Creates xcode task #taskName when project contains single xcode project'(String taskName, Class taskType) {
         given:
         assert !project.plugins.hasPlugin(PLUGIN_NAME)
         assert !project.tasks.findByName(taskName)
@@ -108,7 +108,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
     }
 
     @Unroll()
-    def 'Creates xcode tasks :#taskNames when project contains multiple xcode projects'() {
+    def 'Creates xcode tasks #taskNames when project contains multiple xcode projects'() {
         given: "a dummpy xcode project"
         xcodeProjectNames.each {
             xcProject = new File(projectDir, "${it}.xcodeproj")
@@ -147,7 +147,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
     }
 
     @Unroll()
-    def "task :#taskName #message on task :#dependedTask when publishToTestflight is #publishToTestflight"() {
+    def "task #taskName #message on task #dependedTask when publishToTestflight is #publishToTestflight"() {
         given: "a dummpy xcode project"
         xcProject = new File(projectDir, "test.xcodeproj")
         xcProject.mkdirs()

@@ -32,6 +32,28 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
 
     String archiveTaskName = "xcodeArchive"
     String testTaskName = archiveTaskName + "DSYMs"
+    File exportOptions
+    def setup() {
+        exportOptions = createFile("exportOptions.plist")
+        exportOptions << """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>teamID</key>
+            <string>${System.getenv("TEST_TEAM_ID")}</string>
+            <key>method</key>
+            <string>development</string>
+            
+            <key>provisioningProfiles</key>
+            <dict>
+                <key>net.wooga.xcodebuildPluginTest</key>
+                <string>xcodebuildPluginTest</string>
+            </dict>
+        </dict>
+        </plist>
+        """.stripIndent().trim()
+    }
 
     String workingXcodebuildTaskConfig = """
     task ${archiveTaskName}(type: ${XcodeArchive.name}) {
@@ -51,8 +73,14 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
     }
 
     ${testTaskName} {
+        archiveBaseName = "custom"
+        archiveVersion = "0.1.0"
+    }
+    
+    xcodeArchiveExport {
         baseName = "custom"
         version = "0.1.0"
+        exportOptionsPlist = file("exportOptions.plist")
     }
     """.stripIndent()
 
@@ -65,11 +93,12 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
         assert !dsymArchive.exists()
 
         when:
-        def result = runTasksSuccessfully("xcodeArchiveDSYMs")
+        def result = runTasksSuccessfully(testTaskName)
 
         then:
         result.success
         result.wasExecuted("xcodeArchive")
+        result.wasExecuted(testTaskName)
         dsymArchive.exists()
     }
 
@@ -86,21 +115,24 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
 
         and: "the main project pulling a dependency"
         buildFile << """
-            configurations.maybeCreate('archives')
+            configurations.maybeCreate('test')
 
             dependencies {
-                archives project(':${subProjectName}')
+                test project(':${subProjectName}')
             }
 
             task run (type: Copy) {
-                from(configurations.archives)
+                from(configurations.test)
                 into("${projectDir}/build/outputs")
             }
         """.stripIndent()
 
+        and: "the export options plist file in the correct directory"
+        def exportPlist = createFile("exportOptions.plist", subProjectDir)
+        exportPlist.text = exportOptions.text
+
         when:
         def result = runTasks("run")
-
 
         then:
         result.wasExecuted(":${subProjectName}:${testTaskName}")
