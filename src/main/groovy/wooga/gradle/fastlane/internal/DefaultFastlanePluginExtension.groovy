@@ -33,7 +33,7 @@ class DefaultFastlanePluginExtension implements FastlanePluginExtension {
 
         username = project.objects.property(String)
         password = project.objects.property(String)
-        apiKeyPath = project.layout.fileProperty()
+        apiKeyPath = project.objects.fileProperty()
     }
 
     final Property<String> username

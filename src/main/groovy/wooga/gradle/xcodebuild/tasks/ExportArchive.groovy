@@ -26,6 +26,8 @@ import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.internal.tasks.TaskResolver
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SkipWhenEmpty
@@ -41,7 +43,12 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
         internalPublishArtifact
     }
 
-    final RegularFileProperty exportOptionsPlist
+    private final RegularFileProperty exportOptionsPlist
+
+    @InputFile
+    RegularFileProperty getExportOptionsPlist() {
+        exportOptionsPlist
+    }
 
     @Override
     void setExportOptionsPlist(Provider value) {
@@ -65,7 +72,12 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
         this
     }
 
-    final DirectoryProperty xcArchivePath
+    private final DirectoryProperty xcArchivePath
+
+    @InputDirectory
+    DirectoryProperty getXcArchivePath() {
+        xcArchivePath
+    }
 
     @Override
     void setXcArchivePath(Provider value) {
@@ -89,11 +101,19 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
         this
     }
 
+    private final Provider<RegularFile> outputPath
+
     @OutputFile
-    final Provider<RegularFile> outputPath
+    Provider<RegularFile> getOutputPath() {
+        outputPath
+    }
+
+    private final Provider<List<String>> buildArguments
 
     @Input
-    final Provider<List<String>> buildArguments
+    Provider<List<String>> getBuildArguments() {
+        buildArguments
+    }
 
     @SkipWhenEmpty
     @InputFiles
@@ -103,8 +123,8 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
 
     ExportArchive() {
         super()
-        exportOptionsPlist = project.layout.fileProperty()
-        xcArchivePath = project.layout.directoryProperty()
+        exportOptionsPlist = project.objects.fileProperty()
+        xcArchivePath = project.objects.directoryProperty()
 
         outputPath = destinationDir.file(archiveName)
         buildArguments = project.provider({

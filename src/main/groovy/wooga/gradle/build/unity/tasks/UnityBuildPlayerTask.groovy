@@ -18,75 +18,122 @@
 package wooga.gradle.build.unity.tasks
 
 import org.apache.commons.io.FilenameUtils
-import org.apache.commons.text.StringEscapeUtils
 import org.gradle.api.Transformer
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-
+import org.gradle.process.ExecResult
 import wooga.gradle.secrets.internal.Secrets
 import wooga.gradle.secrets.SecretSpec
-import wooga.gradle.unity.batchMode.BuildTarget
-import wooga.gradle.unity.tasks.internal.AbstractUnityProjectTask
-import wooga.gradle.unity.utils.GenericUnityAsset
+import wooga.gradle.unity.UnityTask
+import wooga.gradle.unity.models.BuildTarget
+import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 import javax.crypto.spec.SecretKeySpec
 
-class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpec {
+class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
 
     static String BUILD_TARGET_KEY = "batchModeBuildTarget"
-    private GenericUnityAsset appConfig
+
+    private final ConfigurableFileCollection inputFiles
 
     @SkipWhenEmpty
     @InputFiles
-    final ConfigurableFileCollection inputFiles
+    ConfigurableFileCollection getInputFiles() {
+        inputFiles
+    }
+
+    private final RegularFileProperty appConfigFile
 
     @InputFile
-    final RegularFileProperty appConfigFile
+    RegularFileProperty getAppConfigFile() {
+        appConfigFile
+    }
+
+    private final DirectoryProperty outputDirectoryBase
 
     @Internal("Base path of outputFiles")
-    final DirectoryProperty outputDirectoryBase
+    DirectoryProperty getOutputDirectoryBase() {
+        outputDirectoryBase
+    }
+
+    private final Provider<Directory> outputDirectory
 
     @OutputDirectory
-    final Provider<Directory> outputDirectory
+    Provider<Directory> getOutputDirectory() {
+        outputDirectory
+    }
+
+    private final Provider<String> appConfigName
 
     @Internal
-    final Provider<String> appConfigName
+    Provider<String> getAppConfigName() {
+        appConfigName
+    }
+
+    private final Property<String> exportMethodName
 
     @Input
-    final Property<String> exportMethodName
+    Property<String> getExportMethodName() {
+        exportMethodName
+    }
 
-    @Optional
-    @Input
-    final Property<String> toolsVersion
-
-    @Optional
-    @Input
-    final Property<String> commitHash
-
-    @Input
-    final Property<String> version
+    private final Property<String> toolsVersion
 
     @Optional
     @Input
-    final Property<String> versionCode
+    Property<String> getToolsVersion() {
+        toolsVersion
+    }
+
+    private final Property<String> commitHash
 
     @Optional
     @Input
-    final Property<SecretKeySpec> secretsKey
+    Property<String> getCommitHash() {
+        commitHash
+    }
+
+    private final Property<String> version
+
+    @Input
+    Property<String> getVersion() {
+        version
+    }
+
+    private final Property<String> versionCode
+
+    @Optional
+    @Input
+    Property<String> getVersionCode() {
+        versionCode
+    }
+
+    private final Property<SecretKeySpec> secretsKey
+
+    @Optional
+    @Input
+    Property<SecretKeySpec> getSecretsKey() {
+        secretsKey
+    }
 
     void setSecretsKey(SecretKeySpec key) {
         secretsKey.set(key)
     }
 
+    private final MapProperty<String, ?> customArguments
+
     @Optional
     @Input
-    final Property<Map> customArguments
+    MapProperty<String, ?> getCustomArguments() {
+        customArguments
+    }
 
     UnityBuildPlayerTask setSecretsKey(String keyFile) {
         setSecretsKey(project.file(keyFile))
@@ -111,43 +158,46 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
         return setSecretsKey(keyFile)
     }
 
-    @Optional
-    @InputFile
-    final RegularFileProperty secretsFile
+    private final RegularFileProperty secretsFile
 
     @Optional
-    @Internal
+    @InputFile
+    RegularFileProperty getSecretsFile() {
+        secretsFile
+    }
+
     protected final Provider<Secrets> secrets
 
     @Internal
+    protected Provider<Secrets> getSecrets() {
+        secrets
+    }
+
     protected final Provider<Secrets.EnvironmentSecrets> environmentSecrets
 
-    @Internal("loaded app config asset")
-    protected GenericUnityAsset getAppConfig() {
-        if (!appConfig) {
-            appConfig = new GenericUnityAsset(appConfigFile.get().asFile)
-            if (!appConfig.isValid()) {
-                throw new StopExecutionException('provided appConfig is invalid')
-            }
-        }
+    @Internal
+    protected Provider<Secrets.EnvironmentSecrets> getEnvironmentSecrets() {
+        environmentSecrets
+    }
 
-        appConfig
+    @Internal("loaded app config asset")
+    protected Provider<GenericUnityAssetFile> getAppConfig() {
+        appConfigFile.map({ new GenericUnityAssetFile(it.asFile) })
     }
 
     @Internal("read from appConfig file")
-    String getBuildPlatform() {
-        getAppConfig()[BUILD_TARGET_KEY]
+    Provider<String> getBuildPlatform() {
+        getAppConfig().map({
+            it[BUILD_TARGET_KEY]
+        }).map({ it.toString().toLowerCase() })
     }
 
     UnityBuildPlayerTask() {
-        super(UnityBuildPlayerTask.class)
-        super.setBuildTarget(BuildTarget.undefined)
-
-        inputFiles = project.layout.configurableFiles()
-        appConfigFile = project.layout.fileProperty()
+        inputFiles = project.objects.fileCollection()
+        appConfigFile = project.objects.fileProperty()
         appConfigName = appConfigFile.map { FilenameUtils.removeExtension(it.asFile.name) }
 
-        outputDirectoryBase = project.layout.directoryProperty()
+        outputDirectoryBase = project.objects.directoryProperty()
 
         def outputPath = appConfigName.map(new Transformer<String, String>() {
             @Override
@@ -156,7 +206,7 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
             }
         })
 
-        outputDirectory = newOutputDirectory()
+        outputDirectory = project.objects.directoryProperty()
         outputDirectory.set(outputDirectoryBase.dir(outputPath))
 
         exportMethodName = project.objects.property(String.class)
@@ -164,9 +214,9 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
         commitHash = project.objects.property(String.class)
         version = project.objects.property(String.class)
         versionCode = project.objects.property(String.class)
-        customArguments = project.objects.property(Map.class)
+        customArguments = project.objects.mapProperty(String, Object)
         secretsKey = project.objects.property(SecretKeySpec.class)
-        secretsFile = newInputFile()
+        secretsFile = project.objects.fileProperty()
         secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {
             @Override
             Secrets transform(RegularFile secretsFile) {
@@ -182,46 +232,45 @@ class UnityBuildPlayerTask extends AbstractUnityProjectTask implements SecretSpe
             } else {
                 new Secrets.EnvironmentSecrets()
             }
+        }.memoize())
+
+        environment.putAll(environmentSecrets)
+        buildTarget.set(getBuildPlatform())
+
+        def customArgsProvider = project.provider({
+            String customArgs = "-CustomArgs:appConfig=${appConfigFile.get().asFile.path};"
+            customArgs += "outputPath=${outputDirectory.get().asFile.path};"
+            customArgs += "version=${version.get()};"
+
+            if (versionCode.present) {
+                customArgs += "versionCode=${versionCode.get()};"
+            }
+
+            if (toolsVersion.present) {
+                customArgs += "toolsVersion=${toolsVersion.get()};"
+            }
+
+            if (commitHash.present) {
+                customArgs += "commitHash=${commitHash.get()};"
+            }
+
+            customArgs += customArguments.get().collect({ key, value -> "${key}=${value};" }).join()
+            customArgs
         })
+
+        additionalArguments.add(customArgsProvider)
+        additionalArguments.add("-executeMethod")
+        additionalArguments.add(exportMethodName)
     }
 
     @Override
-    protected void exec() {
+    void exec() {
         File out = outputDirectory.get().asFile
         out.mkdirs()
-        String customArgs = "-CustomArgs:appConfig=${appConfigFile.get().asFile.path};"
-        customArgs += "outputPath=${out.path};"
-        customArgs += "version=${version.get()};"
-
-        if (getBuildPlatform()) {
-            setBuildTarget(getBuildPlatform().toLowerCase() as BuildTarget)
-        }
-
-        if (versionCode.present) {
-            customArgs += "versionCode=${versionCode.get()};"
-        }
-
-        if (toolsVersion.present) {
-            customArgs += "toolsVersion=${toolsVersion.get()};"
-        }
-
-        if (commitHash.present) {
-            customArgs += "commitHash=${commitHash.get()};"
-        }
-
-        if (customArguments.present) {
-            customArgs += customArguments.get().collect({ key, value -> "${key}=${value};"}).join()
-        }
-
-        args "-executeMethod", exportMethodName.get()
-        args customArgs
-
-        Secrets.EnvironmentSecrets secretsMap = environmentSecrets.get()
-        environment(secretsMap)
         try {
             super.exec()
         } finally {
-            secretsMap.clear()
+            environmentSecrets.get().clear()
         }
     }
 }

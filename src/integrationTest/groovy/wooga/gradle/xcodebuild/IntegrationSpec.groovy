@@ -109,7 +109,7 @@ class IntegrationSpec extends nebula.test.IntegrationSpec {
                     case "Directory":
                         value = """
                                 project.provider({
-                                    def d = project.layout.directoryProperty()
+                                    def d = project.objects.directoryProperty()
                                     d.set(${wrapValueBasedOnType(rawValue, "File", fallback)})
                                     d.get()
                                 })

@@ -66,8 +66,8 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.group = BasePlugin.BUILD_GROUP
                 task.description = "export .xcarchive from given Xcode project"
 
-                task.extension.set("xcarchive")
-                task.derivedDataPath.set(extension.derivedDataPath.dir(task.name))
+                task.extension.convention("xcarchive")
+                task.derivedDataPath.convention(extension.derivedDataPath.dir(task.name))
 
                 //each XcodeArchive task creates an archive symbols task
                 def archiveDysim = tasks.create(task.name + ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX, ArchiveDebugSymbols) {
@@ -141,15 +141,13 @@ class XcodeBuildPlugin implements Plugin<Project> {
             void execute(ArchiveDebugSymbols task) {
                 task.group = BasePlugin.BUILD_GROUP
                 task.description = "export debug symbols (dSYMs) from given .xcarchive"
-
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("version", { PropertyUtils.convertToString(project.version) })
-                conventionMapping.map("destinationDir", {
-                    extension.debugSymbolsDir.get().asFile
-                })
-                conventionMapping.map("baseName", { project.name })
-                conventionMapping.map("classifier", { "dSYM" })
-                conventionMapping.map("extension", { "zip" })
+                task.archiveVersion.convention(project.provider({
+                    PropertyUtils.convertToString(project.version)
+                }))
+                task.archiveBaseName.convention(project.name)
+                task.archiveExtension.convention("zip")
+                task.archiveClassifier.convention("dSYM")
+                task.getDestinationDirectory().convention(extension.debugSymbolsDir)
             }
         })
     }

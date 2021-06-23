@@ -150,31 +150,31 @@ abstract class AbstractXcodeArchiveTaskIntegrationSpec extends AbstractXcodeTask
         _        | null     | _       | null       | _         | _            | "#baseName-#version.#extension"
         null     | null     | _       | null       | _         | _            | "#version.#extension"
         'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#appendix-#version-#classifier.#extension"
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier"
-        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier"
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier.#extension"
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier.#extension"
         'test'   | 'suite'  | '0.1.0' | null       | 'xml'     | _            | "#baseName-#appendix-#version.#extension"
-        'test'   | 'suite'  | '0.1.0' | null       | null      | _            | "#baseName-#appendix-#version"
+        'test'   | 'suite'  | '0.1.0' | null       | null      | _            | "#baseName-#appendix-#version.#extension"
         'test'   | 'suite'  | null    | 'case'     | 'xml'     | _            | "#baseName-#appendix-#classifier.#extension"
         'test'   | 'suite'  | null    | null       | 'xml'     | _            | "#baseName-#appendix.#extension"
-        'test'   | 'suite'  | null    | null       | null      | _            | "#baseName-#appendix"
+        'test'   | 'suite'  | null    | null       | null      | _            | "#baseName-#appendix.#extension"
         'test'   | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#version-#classifier.#extension"
         'test'   | null     | '0.1.0' | null       | 'xml'     | _            | "#baseName-#version.#extension"
-        'test'   | null     | '0.1.0' | null       | null      | _            | "#baseName-#version"
+        'test'   | null     | '0.1.0' | null       | null      | _            | "#baseName-#version.#extension"
         'test'   | null     | null    | 'case'     | 'xml'     | _            | "#baseName-#classifier.#extension"
         'test'   | null     | null    | null       | 'xml'     | _            | "#baseName.#extension"
-        'test'   | null     | null    | null       | null      | _            | "#baseName"
+        'test'   | null     | null    | null       | null      | _            | "#baseName.#extension"
         null     | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#appendix-#version-#classifier.#extension"
         null     | 'suite'  | null    | 'case'     | 'xml'     | _            | "#appendix-#classifier.#extension"
-        null     | 'suite'  | null    | 'case'     | null      | _            | "#appendix-#classifier"
+        null     | 'suite'  | null    | 'case'     | null      | _            | "#appendix-#classifier.#extension"
         null     | 'suite'  | null    | null       | 'xml'     | _            | "#appendix.#extension"
-        null     | 'suite'  | null    | null       | null      | _            | "#appendix"
+        null     | 'suite'  | null    | null       | null      | _            | "#appendix.#extension"
         null     | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#version-#classifier.#extension"
         null     | null     | '0.1.0' | null       | 'xml'     | _            | "#version.#extension"
-        null     | null     | '0.1.0' | null       | null      | _            | "#version"
+        null     | null     | '0.1.0' | null       | null      | _            | "#version.#extension"
         null     | null     | null    | 'case'     | 'xml'     | _            | "#classifier.#extension"
-        null     | null     | null    | 'case'     | null      | _            | "#classifier"
+        null     | null     | null    | 'case'     | null      | _            | "#classifier.#extension"
         null     | null     | null    | null       | 'xml'     | _            | ".#extension"
-        null     | null     | null    | null       | null      | _            | ""
+        null     | null     | null    | null       | null      | _            | ".#extension"
         _        | null     | _       | null       | _         | 'customName' | 'customName'
         null     | null     | _       | null       | _         | 'customName' | 'customName'
         'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
@@ -210,7 +210,7 @@ abstract class AbstractXcodeArchiveTaskIntegrationSpec extends AbstractXcodeTask
 
         expectedValue = expectedArchivePattern.replace('#baseName', (baseName == _ ? defaultBaseName : baseName ?: '').toString())
                 .replace('#version', (version == _ ? defaultVersion : version ?: '').toString())
-                .replace('#extension', (extension == _ ? defaultExtension : extension ?: '').toString())
+                .replace('#extension', (extension == _ ? defaultExtension : extension ?: defaultExtension).toString())
                 .replace('#appendix', (appendix ?: '').toString())
                 .replace('#classifier', (classifier ?: '').toString())
 

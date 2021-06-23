@@ -24,6 +24,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 
@@ -46,7 +47,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<String> commitHash
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
-    final Property<Map> customArguments
+    final MapProperty<String, ?> customArguments
     final Provider<Directory> assetsDir
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
     final RegularFileProperty exportInitScript
@@ -58,18 +59,18 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
 
-        appConfigsDirectory = project.layout.directoryProperty()
-        outputDirectoryBase = project.layout.directoryProperty()
+        appConfigsDirectory = project.objects.directoryProperty()
+        outputDirectoryBase = project.objects.directoryProperty()
         toolsVersion = project.objects.property(String.class)
         version = project.objects.property(String.class)
         versionCode = project.objects.property(String.class)
         commitHash = project.objects.property(String.class)
         exportMethodName = project.objects.property(String.class)
         defaultAppConfigName = project.objects.property(String.class)
-        customArguments = project.objects.property(Map.class)
-        assetsDir = project.layout.directoryProperty()
-        ignoreFilesForExportUpToDateCheck = project.layout.configurableFiles()
-        exportInitScript = project.layout.fileProperty()
+        customArguments = project.objects.mapProperty(String, Object)
+        assetsDir = project.objects.directoryProperty()
+        ignoreFilesForExportUpToDateCheck = project.objects.fileCollection()
+        exportInitScript = project.objects.fileProperty()
         exportBuildDirBase = project.objects.property(File)
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
 
@@ -132,7 +133,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             @Override
             Directory call() throws Exception {
                 UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
-                def assetDir = project.layout.directoryProperty()
+                def assetDir = project.objects.directoryProperty()
                 assetDir.set(project.file(unity.assetsDir))
                 assetDir.get()
             }
@@ -145,7 +146,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
                         project.properties.get(UnityBuildPluginConsts.EXPORT_INIT_SCRIPT_OPTION, null)
 
                 if (exportInitScriptPath) {
-                    def property = project.layout.fileProperty()
+                    def property = project.objects.fileProperty()
                     property.set(new File(exportInitScriptPath))
                     return property.get()
                 }
@@ -153,19 +154,13 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
             }
         }))
 
-        exportBuildDirBase.set(project.provider(new Callable<Directory>() {
-            @Override
-            Directory call() throws Exception {
+        exportBuildDirBase.convention(project.provider({
                 String exportBuildDirBasePath = System.getenv().get(UnityBuildPluginConsts.EXPORT_BUILD_DIR_BASE_ENV_VAR) ?:
                         project.properties.get(UnityBuildPluginConsts.EXPORT_BUILD_DIR_BASE_OPTION, null)
-
                 if (exportBuildDirBasePath) {
-                    def property = project.layout.directoryProperty()
-                    property.set(new File(exportBuildDirBasePath))
-                    return property.get()
+                    return project.layout.projectDirectory.dir(exportBuildDirBasePath)
                 }
                 return null
-            }
         }))
 
         cleanBuildDirBeforeBuild.set(project.provider(new Callable<Boolean>() {

@@ -153,7 +153,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
         when:
         ExecutionResult result
-        def t = new Thread({
+        Thread t = new Thread({
             result = runTasks("addKeychain", "longRunningTask")
         })
 
@@ -188,7 +188,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         ProcessList.Signal.KILL | false
         ProcessList.Signal.ALRM | false
         ProcessList.Signal.TERM | true
-        gradleDaemonVersion = "4.10.2"
+        gradleDaemonVersion = "6.8.2"
         removes = removeKeychain ? "runs shutdown hook and removes" : "keeps"
     }
 
@@ -223,7 +223,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
     }
 
     @Unroll
-    def "task :#taskToRun resets keychains before build when #message"() {
+    def "task #taskToRun resets keychains before build when #message"() {
         given: "project which will succeed/fail the assemble task"
         //skip these tasks to succeed the build
         buildFile << """

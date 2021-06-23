@@ -27,6 +27,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Console
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.xcodebuild.ConsoleSettings
@@ -77,7 +78,12 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         this
     }
 
-    final ListProperty<String> additionalBuildArguments
+    private final ListProperty<String> additionalBuildArguments
+
+    @Input
+    ListProperty<String> getAdditionalBuildArguments() {
+        additionalBuildArguments
+    }
 
     @Override
     void setAdditionalBuildArguments(Iterable<String> value) {
@@ -107,7 +113,12 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         return this
     }
 
-    final Property<BuildSettings> buildSettings
+    private final Property<BuildSettings> buildSettings
+
+    @Internal
+    Property<BuildSettings> getBuildSettings() {
+        buildSettings
+    }
 
     @Override
     void setBuildSettings(BuildSettings value) {
@@ -137,8 +148,12 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         this
     }
 
+    private final RegularFileProperty logFile
+
     @Internal
-    final RegularFileProperty logFile
+    RegularFileProperty getLogFile() {
+        logFile
+    }
 
     @Override
     void setLogFile(File value) {
@@ -174,7 +189,7 @@ abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec 
         additionalBuildArguments = project.objects.listProperty(String)
         buildSettings = project.objects.property(BuildSettings)
         consoleSettings = project.objects.property(ConsoleSettings)
-        logFile = project.layout.fileProperty()
+        logFile = project.objects.fileProperty()
     }
 
     @TaskAction

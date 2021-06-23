@@ -21,12 +21,18 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.util.GUtil
 import wooga.gradle.xcodebuild.XcodeArchiveActionSpecBase
 
 abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements XcodeArchiveActionSpecBase {
+    private final Property<String> archiveName
+
     @Input
-    final Property<String> archiveName
+    Property<String> getArchiveName(){
+        archiveName
+    }
 
     @Override
     void setArchiveName(String value) {
@@ -50,7 +56,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
-    final Property<String> baseName
+    private final Property<String> baseName
+
+    @Internal
+    Property<String> getBaseName() {
+        baseName
+    }
 
     @Override
     void setBaseName(String value) {
@@ -74,7 +85,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
-    final Property<String> appendix
+    private final Property<String> appendix
+
+    @Internal
+    Property<String> getAppendix() {
+        appendix
+    }
 
     @Override
     void setAppendix(String value) {
@@ -98,7 +114,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
-    final Property<String> version
+    private final Property<String> version
+
+    @Internal
+    Property<String> getVersion() {
+        version
+    }
 
     @Override
     void setVersion(String value) {
@@ -122,8 +143,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
+    private final Property<String> extension
 
-    final Property<String> extension
+    @Internal
+    Property<String> getExtension() {
+        extension
+    }
 
     @Override
     void setExtension(String value) {
@@ -147,7 +172,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
-    final Property<String> classifier
+    private final Property<String> classifier
+
+    @Internal
+    Property<String> getClassifier() {
+        classifier
+    }
 
     @Override
     void setClassifier(String value) {
@@ -171,7 +201,12 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
         this
     }
 
-    final DirectoryProperty destinationDir
+    private final DirectoryProperty destinationDir
+
+    @OutputDirectory
+    DirectoryProperty getDestinationDir(){
+        destinationDir
+    }
 
     @Override
     void setDestinationDir(File value) {
@@ -211,7 +246,7 @@ abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements Xco
             name
         }))
 
-        destinationDir = project.layout.directoryProperty()
+        destinationDir = project.objects.directoryProperty()
     }
 
     protected static String maybe(String prefix, Provider<String> value) {

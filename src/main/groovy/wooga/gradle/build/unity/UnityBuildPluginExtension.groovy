@@ -21,6 +21,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
@@ -33,7 +34,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     Property<String> getCommitHash()
     Property<String> getExportMethodName()
     Property<String> getDefaultAppConfigName()
-    Property<Map> getCustomArguments()
+    MapProperty<String, String> getCustomArguments()
     RegularFileProperty getExportInitScript()
     Property<File> getExportBuildDirBase()
     Property<Boolean> getCleanBuildDirBeforeBuild()

@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '1.5.0'
+    id 'net.wooga.plugins' version '2.1.1'
 }
 
 group 'net.wooga.gradle'
@@ -53,38 +53,42 @@ github {
 }
 
 repositories {
-    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
-    jcenter()
     mavenCentral()
+    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
 }
 
 dependencies {
-    compile "org.gradle:gradle-tooling-api:+"
-    compile 'gradle.plugin.net.wooga.gradle:atlas-unity:1.+'
-    compile 'gradle.plugin.net.wooga.gradle:atlas-secrets:0.1.0-rc.1'
-    compile 'xmlwise:xmlwise:1.2.11'
-    compile 'commons-codec:commons-codec:1.14'
-    compile 'software.amazon.awssdk:secretsmanager:2.13.42'
-    compile('com.wooga.xcodebuild:xcpretty:1.+') {
-        exclude group: "org.codehaus.groovy", module: "groovy-all"
-    }
-    compile 'com.googlecode.plist:dd-plist:1.23'
-    testCompile 'org.apache.commons:commons-text:1.8'
-    testCompile 'com.github.stefanbirkner:system-rules:1.18.0'
-    testCompile('com.nagternal:spock-genesis:0.6.0') {
-        exclude group: "org.codehaus.groovy", module: "groovy-all"
-    }
+    implementation "org.gradle:gradle-tooling-api:+"
+    implementation 'gradle.plugin.net.wooga.gradle:atlas-unity:2.0.0-rc.5'
+    implementation 'gradle.plugin.net.wooga.gradle:atlas-secrets:1.0.0-rc.1'
+    implementation 'xmlwise:xmlwise:1.2.11'
+    implementation 'commons-codec:commons-codec:1.14'
+    implementation 'software.amazon.awssdk:secretsmanager:(2.16,3]'
+    implementation('com.wooga.xcodebuild:xcpretty:(1,2]')
+    implementation'com.googlecode.plist:dd-plist:1.23'
+    implementation 'org.apache.commons:commons-text:1.8'
+    testImplementation('com.nagternal:spock-genesis:0.6.0')
+    testImplementation "org.yaml:snakeyaml:1.28"
 
-    testCompile('com.netflix.nebula:nebula-test:7.7.0') {
-        force = true
-    }
+    implementation('com.wooga.security:macos-security:(1,2]')
 
-    compile('com.wooga.security:macos-security:1.+') {
-        exclude group: "org.codehaus.groovy", module: "groovy-all"
-    }
+    //TODO: I have no idea why we need this now.
+    implementation('org.apache.maven:maven-artifact:(3,4]')
 
-    integrationTestCompile('com.wooga.spock.extensions:spock-macos-keychain-extension:1.+') {
-        exclude group: "org.codehaus.groovy", module: "groovy-all"
-    }
-    integrationTestCompile('commons-io:commons-io:2.6')
+    integrationTestImplementation('com.wooga.spock.extensions:spock-macos-keychain-extension:(1,2]')
+    integrationTestImplementation('commons-io:commons-io:2.6')
+
+    //TODO: https://github.com/wooga/atlas-plugins/issues/56
+    integrationTestImplementation sourceSets.test.output
 }
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.codehaus.groovy:groovy-all:2.5.12'
+        force 'org.codehaus.groovy:groovy-macro:2.5.12'
+        force 'org.codehaus.groovy:groovy-nio:2.5.12'
+        force 'org.codehaus.groovy:groovy-sql:2.5.12'
+        force 'org.codehaus.groovy:groovy-xml:2.5.12'
+    }
+}
+

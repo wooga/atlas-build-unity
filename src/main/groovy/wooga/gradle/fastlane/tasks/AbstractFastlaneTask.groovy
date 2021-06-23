@@ -113,8 +113,8 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActio
 
     AbstractFastlaneTask() {
         additionalArguments = project.objects.listProperty(String)
-        logFile = project.layout.fileProperty()
-        apiKeyPath = project.layout.fileProperty()
+        logFile = project.objects.fileProperty()
+        apiKeyPath = project.objects.fileProperty()
     }
 
     @TaskAction

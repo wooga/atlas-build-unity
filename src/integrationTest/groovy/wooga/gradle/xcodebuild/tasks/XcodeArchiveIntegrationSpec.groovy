@@ -19,6 +19,7 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+import nebula.test.IntegrationBase
 import net.wooga.test.xcode.XcodeTestProject
 import org.junit.ClassRule
 import spock.lang.Requires
@@ -103,14 +104,19 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
     }
 
     def "fails when project is not a valid .xcodeprj or .xcworkspace"() {
-        given:
+        given: "temp fake project"
+        def prj = File.createTempDir("someProject", ".project")
+        def someProjectFile = new File(prj, "foo")
+        someProjectFile.text = "temp"
+
+        and:
         buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        ${testTaskName}.projectPath = new File("${File.createTempDir("someProject", ".project")}")
+        ${testTaskName}.projectPath = file("${prj.absolutePath}")
         """.stripIndent()
 
         when:
-        def result = runTasksWithFailure(testTaskName)
+        def result = runTasks(testTaskName)
 
         then:
         outputContains(result, "xcode project path must be a valid .xcodeproj or .xcworkspace")
