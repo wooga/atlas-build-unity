@@ -16,9 +16,10 @@
 
 package wooga.gradle.xcodebuild
 
-import wooga.gradle.xcodebuild.internal.PropertyLookup
+import wooga.gradle.unity.utils.PropertyLookup
 
-class XcodeBuildPluginConsts {
+
+class XcodeBuildPluginConventions {
     static final String INVALID_XCODE_PROJECT_ERROR_MESSAGE = "xcode project path must be a valid .xcodeproj or .xcworkspace"
 
     /**
@@ -33,7 +34,7 @@ class XcodeBuildPluginConsts {
 
     /**
      * Gradle property lookup object with values to fetch default derived data path.
-     *
+     *Pro
      * @environmentVariable "XCODEBUILD_DERIVED_DATA_PATH"
      * @propertyName "xcodebuild.derivedDataPath"
      * @defaultValue "derivedData"

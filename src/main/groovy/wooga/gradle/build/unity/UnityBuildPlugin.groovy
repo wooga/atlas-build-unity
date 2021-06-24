@@ -28,14 +28,14 @@ import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
-
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
-import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
+import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -49,8 +49,93 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(UnityPlugin.class)
         project.pluginManager.apply(SecretsPlugin.class)
 
-        def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
+        configureExtension(extension, project)
+        configureTasks(extension, project)
+    }
+
+    static void configureExtension(UnityBuildPluginExtension extension, Project project) {
+
+        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
+        extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
+        extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
+        extension.toolsVersion.set(UnityBuildPluginConventions.BUILD_TOOLS_VERSION.getStringValueProvider(project))
+
+        // TODO: How to handle checking for project version first here?
+        extension.version.set(project.provider {
+            def version = PropertyUtils.convertToString(project.version)
+            if (!version || version == "unspecified") {
+                return UnityBuildPluginConventions.BUILD_VERSION.getValueAsString(project.properties)
+            }
+            version
+        })
+        //extension.version.set(UnityBuildPluginConventions.BUILD_VERSION.getStringValueProvider(project))
+//        extension.version.set(project.provider(new Callable<String>() {
+//            @Override
+//            String call() throws Exception {
+//                def version = PropertyUtils.convertToString(project.version)
+//                if(!version || version == "unspecified") {
+//                    return System.getenv().get(UnityBuildPluginConventions.BUILD_VERSION_ENV_VAR) ?:
+//                            project.properties.get(UnityBuildPluginConventions.BUILD_VERSION_OPTION, version) as String
+//                }
+//                version
+//            }
+//        }))
+        extension.versionCode.set(UnityBuildPluginConventions.BUILD_VERSION_CODE.getStringValueProvider(project))
+        extension.outputDirectoryBase.set(project.layout.buildDirectory.dir(UnityBuildPluginConventions.DEFAULT_EXPORT_DIRECTORY_NAME))
+
+        // TODO: Is this correct?
+        UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
+        extension.assetsDir.set(unity.assetsDir)
+//        extension.assetsDir.set(project.provider(new Callable<Directory>() {
+//            @Override
+//            Directory call() throws Exception {
+//
+//                def assetDir = project.objects.directoryProperty()
+//                assetDir.set(project.file(unity.assetsDir))
+//                assetDir.get()
+//            }
+//        }))
+
+        // TODO: assetsDir should be a DirectoryProperty?
+        extension.appConfigsDirectory.set(extension.assetsDir.get().dir(UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY))
+        extension.exportInitScript.set(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT.getFileValueProvider(project))
+//        extension.exportInitScript.set(project.provider(new Callable<RegularFile>() {
+//
+//            @Override
+//            RegularFile call() throws Exception {
+//                String exportInitScriptPath = System.getenv().get(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT_ENV_VAR) ?:
+//                        project.properties.get(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT_OPTION, null)
+//
+//                if (exportInitScriptPath) {
+//                    def property = project.objects.fileProperty()
+//                    property.set(new File(exportInitScriptPath))
+//                    return property.get()
+//                }
+//                return null
+//            }
+//        }))
+
+        // TODO: Won't wokr unless exportBuildDirBase is a RegularFileProperty?
+        extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getFileValueProvider(project))
+//        extension.exportBuildDirBase.convention(project.provider({
+//            String exportBuildDirBasePath = System.getenv().get(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE_ENV_VAR) ?:
+//                    project.properties.get(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE_OPTION, null)
+//            if (exportBuildDirBasePath) {
+//                return project.layout.projectDirectory.dir(exportBuildDirBasePath)
+//            }
+//            return null
+//        }))
+
+
+        extension.cleanBuildDirBeforeBuild.set(UnityBuildPluginConventions.CLEAN_BUILD_DIR_BEFORE_BUILD.getBooleanValueProvider(project))
+        extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
+    }
+
+    static void configureTasks(UnityBuildPluginExtension extension, Project project) {
+
+        def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
+
         def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME,
                                       LifecycleBasePlugin.CHECK_TASK_NAME,
                                       LifecycleBasePlugin.BUILD_TASK_NAME,
@@ -63,17 +148,17 @@ class UnityBuildPlugin implements Plugin<Project> {
 
         project.tasks.withType(UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
             @Override
-            void execute(UnityBuildPlayerTask task) {
-                task.exportMethodName.set(extension.exportMethodName)
-                task.toolsVersion.set(extension.toolsVersion)
-                task.commitHash.set(extension.commitHash)
-                task.outputDirectoryBase.set(extension.outputDirectoryBase)
-                task.version.set(extension.version)
-                task.versionCode.set(extension.versionCode)
-                task.customArguments.set(extension.customArguments)
-                task.inputFiles.from({
+            void execute(UnityBuildPlayerTask t) {
+                t.exportMethodName.set(extension.exportMethodName)
+                t.toolsVersion.set(extension.toolsVersion)
+                t.commitHash.set(extension.commitHash)
+                t.outputDirectoryBase.set(extension.outputDirectoryBase)
+                t.version.set(extension.version)
+                t.versionCode.set(extension.versionCode)
+                t.customArguments.set(extension.customArguments)
+                t.inputFiles.from({
 
-                    def assetsDir = task.projectDirectory.dir("Assets")
+                    def assetsDir = t.projectDirectory.dir("Assets")
                     def assetsFileTree = project.fileTree(assetsDir)
 
                     def includeSpec = new Spec<FileTreeElement>() {
@@ -94,8 +179,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                                  *
                                  * @return The path. Never returns null.
                                  */
-                                if (task.getBuildPlatform()) {
-                                    status = path.contains("plugins/" + task.getBuildPlatform().get())
+                                if (t.getBuildPlatform()) {
+                                    status = path.contains("plugins/" + t.getBuildPlatform().get())
                                 } else {
                                     status = true
                                 }
@@ -115,12 +200,11 @@ class UnityBuildPlugin implements Plugin<Project> {
                     assetsFileTree.include(includeSpec)
                     assetsFileTree.exclude(excludeSpec)
 
-
-                    def projectSettingsDir = task.projectDirectory.dir("ProjectSettings")
+                    def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
                     def projectSettingsFileTree = project.fileTree(projectSettingsDir)
                     projectSettingsFileTree.exclude(excludeSpec)
 
-                    def packageManagerDir = task.projectDirectory.dir("UnityPackageManager")
+                    def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
                     def packageManagerDirFileTree = project.fileTree(packageManagerDir)
                     packageManagerDirFileTree.exclude(excludeSpec)
 
@@ -150,7 +234,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     t.group = "secrets"
                     t.description = "fetches all secrets configured in ${appConfigName}"
                     t.secretIds.set(project.provider({
-                        if(config.containsKey(extension.appConfigSecretsKey.get())) {
+                        if (config.containsKey(extension.appConfigSecretsKey.get())) {
                             return config[extension.appConfigSecretsKey.get()] as List<String>
                         }
                         []

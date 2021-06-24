@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package wooga.gradle.fastlane.internal
+package wooga.gradle.fastlane
 
-class PropertyLookup {
-    final String env
-    final String property
-    final String defaultValue
+import wooga.gradle.unity.utils.PropertyLookup
 
-    PropertyLookup(String env, String property, String defaultValue = null) {
-        this.env = env
-        this.property = property
-        this.defaultValue = defaultValue
-    }
+
+class FastlanePluginConventions {
+
+    static final PropertyLookup USERNAME_LOOKUP = new PropertyLookup("FASTLANE_USERNAME", "fastlane.username", null)
+    static final PropertyLookup PASSWORD_LOOKUP = new PropertyLookup("FASTLANE_PASSWORD", "fastlane.password", null)
+    static final PropertyLookup API_KEY_PATH_LOOKUP = new PropertyLookup("FASTLANE_API_KEY_PATH", "fastlane.apiKeyPath", null)
 }
