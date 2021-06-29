@@ -43,10 +43,11 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final Property<String> exportMethodName
     final Property<String> defaultAppConfigName
     final MapProperty<String, ?> customArguments
-    final Provider<Directory> assetsDir
-    Provider<Directory> getAssetsDir(){
+    final DirectoryProperty assetsDir
+    DirectoryProperty getAssetsDir(){
         assetsDir
     }
+
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
     final RegularFileProperty exportInitScript
     final Property<File> exportBuildDirBase

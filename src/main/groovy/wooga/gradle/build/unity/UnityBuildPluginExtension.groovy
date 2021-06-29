@@ -38,12 +38,10 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     Property<String> getDefaultAppConfigName()
     MapProperty<String, String> getCustomArguments()
     RegularFileProperty getExportInitScript()
-    // TODO: Convert to Directory or RegularFile Property?
     Property<File> getExportBuildDirBase()
     Property<Boolean> getCleanBuildDirBeforeBuild()
     FileCollection getAppConfigs()
-    // TODO: Convert to DirectoryProperty?
-    Provider<Directory> getAssetsDir()
+    DirectoryProperty getAssetsDir()
 
     ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
 
