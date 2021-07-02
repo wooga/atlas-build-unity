@@ -167,17 +167,23 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
         })
 
+        // Generate tasks for each app config in the Unity project
         project.afterEvaluate {
+
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
+
+            // For every app config
             extension.getAppConfigs().each { File appConfig ->
                 def appConfigName = FilenameUtils.removeExtension(appConfig.name)
                 def config = new GenericUnityAssetFile(appConfig)
 
+                // Compose a suffix based on the appconfig for the tasks about to be generated
                 def characterPattern = ':_\\-<>|*\\\\?/ '
-                def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
-                baseName = baseName.replaceAll(~/[$characterPattern]/, '')
+                def appConfigSuffix = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
+                appConfigSuffix = appConfigSuffix.replaceAll(~/[$characterPattern]/, '')
 
-                TaskProvider<FetchSecrets> fetchSecretsTask = project.tasks.register("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
+                // Generate a task to fetch secrets, which will be used by the build system
+                TaskProvider<FetchSecrets> fetchSecretsTask = project.tasks.register("fetchSecrets${appConfigSuffix}", FetchSecrets) { FetchSecrets t ->
                     t.group = "secrets"
                     t.description = "fetches all secrets configured in ${appConfigName}"
                     t.secretIds.convention(project.provider({
@@ -188,7 +194,9 @@ class UnityBuildPlugin implements Plugin<Project> {
                     }))
                 }
 
-                TaskProvider<UnityBuildPlayerTask> exportTask = project.tasks.register("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
+                // Generate a task to export the gradle project
+                // TODO: Explain
+                TaskProvider<UnityBuildPlayerTask> exportTask = project.tasks.register("export${appConfigSuffix}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
                     t.group = "build unity"
                     t.description = "exports gradle project for app config ${appConfigName}"
                     t.appConfigFile.set(appConfig)
@@ -196,8 +204,10 @@ class UnityBuildPlugin implements Plugin<Project> {
                     t.secretsKey.set(secretsExtension.secretsKey)
                 }
 
+                // Generate tasks based on the lifecycle tasks
+                // TODO: Explain
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
-                    def gradleBuild = project.tasks.register("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
+                    def gradleBuild = project.tasks.register("${taskName}${appConfigSuffix.capitalize()}", GradleBuild) { GradleBuild t ->
                         t.dependsOn exportTask
                         t.group = groupName
                         t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
@@ -216,6 +226,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                         }))
                     }
 
+                    // If this is the default app config....
+                    // TODO: Explain
                     if (defaultAppConfigName == appConfigName) {
                         project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }

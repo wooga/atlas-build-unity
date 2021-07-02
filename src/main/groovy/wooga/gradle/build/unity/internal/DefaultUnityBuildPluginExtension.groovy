@@ -90,6 +90,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     @Override
     FileCollection getAppConfigs() {
+        // Returns all files with .asset in the appconfig directory
         project.fileTree(getAppConfigsDirectory()) {
             it.include UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_INCLUDE_PATTERN
             it.exclude UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN

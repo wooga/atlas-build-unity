@@ -45,16 +45,22 @@ class XcodeBuildPlugin implements Plugin<Project> {
     void apply(Project project) {
         this.project = project
         def extension = project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
-        def tasks = project.tasks
 
         project.pluginManager.apply(BasePlugin.class)
+        configureExtension(extension, project)
+        configureTasks(project, extension)
+    }
 
+    private static void configureExtension(XcodeBuildPluginExtension extension, Project project) {
         extension.logsDir.set(LOGS_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.derivedDataPath.set(DERIVED_DATA_PATH_LOOKUP.getDirectoryValueProvider(project))
         extension.xarchivesDir.set(XARCHIVES_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.debugSymbolsDir.set(DEBUG_SYMBOLS_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.consoleSettings.set(ConsoleSettings.fromGradleOutput(project.gradle.startParameter.consoleOutput))
+    }
 
+    private static void configureTasks(Project project, extension) {
+        def tasks = project.tasks
         def archives = project.configurations.maybeCreate('archives')
         project.configurations['default'].extendsFrom(archives)
 

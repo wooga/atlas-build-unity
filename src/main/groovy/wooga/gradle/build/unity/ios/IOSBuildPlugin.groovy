@@ -44,6 +44,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+
         //check if system is running mac os
         String osName = System.getProperty("os.name").toLowerCase()
         if (!osName.contains('mac os')) {
@@ -56,10 +57,15 @@ class IOSBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(FastlanePlugin.class)
         project.pluginManager.apply(PublishingPlugin.class)
 
-        def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
-        def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
+        def extension = project.extensions.create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
+        configureTasks(project, extension)
+        generateTasksFromXcode(project, extension)
+    }
 
-        //register some defaults
+    private static void configureTasks(Project project, IOSBuildPluginExtension extension) {
+
+        def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
+        // Register some defaults
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
             void execute(XcodeArchive task) {
@@ -138,7 +144,9 @@ class IOSBuildPlugin implements Plugin<Project> {
                 task.appIdentifier.set(project.provider({ extension.getAppIdentifier() }))
             }
         })
+    }
 
+    private static void generateTasksFromXcode(Project project, extension) {
         def projects = project.fileTree(project.projectDir) { it.include("*.xcodeproj/project.pbxproj") }.files
         projects.each { File xcodeProject ->
             def base = xcodeProject.parentFile
@@ -199,7 +207,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         def shutdownHook = new Thread({
             System.err.println("shutdown hook called")
             System.err.flush()
-            if(addKeychain.didWork) {
+            if (addKeychain.didWork) {
                 System.err.println("task ${addKeychain.name} did run. Execute ${removeKeychain.name} shutdown action")
                 removeKeychain.shutdown()
             } else {
@@ -219,7 +227,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
             it.dependsOn addKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString() )
+            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
         }
 
         PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
