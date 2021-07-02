@@ -26,16 +26,17 @@ import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
-
+import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
-import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
+import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -49,8 +50,45 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(UnityPlugin.class)
         project.pluginManager.apply(SecretsPlugin.class)
 
-        def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
+        configureExtension(extension, project)
+        configureTasks(extension, project)
+    }
+
+    static void configureExtension(UnityBuildPluginExtension extension, Project project) {
+
+        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
+        extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
+        extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
+        extension.toolsVersion.set(UnityBuildPluginConventions.BUILD_TOOLS_VERSION.getStringValueProvider(project))
+
+        extension.version.convention(project.provider {
+            def version = PropertyUtils.convertToString(project.version)
+            if (!version || version == "unspecified") {
+                return UnityBuildPluginConventions.BUILD_VERSION.getStringValueProvider(project).getOrElse("unspecified")
+            }
+            version
+        })
+
+        extension.versionCode.convention(UnityBuildPluginConventions.BUILD_VERSION_CODE.getStringValueProvider(project))
+        extension.outputDirectoryBase.convention(project.layout.buildDirectory.dir(UnityBuildPluginConventions.DEFAULT_EXPORT_DIRECTORY_NAME))
+
+        UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
+        extension.assetsDir.convention(unity.assetsDir)
+
+        extension.appConfigsDirectory.convention(extension.assetsDir.dir(UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY))
+        extension.exportInitScript.convention(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT.getFileValueProvider(project))
+
+        extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({new File(it)}))
+
+        extension.cleanBuildDirBeforeBuild.set(UnityBuildPluginConventions.CLEAN_BUILD_DIR_BEFORE_BUILD.getBooleanValueProvider(project))
+        extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
+    }
+
+    static void configureTasks(UnityBuildPluginExtension extension, Project project) {
+
+        def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
+
         def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME,
                                       LifecycleBasePlugin.CHECK_TASK_NAME,
                                       LifecycleBasePlugin.BUILD_TASK_NAME,
@@ -61,79 +99,72 @@ class UnityBuildPlugin implements Plugin<Project> {
                                        LifecycleBasePlugin.BUILD_GROUP,
                                        PublishingPlugin.PUBLISH_TASK_GROUP]
 
-        project.tasks.withType(UnityBuildPlayerTask, new Action<UnityBuildPlayerTask>() {
-            @Override
-            void execute(UnityBuildPlayerTask task) {
-                task.exportMethodName.set(extension.exportMethodName)
-                task.toolsVersion.set(extension.toolsVersion)
-                task.commitHash.set(extension.commitHash)
-                task.outputDirectoryBase.set(extension.outputDirectoryBase)
-                task.version.set(extension.version)
-                task.versionCode.set(extension.versionCode)
-                task.customArguments.set(extension.customArguments)
-                task.inputFiles.from({
+        project.tasks.withType(UnityBuildPlayerTask).configureEach({UnityBuildPlayerTask t ->
+            t.exportMethodName.convention(extension.exportMethodName)
+            t.toolsVersion.convention(extension.toolsVersion)
+            t.commitHash.convention(extension.commitHash)
+            t.outputDirectoryBase.convention(extension.outputDirectoryBase)
+            t.version.convention(extension.version)
+            t.versionCode.convention(extension.versionCode)
+            t.customArguments.convention(extension.customArguments)
+            t.inputFiles.from({
 
-                    def assetsDir = task.projectDirectory.dir("Assets")
-                    def assetsFileTree = project.fileTree(assetsDir)
+                def assetsDir = t.projectDirectory.dir("Assets")
+                def assetsFileTree = project.fileTree(assetsDir)
 
-                    def includeSpec = new Spec<FileTreeElement>() {
-                        @Override
-                        boolean isSatisfiedBy(FileTreeElement element) {
-                            def path = element.getRelativePath().getPathString().toLowerCase()
-                            def name = element.name.toLowerCase()
-                            def status = true
-                            if (path.contains("plugins")
-                                    && !((name == "plugins") || (name == "plugins.meta"))) {
-                                /*
-                                 Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
-                                 The getPath() method is not the same as {@code File.getPath()}
-                                 From the docs:
+                def includeSpec = new Spec<FileTreeElement>() {
+                    @Override
+                    boolean isSatisfiedBy(FileTreeElement element) {
+                        def path = element.getRelativePath().getPathString().toLowerCase()
+                        def name = element.name.toLowerCase()
+                        def status = true
+                        if (path.contains("plugins")
+                                && !((name == "plugins") || (name == "plugins.meta"))) {
+                            /*
+                             Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
+                             The getPath() method is not the same as {@code File.getPath()}
+                             From the docs:
 
-                                 * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-                                 * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-                                 *
-                                 * @return The path. Never returns null.
-                                 */
-                                if (task.getBuildPlatform()) {
-                                    status = path.contains("plugins/" + task.getBuildPlatform().get())
-                                } else {
-                                    status = true
-                                }
+                             * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
+                             * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
+                             *
+                             * @return The path. Never returns null.
+                             */
+                            if (t.getBuildPlatform()) {
+                                status = path.contains("plugins/" + t.getBuildPlatform().get())
+                            } else {
+                                status = true
                             }
-
-                            status
                         }
+
+                        status
                     }
+                }
 
-                    def excludeSpec = new Spec<FileTreeElement>() {
-                        @Override
-                        boolean isSatisfiedBy(FileTreeElement element) {
-                            return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
-                        }
+                def excludeSpec = new Spec<FileTreeElement>() {
+                    @Override
+                    boolean isSatisfiedBy(FileTreeElement element) {
+                        return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
                     }
+                }
 
-                    assetsFileTree.include(includeSpec)
-                    assetsFileTree.exclude(excludeSpec)
+                assetsFileTree.include(includeSpec)
+                assetsFileTree.exclude(excludeSpec)
 
+                def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
+                def projectSettingsFileTree = project.fileTree(projectSettingsDir)
+                projectSettingsFileTree.exclude(excludeSpec)
 
-                    def projectSettingsDir = task.projectDirectory.dir("ProjectSettings")
-                    def projectSettingsFileTree = project.fileTree(projectSettingsDir)
-                    projectSettingsFileTree.exclude(excludeSpec)
+                def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
+                def packageManagerDirFileTree = project.fileTree(packageManagerDir)
+                packageManagerDirFileTree.exclude(excludeSpec)
 
-                    def packageManagerDir = task.projectDirectory.dir("UnityPackageManager")
-                    def packageManagerDirFileTree = project.fileTree(packageManagerDir)
-                    packageManagerDirFileTree.exclude(excludeSpec)
-
-                    project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
-                })
-            }
+                project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
+            })
         })
 
-        project.tasks.withType(GradleBuild, new Action<GradleBuild>() {
-            @Override
-            void execute(GradleBuild t) {
-                t.gradleVersion.set(project.provider({ project.gradle.gradleVersion }))
-            }
+        project.tasks.withType(GradleBuild).configureEach({GradleBuild t ->
+            t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
         })
 
         project.afterEvaluate {
@@ -146,35 +177,35 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
                 baseName = baseName.replaceAll(~/[$characterPattern]/, '')
 
-                FetchSecrets fetchSecretsTask = project.tasks.create("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
+                TaskProvider<FetchSecrets> fetchSecretsTask = project.tasks.register("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
                     t.group = "secrets"
                     t.description = "fetches all secrets configured in ${appConfigName}"
-                    t.secretIds.set(project.provider({
-                        if(config.containsKey(extension.appConfigSecretsKey.get())) {
+                    t.secretIds.convention(project.provider({
+                        if (config.containsKey(extension.appConfigSecretsKey.get())) {
                             return config[extension.appConfigSecretsKey.get()] as List<String>
                         }
                         []
                     }))
                 }
 
-                UnityBuildPlayerTask exportTask = project.tasks.create("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
+                TaskProvider<UnityBuildPlayerTask> exportTask = project.tasks.register("export${baseName}", UnityBuildPlayerTask) { UnityBuildPlayerTask t ->
                     t.group = "build unity"
                     t.description = "exports gradle project for app config ${appConfigName}"
                     t.appConfigFile.set(appConfig)
-                    t.secretsFile.set(fetchSecretsTask.secretsFile)
+                    t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
                     t.secretsKey.set(secretsExtension.secretsKey)
-                } as UnityBuildPlayerTask
+                }
 
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
-                    def gradleBuild = project.tasks.create("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
+                    def gradleBuild = project.tasks.register("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
                         t.dependsOn exportTask
                         t.group = groupName
                         t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
-                        t.dir.set(exportTask.outputDirectory)
+                        t.dir.set(exportTask.flatMap({it.outputDirectory}))
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
                         t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
-                        t.secretsFile.set(fetchSecretsTask.secretsFile)
+                        t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
                         t.secretsKey.set(secretsExtension.secretsKey)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({

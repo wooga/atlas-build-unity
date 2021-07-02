@@ -27,13 +27,12 @@ import org.gradle.api.artifacts.ConfigurablePublishArtifact
 import org.gradle.api.artifacts.dsl.ArtifactHandler
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
-import wooga.gradle.xcodebuild.internal.PropertyLookup
+
 import wooga.gradle.xcodebuild.tasks.*
 
-import static wooga.gradle.xcodebuild.XcodeBuildPluginConsts.*
+import static XcodeBuildPluginConventions.*
 
 class XcodeBuildPlugin implements Plugin<Project> {
 
@@ -50,10 +49,10 @@ class XcodeBuildPlugin implements Plugin<Project> {
 
         project.pluginManager.apply(BasePlugin.class)
 
-        extension.logsDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(LOGS_DIR_LOOKUP)))
-        extension.derivedDataPath.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(DERIVED_DATA_PATH_LOOKUP)))
-        extension.xarchivesDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(XARCHIVES_DIR_LOOKUP)))
-        extension.debugSymbolsDir.set(project.layout.buildDirectory.dir(lookupValueInEnvAndPropertiesProvider(DEBUG_SYMBOLS_DIR_LOOKUP)))
+        extension.logsDir.set(LOGS_DIR_LOOKUP.getDirectoryValueProvider(project))
+        extension.derivedDataPath.set(DERIVED_DATA_PATH_LOOKUP.getDirectoryValueProvider(project))
+        extension.xarchivesDir.set(XARCHIVES_DIR_LOOKUP.getDirectoryValueProvider(project))
+        extension.debugSymbolsDir.set(DEBUG_SYMBOLS_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.consoleSettings.set(ConsoleSettings.fromGradleOutput(project.gradle.startParameter.consoleOutput))
 
         def archives = project.configurations.maybeCreate('archives')
@@ -150,20 +149,5 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.getDestinationDirectory().convention(extension.debugSymbolsDir)
             }
         })
-    }
-
-    private Provider<String> lookupValueInEnvAndPropertiesProvider(PropertyLookup lookup) {
-        lookupValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
-    }
-
-    private Provider<String> lookupValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
-        project.provider({
-            lookupValueInEnvAndProperties(env, property, defaultValue)
-        })
-    }
-
-    protected String lookupValueInEnvAndProperties(String env, String property, String defaultValue = null) {
-        System.getenv().get(env) ?:
-                project.properties.getOrDefault(property, defaultValue)
     }
 }

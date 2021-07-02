@@ -28,10 +28,9 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import org.gradle.util.GUtil
 import wooga.gradle.xcodebuild.XcodeArchiveActionSpec
 import wooga.gradle.xcodebuild.XcodeBuildAction
-import wooga.gradle.xcodebuild.XcodeBuildPluginConsts
+import wooga.gradle.xcodebuild.XcodeBuildPluginConventions
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActionSpec {
@@ -272,7 +271,7 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
             } else if (projectOrWorkspace.name.endsWith(".xcodeproj")) {
                 arguments << "-project" << projectOrWorkspace.getPath()
             } else {
-                throw new ScriptException(XcodeBuildPluginConsts.INVALID_XCODE_PROJECT_ERROR_MESSAGE)
+                throw new ScriptException(XcodeBuildPluginConventions.INVALID_XCODE_PROJECT_ERROR_MESSAGE)
             }
 
             arguments << "-scheme" << scheme.get()

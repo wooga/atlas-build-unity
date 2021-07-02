@@ -19,16 +19,13 @@ package wooga.gradle.fastlane
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.provider.Provider
 import wooga.gradle.fastlane.internal.DefaultFastlanePluginExtension
 import wooga.gradle.fastlane.tasks.AbstractFastlaneTask
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
-import wooga.gradle.fastlane.internal.PropertyLookup
 
-import static wooga.gradle.fastlane.FastlanePluginConsts.*
+import static FastlanePluginConventions.*
 
 class FastlanePlugin implements Plugin<Project> {
     static final String EXTENSION_NAME = "fastlane"
@@ -42,9 +39,9 @@ class FastlanePlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(FastlanePluginExtension, EXTENSION_NAME, DefaultFastlanePluginExtension, project)
 
-        extension.username.set(lookupValueInEnvAndPropertiesProvider(USERNAME_LOOKUP))
-        extension.password.set(lookupValueInEnvAndPropertiesProvider(PASSWORD_LOOKUP))
-        extension.apiKeyPath.set(lookupFileValueInEnvAndPropertiesProvider(API_KEY_PATH_LOOKUP))
+        extension.username.set(USERNAME_LOOKUP.getStringValueProvider(project))
+        extension.password.set(PASSWORD_LOOKUP.getStringValueProvider(project))
+        extension.apiKeyPath.set(API_KEY_PATH_LOOKUP.getFileValueProvider(project))
 
         project.tasks.withType(AbstractFastlaneTask, new Action<AbstractFastlaneTask>() {
             @Override
@@ -74,34 +71,5 @@ class FastlanePlugin implements Plugin<Project> {
                 task.password.set(extension.password)
             }
         })
-    }
-
-    private Provider<String> lookupValueInEnvAndPropertiesProvider(PropertyLookup lookup) {
-        lookupValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
-    }
-
-    private Provider<RegularFile> lookupFileValueInEnvAndPropertiesProvider(PropertyLookup lookup) {
-        lookupFileValueInEnvAndPropertiesProvider(lookup.env, lookup.property, lookup.defaultValue)
-    }
-
-    private Provider<String> lookupValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
-        project.provider({
-            lookupValueInEnvAndProperties(env, property, defaultValue)
-        })
-    }
-
-    private Provider<RegularFile> lookupFileValueInEnvAndPropertiesProvider(String env, String property, String defaultValue = null) {
-        project.layout.file(project.provider({
-            def path = lookupValueInEnvAndProperties(env, property, defaultValue)
-            if (path) {
-                return new File(path)
-            }
-            null
-        }))
-    }
-
-    protected String lookupValueInEnvAndProperties(String env, String property, String defaultValue = null) {
-        System.getenv().get(env) ?:
-                project.properties.getOrDefault(property, defaultValue)
     }
 }

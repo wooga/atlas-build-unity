@@ -166,7 +166,7 @@ class GradleBuild extends DefaultTask implements SecretSpec {
     GradleBuild() {
         initScript = project.objects.fileProperty()
         buildDirBase = project.objects.property(File)
-        projectCacheDir = buildDirBase.map({it -> new File(it, ".gradle")})
+        projectCacheDir = buildDirBase.map({ it -> new File(it, ".gradle") })
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
 
         secretsKey = project.objects.property(SecretKeySpec.class)
@@ -203,7 +203,7 @@ class GradleBuild extends DefaultTask implements SecretSpec {
             def tempInitScript = new File(getTemporaryDir(), 'initScript.groovy')
             tempInitScript.text = ""
 
-            if(initScript.isPresent()) {
+            if (initScript.isPresent()) {
                 tempInitScript << initScript.get().getAsFile().text
             } else {
                 tempInitScript << getClass().getResource('/buildUnityExportInit.gradle').text
@@ -215,11 +215,11 @@ class GradleBuild extends DefaultTask implements SecretSpec {
                     def projectCacheDir = projectCacheDir.get()
                     def projectDir = dir.get().asFile
 
-                    if(!buildBase.isAbsolute()) {
+                    if (!buildBase.isAbsolute()) {
                         buildBase = new File(projectDir, buildBase.path)
                     }
 
-                    if(!projectCacheDir.isAbsolute()) {
+                    if (!projectCacheDir.isAbsolute()) {
                         projectCacheDir = new File(projectDir, projectCacheDir.path)
                     }
 
@@ -228,7 +228,7 @@ class GradleBuild extends DefaultTask implements SecretSpec {
                     args << "--project-cache-dir=${projectCacheDir.getPath()}".toString()
                 }
 
-                if(cleanBuildDirBeforeBuild) {
+                if (cleanBuildDirBeforeBuild) {
                     args << "-Pexport.deleteBuildDirBeforeBuild=1"
                 }
             }
