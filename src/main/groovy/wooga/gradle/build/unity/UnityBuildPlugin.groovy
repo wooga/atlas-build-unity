@@ -30,6 +30,7 @@ import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
+import wooga.gradle.build.unity.tasks.UnityBuildEngineTask
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -189,6 +190,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                     t.appConfigFile.set(appConfig)
                     t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
                     t.secretsKey.set(secretsExtension.secretsKey)
+                }
+
+                TaskProvider<UnityBuildEngineTask> newExportTask = project.tasks.register("newExport${baseName}", UnityBuildEngineTask) {
+                    UnityBuildEngineTask t ->
+                        t.group = "build unity"
+                        t.description = "exports gradle project for app config ${appConfigName}"
                 }
 
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->

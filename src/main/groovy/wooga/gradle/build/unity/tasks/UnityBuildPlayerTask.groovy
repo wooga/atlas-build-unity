@@ -28,11 +28,9 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import org.gradle.process.ExecResult
 import wooga.gradle.secrets.internal.Secrets
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.unity.UnityTask
-import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 import javax.crypto.spec.SecretKeySpec
