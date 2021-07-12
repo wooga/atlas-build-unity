@@ -35,6 +35,10 @@ import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Deprecated in favor of UnityBuildEnginePlayerTask from UBS 1.2 onwards.
+ */
+@Deprecated
 class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
 
     static String BUILD_TARGET_KEY = "batchModeBuildTarget"

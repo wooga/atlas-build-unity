@@ -18,13 +18,11 @@
 package wooga.gradle.build.unity
 
 import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 
 interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
 
@@ -32,6 +30,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     DirectoryProperty getOutputDirectoryBase()
     Property<String> getToolsVersion()
     Property<String> getVersion()
+    Property<UBSVersion> getUbsVersionCompatibility()
     Property<String> getVersionCode()
     Property<String> getCommitHash()
     Property<String> getExportMethodName()

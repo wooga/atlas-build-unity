@@ -17,6 +17,7 @@
 
 package wooga.gradle.build
 
+import org.yaml.snakeyaml.Yaml
 import wooga.gradle.build.unity.UnityBuildPlugin
 
 abstract class UnityIntegrationSpec extends IntegrationSpec {
@@ -52,6 +53,26 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
 
         unityTestLocation
     }
+
+    File createAppConfig(String path) {
+        def appConfigsDir = new File(projectDir, path)
+        appConfigsDir.mkdirs()
+
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
+        ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            it << UNITY_ASSET_HEADER
+            it << "\n"
+            Yaml yaml = new Yaml()
+            it << yaml.dump(appConfig)
+        }
+        return new File(appConfigsDir, "custom.asset")
+    }
+
+    String substringAt(String base, String expression) {
+        def customArgsIndex = base.indexOf(expression)
+        return base.substring(customArgsIndex)
+    }
+
 
     public static final String UNITY_ASSET_HEADER = """
             %YAML 1.1

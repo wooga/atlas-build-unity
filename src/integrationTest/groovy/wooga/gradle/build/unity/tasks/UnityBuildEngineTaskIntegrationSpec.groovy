@@ -42,7 +42,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
 
         then:
         result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
-        result.standardOutput.contains("-CustomArgs:build=UBSBuild")
+        result.standardOutput.contains("--build UBSBuild")
+        result.standardOutput.contains("--outputPath ${new File(projectDir, "build/export").path}")
     }
 
     def "can configure custom unity entrypoint"() {
@@ -50,7 +51,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
-                unityMethodName = "${entrypoint}"
+                exportMethodName = "${entrypoint}"
             }
         """.stripIndent()
 
@@ -78,7 +79,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
 
         then:
         def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
-        customArgsString.contains("outputPath=${new File(projectDir, outputPath).path}")
+        customArgsString.contains("--outputPath ${new File(projectDir, outputPath).path}")
 
         where:
         outputPath << ["custom"]
@@ -89,7 +90,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
-                extraArgs = ${extraArgsString}
+                customArguments = ${extraArgsString}
             }
         """.stripIndent()
 
@@ -97,13 +98,14 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
+        def customArgsString = substringAt(result.standardOutput, "-CustomArgs:")
         customArgsString.contains(expectedCustomArgs)
 
         where:
-        extraArgsString                             | expectedCustomArgs
-        """["-an-arg", ["-valued-arg":"value"]]"""  | "-an-arg -valued-arg=value"
-        """["-an-arg", "-valued-arg=value"]"""      | "-an-arg -valued-arg=value"
+        extraArgsString                                         | expectedCustomArgs
+        """["--an-arg", ["--valued-arg":"value"]]"""            | "--an-arg --valued-arg value"
+        """["--an-arg", "--valued-arg value"]"""                | "--an-arg --valued-arg value"
+        """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | "--an-arg --varg val --oarg oval"
     }
 
 
@@ -125,8 +127,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
 
         and: "secrets and key configured in task"
         buildFile << """
-            secretsFile = project.file('${escapedPath(secretsFile.path)}')
-            secretsKey = new SecretKeySpec(project.file('${escapedPath(secretsKey.path)}').bytes, 'AES')
+            secretsFile = file('${escapedPath(secretsFile.path)}')
+            secretsKey = new SecretKeySpec(file('${escapedPath(secretsKey.path)}').bytes, 'AES')
         }
         """.stripIndent()
 
@@ -134,7 +136,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
+        def customArgsString = substringAt(result.standardOutput, "environment")
         secretsMap.every {secretPair ->
             customArgsString.contains("${secretPair.key.toUpperCase()}=${secretPair.value}")
         }
@@ -153,12 +155,6 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
         secretsFile.text = secrets.encode()
         return secretsFile
-    }
-
-
-    private static String substringAt(String base, String expression) {
-        def customArgsIndex = base.indexOf(expression)
-        return base.substring(customArgsIndex)
     }
 
 }
