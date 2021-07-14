@@ -32,7 +32,6 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
     Class taskType = ExportArchive
-
     String archiveTaskName = "xcodeArchive"
     String testTaskName = archiveTaskName + "Export"
 

@@ -5,6 +5,7 @@ withCredentials([
                     string(credentialsId: 'atlas_build_unity_coveralls_token', variable: 'coveralls_token'),
                     string(credentialsId: 'aws.secretsmanager.integration.accesskey', variable: 'accesskey'),
                     string(credentialsId: 'aws.secretsmanager.integration.secretkey', variable: 'secretkey'),
+                    string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token')
                 ])
 {
     def env = [
@@ -26,5 +27,5 @@ withCredentials([
     def testLabels = [
         'macos': 'xcode_12'
     ]
-    buildGradlePlugin plaforms: ['macos','windows', 'linux'], coverallsToken: coveralls_token, testEnvironment:env, testLabels: testLabels
+    buildGradlePlugin platforms: ['macos','windows', 'linux'], coverallsToken: coveralls_token, sonarToken: sonar_token, testEnvironment:env, testLabels: testLabels
 }
