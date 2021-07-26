@@ -200,7 +200,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
 
                 TaskProvider<? extends Task> exportTask;
-                def ubsVersion = extension.ubsVersionCompatibility.getOrElse(UBSVersion.v100)
+                def ubsVersion = extension.ubsCompatibilityVersion.getOrElse(UBSVersion.v100)
                 if(ubsVersion >= UBSVersion.v120) {
                     exportTask = project.tasks.register("export${baseName}", UnityBuildEnginePlayerTask) {
                         UnityBuildEnginePlayerTask t ->

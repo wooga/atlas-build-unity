@@ -35,7 +35,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final DirectoryProperty appConfigsDirectory
     final DirectoryProperty outputDirectoryBase
     final Property<String> toolsVersion
-    final Property<UBSVersion> ubsVersionCompatibility
+    final Property<UBSVersion> ubsCompatibilityVersion
     final Property<String> version
     final Property<String> versionCode
     final Property<String> commitHash
@@ -73,7 +73,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         appConfigsDirectory = project.objects.directoryProperty()
         outputDirectoryBase = project.objects.directoryProperty()
         toolsVersion = project.objects.property(String)
-        ubsVersionCompatibility = project.objects.property(UBSVersion)
+        ubsCompatibilityVersion = project.objects.property(UBSVersion)
         version = project.objects.property(String)
         versionCode = project.objects.property(String)
         commitHash = project.objects.property(String)

@@ -30,7 +30,7 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     DirectoryProperty getOutputDirectoryBase()
     Property<String> getToolsVersion()
     Property<String> getVersion()
-    Property<UBSVersion> getUbsVersionCompatibility()
+    Property<UBSVersion> getUbsCompatibilityVersion()
     Property<String> getVersionCode()
     Property<String> getCommitHash()
     Property<String> getExportMethodName()

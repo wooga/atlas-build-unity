@@ -88,7 +88,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         buildFile << "import wooga.gradle.build.unity.UBSVersion"
         buildFile << (ubsVersion? """
             import wooga.gradle.build.unity.UBSVersion
-            unityBuild.ubsVersionCompatibility=UBSVersion.${ubsVersion.name()}
+            unityBuild.ubsCompatibilityVersion=UBSVersion.${ubsVersion.name()}
         """ : "")
         when:
         def result = runTasksSuccessfully(taskToRun)
