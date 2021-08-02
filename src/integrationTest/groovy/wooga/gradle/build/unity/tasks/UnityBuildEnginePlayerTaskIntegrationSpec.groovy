@@ -29,7 +29,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         then:
         def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
         customArgsString.contains("--build Player")
-        customArgsString.contains("--appConfig ${appConfigFile.path}")
+        customArgsString.contains("--config ${appConfigFile.path}")
         customArgsString.contains("--version ${version}")
     }
 
@@ -38,7 +38,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         given: "a custom export task without configuration"
         buildFile << """
             task("customExport", type: UnityBuildEnginePlayerTask) {
-                appConfigFile = file("${escapedPath(appConfigFile.path)}")
+                appConfigFile = "${escapedPath(appConfigFile.path)}"
                 version = "0.0.1"  
                 ${propName} = "${argValue}"         
             }

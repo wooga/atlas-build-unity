@@ -16,27 +16,35 @@
 
 package wooga.gradle.build.unity.tasks
 
+import spock.lang.Shared
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
+import java.nio.file.Paths
 
 class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
 
+    @Shared
+    File configFile;
+
     def setup() {
         buildFile << "import wooga.gradle.build.unity.tasks.UnityBuildEngineTask\n".stripIndent()
+        configFile = createAppConfig("Assets/CustomConfigs")
     }
 
     def "uses default settings when not configured"() {
         given: "a custom export task without configuration"
         buildFile << """
+            def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
+            ext.customArguments.set([key:"value"])
             task("customExport", type: UnityBuildEngineTask) {
                 build = "UBSBuild"
             }
         """.stripIndent()
-
+        and:
         when:
         def result = runTasksSuccessfully("customExport")
 
@@ -44,6 +52,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
         result.standardOutput.contains("--build UBSBuild")
         result.standardOutput.contains("--outputPath ${new File(projectDir, "build/export").path}")
+        result.standardOutput.contains("key value")
+        !result.standardOutput.contains("--config")
     }
 
     def "can configure custom unity entrypoint"() {
@@ -85,7 +95,24 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         outputPath << ["custom"]
     }
 
-    def "can configure extra arguments to be passed through unity's -CustomArgs"() {
+    def "can configure custom configuration"() {
+        given: "a export task with a custom output directory"
+        buildFile << """
+            task("customExport", type: UnityBuildEngineTask) {
+                build = "mandatoryBuildName"
+                config = "${escapedPath(configFile.path)}"
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("customExport")
+
+        then:
+        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
+        customArgsString.contains("--config ${configFile.absolutePath}")
+    }
+
+    def "can configure extra arguments"() {
         given: "a export task custom configuration"
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
@@ -108,8 +135,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | "--an-arg --varg val --oarg oval"
     }
 
-
-    def "can configure encrypted secrets file to be passed through unity's -CustomArgs"() {
+    def "can configure encrypted secrets file"() {
         given: "a basic export task"
         buildFile << """
             import javax.crypto.spec.SecretKeySpec

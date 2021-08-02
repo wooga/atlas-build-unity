@@ -9,14 +9,14 @@ import org.gradle.api.tasks.Optional;
 
 class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
 
-    private final RegularFileProperty appConfigFile
+    private final Property<String> appConfigFile
     private final Property<String> version
     private final Property<String> versionCode
     private final Property<String> toolsVersion
     private final Property<String> commitHash
 
     UnityBuildEnginePlayerTask() {
-        this.appConfigFile = project.objects.fileProperty()
+        this.appConfigFile = project.objects.property(String)
         this.version = project.objects.property(String)
         this.versionCode = project.objects.property(String)
         this.toolsVersion = project.objects.property(String)
@@ -26,7 +26,7 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
         def exportArgs = super.defaultArgs()
 
         exportArgs.with {
-            addArg("--appConfig", appConfigFile.map {gradleFile -> gradleFile.asFile.path})
+            addArg("--config", appConfigFile.orElse(super.config))
             addArg("--version", version)
             addOptArg("--versionCode", versionCode)
             addOptArg("--toolsVersion", toolsVersion)
@@ -36,7 +36,7 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
     }
 
     @InputFile
-    RegularFileProperty getAppConfigFile() {
+    Property<String> getAppConfigFile() {
         return appConfigFile
     }
 
@@ -60,8 +60,12 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
         return commitHash
     }
 
-    void setAppConfigFile(File appConfigFile) {
+    void setAppConfigFile(String appConfigFile) {
         this.appConfigFile.set(appConfigFile)
+    }
+
+    void setAppConfigFile(File appConfigFile) {
+        this.appConfigFile.set(appConfigFile.absolutePath)
     }
 
     void setVersion(String version) {

@@ -8,13 +8,14 @@ class BuildEngineArgs {
 
 
     private final ProviderFactory providers;
-
     final Provider<String> method;
-    private List<BuildEngineArg> args = new ArrayList<>();
+    private Map<String, BuildEngineArg> args
+    private List<BuildEngineRawArg> rawArgs
     private Provider<Map<String,?>> environment;
 
     BuildEngineArgs(ProviderFactory providers, Provider<String> method) {
-        this.args = new ArrayList<>();
+        this.args = new HashMap<>()
+        this.rawArgs = new ArrayList<>()
         this.providers = providers
         this.method = method
         this.environment = providers.provider{ new HashMap<String, ?>() };
@@ -28,16 +29,16 @@ class BuildEngineArgs {
         addArg(new BuildEngineArg(key, rawValueProvider, true))
     }
 
-    void addArg(Provider<?> rawValueProvider) {
-        addArg(new BuildEngineArg(rawValueProvider))
-    }
-
-    void addArgs(Provider<List<?>> rawArgsProvider) {
-       addArg(rawArgsProvider)
-    }
-
     void addArg(BuildEngineArg arg) {
-        args.add(arg)
+        args.put(arg.key, arg)
+    }
+
+    void addRawArgs(Provider<List<?>> rawArgsProvider) {
+       addRawArg(rawArgsProvider)
+    }
+
+    void addRawArg(Provider<?> rawValueProvider) {
+        rawArgs.add(new BuildEngineRawArg(rawValueProvider))
     }
 
     void addEnvs(Provider<Map<String, ?>> envsProvider) {
@@ -53,8 +54,11 @@ class BuildEngineArgs {
 
     Provider<String> getCustomArgsStr() {
         return providers.provider {
-            def resolvedArgs = args.collect{ it.resolveArgString() }.findAll {it != null}
-            return resolvedArgs.join(" ") as String
+            def resolvedArgs = args.collect{ it.value.resolveArgString() }
+            def resolvedRawArgs = rawArgs.collect {raw -> raw.resolveArgString() }
+            resolvedArgs.addAll(resolvedRawArgs)
+
+            return resolvedArgs.findAll {it != null}.join(" ") as String
         }
     }
 }

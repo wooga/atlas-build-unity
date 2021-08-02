@@ -1,5 +1,6 @@
 package wooga.gradle.build.unity.tasks
 
+
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -21,6 +22,7 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
     private static final String CUSTOM_ARGS_DECL = "-CustomArgs";
 
     private final Property<String> build
+    private final Property<String> config
     private final Property<String> exportMethodName
     private final Property<String> outputPath
     private final RegularFileProperty secretsFile
@@ -29,6 +31,7 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     AbstractUnityBuildEngineTask() {
         this.build = project.objects.property(String)
+        this.config = project.objects.property(String)
         this.exportMethodName = project.objects.property(String)
         this.outputPath = project.objects.property(String)
         this.secretsFile = project.objects.fileProperty()
@@ -49,9 +52,10 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
-            addArgs(customArguments.orElse(new ArrayList<>()))
             addArg("--build", build)
+            addOptArg("--config", config)
             addArg("--outputPath", outputDir.map{out -> out.asFile.path})
+            addRawArgs(customArguments)
             addEnvs(environmentSecrets)
         }
         return buildEngineArgs
@@ -59,7 +63,9 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     def setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
-        additionalArguments.add(unityArgs.customArgsStr.map{args -> "${CUSTOM_ARGS_DECL}:${args}"})
+        additionalArguments.add(unityArgs.customArgsStr.map {
+            args -> "${CUSTOM_ARGS_DECL}: ${args}"
+        })
         additionalArguments.add("-executeMethod")
         additionalArguments.add(unityArgs.method)
     }
@@ -99,10 +105,14 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         return secretsKey
     }
 
-    @Optional
-    @Input
+    @Optional @Input
     ListProperty<Object> getCustomArguments() {
         return customArguments
+    }
+
+    @Optional @Input
+    Property<String> getConfig() {
+        return config
     }
 
     void setBuild(String build) {
@@ -129,4 +139,11 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         this.customArguments.set(customArguments)
     }
 
+    void setConfig(String config) {
+        this.config.set(config)
+    }
+
+    void setConfig(File config) {
+        this.config.set(config.absolutePath)
+    }
 }

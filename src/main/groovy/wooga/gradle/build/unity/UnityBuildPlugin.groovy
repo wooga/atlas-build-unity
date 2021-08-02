@@ -162,7 +162,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(AbstractUnityBuildEngineTask).configureEach {t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
             t.outputPath.convention(extension.outputDirectoryBase.asFile.get().path)
-            t.customArguments.convention([extension.customArguments])
+            t.customArguments.convention(extension.customArguments.map {[it] })
         }
 
         project.tasks.withType(UnityBuildEnginePlayerTask).configureEach { task ->
@@ -206,7 +206,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         UnityBuildEnginePlayerTask t ->
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
-                            t.appConfigFile.set(appConfig)
+                            t.appConfigFile.set(appConfig.absolutePath)
                             t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
                             t.secretsKey.set(secretsExtension.secretsKey)
                     }
