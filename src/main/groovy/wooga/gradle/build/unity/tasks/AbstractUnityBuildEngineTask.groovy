@@ -19,9 +19,8 @@ import javax.crypto.spec.SecretKeySpec
 
 abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
-    private static final String CUSTOM_ARGS_DECL = "-CustomArgs";
-
     private final Property<String> build
+    private final Property<String> version
     private final Property<String> config
     private final Property<String> exportMethodName
     private final Property<String> outputPath
@@ -31,6 +30,7 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     AbstractUnityBuildEngineTask() {
         this.build = project.objects.property(String)
+        this.version = project.objects.property(String)
         this.config = project.objects.property(String)
         this.exportMethodName = project.objects.property(String)
         this.outputPath = project.objects.property(String)
@@ -53,7 +53,8 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
             addArg("--build", build)
-            addOptArg("--config", config)
+            addArg("--version", version)
+            addArg("--config", config)
             addArg("--outputPath", outputDir.map{out -> out.asFile.path})
             addRawArgs(customArguments)
             addEnvs(environmentSecrets)
@@ -63,7 +64,9 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     def setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
-        additionalArguments.add(unityArgs.customArgsStr)
+        unityArgs.argsProviders.each { Provider<List<String>> argsProvider ->
+            additionalArguments.addAll(argsProvider)
+        }
         additionalArguments.add("-executeMethod")
         additionalArguments.add(unityArgs.method)
     }
@@ -113,8 +116,17 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         return config
     }
 
+    @Optional @Input
+    Property<String> getVersion() {
+        return version
+    }
+
     void setBuild(String build) {
         this.build.set(build)
+    }
+
+    void setVersion(String version) {
+        this.version.set(version)
     }
 
     void setExportMethodName(String unityMethodName) {
@@ -144,4 +156,6 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
     void setConfig(File config) {
         this.config.set(config.absolutePath)
     }
+
+
 }

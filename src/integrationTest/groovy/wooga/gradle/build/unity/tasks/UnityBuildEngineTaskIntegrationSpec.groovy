@@ -41,6 +41,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
             ext.customArguments.set(["--key":"value"])
             task("customExport", type: UnityBuildEngineTask) {
                 build = "UBSBuild"
+                version = "0.0.1"
             }
         """.stripIndent()
 
@@ -50,6 +51,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         then:
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "UBSBuild", customArgsParts)
+        hasKeyValue("--version", "0.0.1", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export").path, customArgsParts)
         hasKeyValue("--key", "value", customArgsParts)
         hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
@@ -61,6 +63,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
+                version = "0.0.1"
                 exportMethodName = "${entrypoint}"
             }
         """.stripIndent()
@@ -81,6 +84,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
+                version = "0.0.1"
                 outputPath = "${outputPath}"
             }
         """.stripIndent()
@@ -101,6 +105,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
+                version = "0.0.1"
                 config = "${escapedPath(configFile.path)}"
             }
         """.stripIndent()
@@ -118,6 +123,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: UnityBuildEngineTask) {
                 build = "mandatoryBuildName"
+                version = "0.0.1"
                 customArguments = ${extraArgsString}
             }
         """.stripIndent()

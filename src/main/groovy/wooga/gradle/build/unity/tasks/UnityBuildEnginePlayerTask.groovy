@@ -10,14 +10,12 @@ import org.gradle.api.tasks.Optional;
 class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
 
     private final Property<String> appConfigFile
-    private final Property<String> version
     private final Property<String> versionCode
     private final Property<String> toolsVersion
     private final Property<String> commitHash
 
     UnityBuildEnginePlayerTask() {
         this.appConfigFile = project.objects.property(String)
-        this.version = project.objects.property(String)
         this.versionCode = project.objects.property(String)
         this.toolsVersion = project.objects.property(String)
         this.commitHash = project.objects.property(String)
@@ -27,22 +25,16 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
 
         exportArgs.with {
             addArg("--config", appConfigFile.orElse(super.config))
-            addArg("--version", version)
-            addOptArg("--versionCode", versionCode)
-            addOptArg("--toolsVersion", toolsVersion)
-            addOptArg("--commitHash", commitHash)
+            addArg("--versionCode", versionCode)
+            addArg("--toolsVersion", toolsVersion)
+            addArg("--commitHash", commitHash)
         }
         super.setupExecution(exportArgs)
     }
 
-    @InputFile
+    @Optional @InputFile
     Property<String> getAppConfigFile() {
         return appConfigFile
-    }
-
-    @Input
-    Property<String> getVersion() {
-        return version
     }
 
     @Optional @Input
@@ -66,10 +58,6 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
 
     void setAppConfigFile(File appConfigFile) {
         this.appConfigFile.set(appConfigFile.absolutePath)
-    }
-
-    void setVersion(String version) {
-        this.version.set(version)
     }
 
     void setVersionCode(String versionCode) {

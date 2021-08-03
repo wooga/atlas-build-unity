@@ -1,6 +1,6 @@
 package wooga.gradle.build.unity.internal
 
-
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
@@ -22,23 +22,11 @@ class BuildEngineArgs {
     }
 
     void addArg(String key, Provider<?> rawValueProvider) {
-        addArg(new BuildEngineArg(key, rawValueProvider))
-    }
-
-    void addOptArg(String key, Provider<?> rawValueProvider) {
-        addArg(new BuildEngineArg(key, rawValueProvider, true))
-    }
-
-    void addArg(BuildEngineArg arg) {
-        args.put(arg.key, arg)
+        args.put(key, new BuildEngineArg(key, rawValueProvider))
     }
 
     void addRawArgs(Provider<List<?>> rawArgsProvider) {
-       addRawArg(rawArgsProvider)
-    }
-
-    void addRawArg(Provider<?> rawValueProvider) {
-        rawArgs.add(new BuildEngineRawArg(rawValueProvider))
+        rawArgs.add(new BuildEngineRawArg(rawArgsProvider))
     }
 
     void addEnvs(Provider<Map<String, ?>> envsProvider) {
@@ -52,13 +40,20 @@ class BuildEngineArgs {
         return environment
     }
 
-    Provider<String> getCustomArgsStr() {
+    Provider<List<String>> getArgsProviders() {
         return providers.provider {
-            def resolvedArgs = args.collect{ it.value.resolveArgString() }
-            def resolvedRawArgs = rawArgs.collect {raw -> raw.resolveArgString() }
-            resolvedArgs.addAll(resolvedRawArgs)
-
-            return resolvedArgs.findAll {it != null}.join(" ") as String
+            def allArgs = new ArrayList<String>()
+            args.values().each {
+                if(it.argStringProvider.present) {
+                    allArgs.addAll(it.argStringProvider.get())
+                }
+            }
+            rawArgs.each {
+                if(it.argStringProvider.present) {
+                    allArgs.addAll(it.argStringProvider.get())
+                }
+            }
+            return allArgs
         }
     }
 }

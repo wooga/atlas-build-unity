@@ -8,10 +8,12 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
     @Shared
     File appConfigFile;
+    @Shared
+    String appConfigPath
 
     def setup() {
-        buildFile << "import wooga.gradle.build.unity.tasks.UnityBuildEnginePlayerTask\n".stripIndent()
         appConfigFile = createAppConfig("Assets/CustomConfigs")
+        buildFile << "import wooga.gradle.build.unity.tasks.UnityBuildEnginePlayerTask\n".stripIndent()
     }
 
     def "uses default settings when configuring only with mandatory variables"() {
@@ -19,7 +21,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def version = "0.0.1"
         buildFile << """
             task("customExport", type: UnityBuildEnginePlayerTask) {
-                appConfigFile = file("${escapedPath(appConfigFile.path)}")
+                config = "configName"
                 version = "${version}"               
             }
         """.stripIndent()
@@ -30,7 +32,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         then:
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "Player", customArgsParts)
-        hasKeyValue("--config", appConfigFile.path, customArgsParts)
+        hasKeyValue("--config", "configName", customArgsParts)
         hasKeyValue("--version", version, customArgsParts)
     }
 
@@ -39,7 +41,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         given: "a custom export task without configuration"
         buildFile << """
             task("customExport", type: UnityBuildEnginePlayerTask) {
-                appConfigFile = "${escapedPath(appConfigFile.path)}"
+                config = "configName"
                 version = "0.0.1"  
                 ${propName} = "${argValue}"         
             }
@@ -53,11 +55,28 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         hasKeyValue(argName, argValue, customArgsParts)
 
         where:
-        propName        | argName         | argValue
-        "build"         | "--build"       | "CustomBuild"
-        "versionCode"   |"--versionCode"  | "codeiguess"
-        "toolsVersion"  |"--toolsVersion" | "10.0.1"
-        "commitHash"    |"--commitHash"   | "a345fc"
+        propName                | argName          | argValue
+        "build"                 | "--build"        | "CustomBuild"
+        "versionCode"           | "--versionCode"  | "codeiguess"
+        "toolsVersion"          | "--toolsVersion" | "10.0.1"
+        "commitHash"            | "--commitHash"   | "a345fc"
     }
 
+    @Unroll
+    def "appConfigFile property takes precedence over config property"() {
+        given: "a custom export task without configuration"
+        buildFile << """
+            task("customExport", type: UnityBuildEnginePlayerTask) {
+                appConfigFile = "${escapedPath(appConfigFile.path)}"
+                version = "0.0.1"  
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("customExport")
+
+        then:
+        def customArgsParts = unityArgs(result.standardOutput)
+        hasKeyValue("--config", appConfigFile.path, customArgsParts)
+    }
 }

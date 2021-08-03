@@ -34,6 +34,7 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         if (osName.contains("windows")) {
             unityTestLocation << """
                 @echo off
+                echo arguments
                 echo %*
                 echo environment
                 set
@@ -70,10 +71,10 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
     }
 
     String[] unityArgs(String base) {
-        def tailString = substringAt(base, "fakeUnity.bat -batchmode")
-        def endIndex = tailString.indexOf("Successfully started process")
+        def tailString = substringAt(base, "arguments").replace("arguments", "")
+        def endIndex = tailString.indexOf("environment")
         def argsString = tailString.substring(0, endIndex)
-        def parts = argsString.replace("fakeUnity.bat ", "").split(" ").
+        def parts = argsString.split(" ").
                 findAll {!StringUtils.isEmpty(it) }.collect{ it.trim() }
         return parts
     }
