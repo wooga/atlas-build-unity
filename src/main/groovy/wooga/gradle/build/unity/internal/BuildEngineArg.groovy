@@ -21,26 +21,10 @@ class BuildEngineArg {
         if(optional && !argProvider.present) {
             return ""
         }
-        return argToString(argProvider.orElse {
+        def arg = argProvider.orElse {
             throw new IllegalStateException("No value for the provider ${key? "associated with the key ${key}": ""}")
-        }.get())
-    }
-
-    private String argToString(Object arg) {
-        if(arg instanceof Map) {
-            def argsMap = arg as Map
-            return argsMap.collect { argPair ->
-                argString(argPair.key.toString(), argPair.value.toString())
-            }.join(" ")
-        }
-        if(arg instanceof List) {
-            def argList = arg as List
-            return argList.collect { argItem -> argToString(argItem) }.join(" ")
-        }
-        else {
-            def strValue = arg.toString()
-            return argString(key, strValue)
-        }
+        }.get();
+        return argString(key, arg.toString())
     }
 
     private static String argString(String key, String value) {

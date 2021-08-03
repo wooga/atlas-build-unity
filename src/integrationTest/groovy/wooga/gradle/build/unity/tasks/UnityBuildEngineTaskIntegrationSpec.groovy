@@ -23,7 +23,6 @@ import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
-import java.nio.file.Paths
 
 class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
 
@@ -39,21 +38,22 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         given: "a custom export task without configuration"
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
-            ext.customArguments.set([key:"value"])
+            ext.customArguments.set(["--key":"value"])
             task("customExport", type: UnityBuildEngineTask) {
                 build = "UBSBuild"
             }
         """.stripIndent()
-        and:
+
         when:
         def result = runTasksSuccessfully("customExport")
 
         then:
-        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
-        result.standardOutput.contains("--build UBSBuild")
-        result.standardOutput.contains("--outputPath ${new File(projectDir, "build/export").path}")
-        result.standardOutput.contains("key value")
-        !result.standardOutput.contains("--config")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue("--build", "UBSBuild", customArgsParts)
+        hasKeyValue("--outputPath", new File(projectDir, "build/export").path, customArgsParts)
+        hasKeyValue("--key", "value", customArgsParts)
+        hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
+        !customArgsParts.contains("--config")
     }
 
     def "can configure custom unity entrypoint"() {
@@ -69,7 +69,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        result.standardOutput.contains("-executeMethod ${entrypoint}")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue("-executeMethod", entrypoint, customArgsParts)
 
         where:
         entrypoint << ["CustomEntrypoint.Build"]
@@ -88,8 +89,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
-        customArgsString.contains("--outputPath ${new File(projectDir, outputPath).path}")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue("--outputPath", new File(projectDir, outputPath).path, customArgsParts)
 
         where:
         outputPath << ["custom"]
@@ -108,8 +109,8 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
-        customArgsString.contains("--config ${configFile.absolutePath}")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue("--config", configFile.absolutePath, customArgsParts)
     }
 
     def "can configure extra arguments"() {
@@ -125,14 +126,20 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs:")
-        customArgsString.contains(expectedCustomArgs)
+        def customArgsParts = customArgsParts(result.standardOutput)
+        expectedCustomArgs.each { expectedArgs ->
+            if(expectedArgs instanceof Map) {
+                def argsPair = (expectedArgs as Map).entrySet().first() as Map.Entry<String, String>
+                return hasKeyValue(argsPair.key, argsPair.value, customArgsParts)
+            }
+            return customArgsParts.contains(expectedArgs)
+        }
 
         where:
         extraArgsString                                         | expectedCustomArgs
-        """["--an-arg", ["--valued-arg":"value"]]"""            | "--an-arg --valued-arg value"
-        """["--an-arg", "--valued-arg value"]"""                | "--an-arg --valued-arg value"
-        """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | "--an-arg --varg val --oarg oval"
+        """["--an-arg", ["--valued-arg":"value"]]"""            | ["--an-arg", ["--valued-arg": "value"]]
+        """["--an-arg", "--valued-arg value"]"""                | ["--an-arg", ["--valued-arg": "value"]]
+        """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | ["--an-arg", ["--varg": "val"], ["--oarg": "oval"]]
     }
 
     def "can configure encrypted secrets file"() {
@@ -170,8 +177,6 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         where:
         secretsMap << [["secretid": "secretvalue"], ["secretid": "secretvalue", "othersecid": "othervalue"]]
     }
-
-
 
     private static File generateSecretsFile(SecretKeySpec key, Map<String, String> secretsMap) {
         Secrets secrets = new Secrets()

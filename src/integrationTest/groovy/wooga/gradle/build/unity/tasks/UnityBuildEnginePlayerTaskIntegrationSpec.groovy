@@ -26,15 +26,16 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         when:
         def result = runTasksSuccessfully("customExport")
+
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
-        customArgsString.contains("--build Player")
-        customArgsString.contains("--config ${appConfigFile.path}")
-        customArgsString.contains("--version ${version}")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue("--build", "Player", customArgsParts)
+        hasKeyValue("--config", appConfigFile.path, customArgsParts)
+        hasKeyValue("--version", version, customArgsParts)
     }
 
     @Unroll
-    def "can configure optional #argName argument to be passed trough -CustomArgs"() {
+    def "can configure optional #argName argument"() {
         given: "a custom export task without configuration"
         buildFile << """
             task("customExport", type: UnityBuildEnginePlayerTask) {
@@ -46,9 +47,11 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         when:
         def result = runTasksSuccessfully("customExport")
+
         then:
-        def customArgsString = substringAt(result.standardOutput, "-CustomArgs")
-        customArgsString.contains("${argName} ${argValue}")
+        def customArgsParts = customArgsParts(result.standardOutput)
+        hasKeyValue(argName, argValue, customArgsParts)
+
         where:
         propName        | argName         | argValue
         "build"         | "--build"       | "CustomBuild"

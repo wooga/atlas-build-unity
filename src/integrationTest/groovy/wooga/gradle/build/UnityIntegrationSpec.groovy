@@ -17,6 +17,7 @@
 
 package wooga.gradle.build
 
+import org.apache.commons.lang3.StringUtils
 import org.yaml.snakeyaml.Yaml
 import wooga.gradle.build.unity.UnityBuildPlugin
 
@@ -68,9 +69,26 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         return new File(appConfigsDir, "custom.asset")
     }
 
+    String[] customArgsParts(String base) {
+        def tailString = substringAt(base, "-CustomArgs ")
+        def endIndex = tailString.indexOf("Successfully started process")
+        def customArgsString = tailString.substring(0, endIndex)
+        def parts = customArgsString.replace("-CustomArgs ", "").split(" ").
+                findAll {!StringUtils.isEmpty(it) }.collect{ it.trim() }
+        return parts
+    }
+
     String substringAt(String base, String expression) {
         def customArgsIndex = base.indexOf(expression)
         return base.substring(customArgsIndex)
+    }
+
+    boolean hasKeyValue(String key, String value, String[] customArgParts) {
+        return customArgParts.any {
+            def keyIndex = customArgParts.findIndexOf {it == key}
+            def valueIndex = customArgParts.findIndexOf {it == value}
+            return keyIndex == valueIndex-1
+        }
     }
 
 
