@@ -28,7 +28,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "Player", customArgsParts)
         hasKeyValue("--config", appConfigFile.path, customArgsParts)
         hasKeyValue("--version", version, customArgsParts)
@@ -49,7 +49,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue(argName, argValue, customArgsParts)
 
         where:

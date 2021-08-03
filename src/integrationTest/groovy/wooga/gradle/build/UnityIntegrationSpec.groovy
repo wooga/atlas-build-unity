@@ -69,11 +69,11 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         return new File(appConfigsDir, "custom.asset")
     }
 
-    String[] customArgsParts(String base) {
-        def tailString = substringAt(base, "-CustomArgs ")
+    String[] unityArgs(String base) {
+        def tailString = substringAt(base, "fakeUnity.bat -batchmode")
         def endIndex = tailString.indexOf("Successfully started process")
-        def customArgsString = tailString.substring(0, endIndex)
-        def parts = customArgsString.replace("-CustomArgs ", "").split(" ").
+        def argsString = tailString.substring(0, endIndex)
+        def parts = argsString.replace("fakeUnity.bat ", "").split(" ").
                 findAll {!StringUtils.isEmpty(it) }.collect{ it.trim() }
         return parts
     }

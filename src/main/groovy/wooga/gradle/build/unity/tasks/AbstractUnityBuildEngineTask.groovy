@@ -63,9 +63,7 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     def setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
-        additionalArguments.add(unityArgs.customArgsStr.map {
-            args -> "${CUSTOM_ARGS_DECL} ${args}"
-        })
+        additionalArguments.add(unityArgs.customArgsStr)
         additionalArguments.add("-executeMethod")
         additionalArguments.add(unityArgs.method)
     }

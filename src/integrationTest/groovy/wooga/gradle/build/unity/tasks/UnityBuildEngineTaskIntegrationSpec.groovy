@@ -48,7 +48,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "UBSBuild", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export").path, customArgsParts)
         hasKeyValue("--key", "value", customArgsParts)
@@ -69,7 +69,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("-executeMethod", entrypoint, customArgsParts)
 
         where:
@@ -89,7 +89,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--outputPath", new File(projectDir, outputPath).path, customArgsParts)
 
         where:
@@ -109,7 +109,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--config", configFile.absolutePath, customArgsParts)
     }
 
@@ -126,7 +126,7 @@ class UnityBuildEngineTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("customExport")
 
         then:
-        def customArgsParts = customArgsParts(result.standardOutput)
+        def customArgsParts = unityArgs(result.standardOutput)
         expectedCustomArgs.each { expectedArgs ->
             if(expectedArgs instanceof Map) {
                 def argsPair = (expectedArgs as Map).entrySet().first() as Map.Entry<String, String>
