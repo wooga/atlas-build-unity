@@ -86,9 +86,10 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
 
     boolean hasKeyValue(String key, String value, String[] customArgParts) {
         return customArgParts.any {
-            def keyIndex = customArgParts.findIndexOf {it == key}
-            def valueIndex = customArgParts.findIndexOf {it == value}
-            return keyIndex == valueIndex-1
+            def keyIndex = customArgParts.findIndexOf {
+                it == key
+            }
+            return value == customArgParts[keyIndex+1]
         }
     }
 

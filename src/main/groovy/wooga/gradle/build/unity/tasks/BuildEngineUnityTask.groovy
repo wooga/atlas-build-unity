@@ -17,32 +17,32 @@ import wooga.gradle.unity.UnityTask
 import javax.crypto.spec.SecretKeySpec
 
 
-abstract class AbstractUnityBuildEngineTask extends UnityTask {
+abstract class BuildEngineUnityTask extends UnityTask {
 
     private final Property<String> build
-    private final Property<String> version
     private final Property<String> config
     private final Property<String> exportMethodName
     private final Property<String> outputPath
+    private final Property<String> logPath
     private final RegularFileProperty secretsFile
     private final Property<SecretKeySpec> secretsKey
     private final ListProperty<Object> customArguments
 
-    AbstractUnityBuildEngineTask() {
+    BuildEngineUnityTask() {
         this.build = project.objects.property(String)
-        this.version = project.objects.property(String)
         this.config = project.objects.property(String)
         this.exportMethodName = project.objects.property(String)
         this.outputPath = project.objects.property(String)
+        this.logPath = project.objects.property(String)
         this.secretsFile = project.objects.fileProperty()
         this.secretsKey = project.objects.property(SecretKeySpec.class)
         this.customArguments = project.objects.listProperty(Object)
     }
 
     BuildEngineArgs defaultArgs() {
-        Provider<Directory> outputDir = outputPath.map { path ->
-            project.layout.projectDirectory.dir(path)
-        }
+        Provider<Directory> outputDir = gradleDirectoryFrom(outputPath)
+        Provider<Directory> logDir = gradleDirectoryFrom(logPath)
+
         def secrets = secretsFile.map { RegularFile secretsFile ->
             Secrets.decode(secretsFile.asFile.text)
         }
@@ -53,9 +53,9 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
             addArg("--build", build)
-            addArg("--version", version)
             addArg("--config", config)
             addArg("--outputPath", outputDir.map{out -> out.asFile.path})
+            addArg("--logPath", logDir.map{out -> out.asFile.path})
             addRawArgs(customArguments)
             addEnvs(environmentSecrets)
         }
@@ -81,6 +81,12 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         }
     }
 
+    def gradleDirectoryFrom(Property<String> pathProperty) {
+        return pathProperty.map { path ->
+            project.layout.projectDirectory.dir(path)
+        }
+    }
+
     @Input
     Property<String> getBuild() {
         return build
@@ -94,6 +100,11 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
     @Input
     Property<String> getOutputPath() {
         return outputPath
+    }
+
+    @Optional @Input
+    Property<String> getLogPath() {
+        return logPath
     }
 
     @Optional @InputFile
@@ -116,17 +127,8 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
         return config
     }
 
-    @Optional @Input
-    Property<String> getVersion() {
-        return version
-    }
-
     void setBuild(String build) {
         this.build.set(build)
-    }
-
-    void setVersion(String version) {
-        this.version.set(version)
     }
 
     void setExportMethodName(String unityMethodName) {
@@ -135,6 +137,10 @@ abstract class AbstractUnityBuildEngineTask extends UnityTask {
 
     void setOutputPath(String outputPath) {
         this.outputPath.set(outputPath)
+    }
+
+    void setLogPath(String logPath) {
+        this.logPath.set(logPath)
     }
 
     void setSecretsFile(File secretsFile) {

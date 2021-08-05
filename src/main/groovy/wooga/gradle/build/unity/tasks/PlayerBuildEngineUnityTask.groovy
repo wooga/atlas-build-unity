@@ -1,20 +1,21 @@
 package wooga.gradle.build.unity.tasks
 
-import org.gradle.api.file.RegularFileProperty
+
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.Optional
 
+class PlayerBuildEngineUnityTask extends BuildEngineUnityTask {
 
-class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
-
+    private final Property<String> version
     private final Property<String> appConfigFile
     private final Property<String> versionCode
     private final Property<String> toolsVersion
     private final Property<String> commitHash
 
-    UnityBuildEnginePlayerTask() {
+    PlayerBuildEngineUnityTask() {
+        this.version = project.objects.property(String)
         this.appConfigFile = project.objects.property(String)
         this.versionCode = project.objects.property(String)
         this.toolsVersion = project.objects.property(String)
@@ -25,11 +26,17 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
 
         exportArgs.with {
             addArg("--config", appConfigFile.orElse(super.config))
+            addArg("--version", version)
             addArg("--versionCode", versionCode)
             addArg("--toolsVersion", toolsVersion)
             addArg("--commitHash", commitHash)
         }
         super.setupExecution(exportArgs)
+    }
+
+    @Input
+    Property<String> getVersion() {
+        return version
     }
 
     @Optional @InputFile
@@ -52,6 +59,10 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
         return commitHash
     }
 
+    void setVersion(String version) {
+        this.version.set(version)
+    }
+
     void setAppConfigFile(String appConfigFile) {
         this.appConfigFile.set(appConfigFile)
     }
@@ -59,6 +70,7 @@ class UnityBuildEnginePlayerTask extends AbstractUnityBuildEngineTask {
     void setAppConfigFile(File appConfigFile) {
         this.appConfigFile.set(appConfigFile.absolutePath)
     }
+
 
     void setVersionCode(String versionCode) {
         this.versionCode.set(versionCode)

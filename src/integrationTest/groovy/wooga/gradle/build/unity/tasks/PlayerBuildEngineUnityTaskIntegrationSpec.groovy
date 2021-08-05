@@ -4,23 +4,21 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 
-class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
+class PlayerBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
 
     @Shared
     File appConfigFile;
-    @Shared
-    String appConfigPath
 
     def setup() {
         appConfigFile = createAppConfig("Assets/CustomConfigs")
-        buildFile << "import wooga.gradle.build.unity.tasks.UnityBuildEnginePlayerTask\n".stripIndent()
+        buildFile << "import wooga.gradle.build.unity.tasks.PlayerBuildEngineUnityTask\n".stripIndent()
     }
 
     def "uses default settings when configuring only with mandatory variables"() {
         given: "a custom export task without configuration"
         def version = "0.0.1"
         buildFile << """
-            task("customExport", type: UnityBuildEnginePlayerTask) {
+            task("customExport", type: PlayerBuildEngineUnityTask) {
                 config = "configName"
                 version = "${version}"               
             }
@@ -40,7 +38,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure optional #argName argument"() {
         given: "a custom export task without configuration"
         buildFile << """
-            task("customExport", type: UnityBuildEnginePlayerTask) {
+            task("customExport", type: PlayerBuildEngineUnityTask) {
                 config = "configName"
                 version = "0.0.1"  
                 ${propName} = "${argValue}"         
@@ -66,7 +64,7 @@ class UnityBuildEnginePlayerTaskIntegrationSpec extends UnityIntegrationSpec {
     def "appConfigFile property takes precedence over config property"() {
         given: "a custom export task without configuration"
         buildFile << """
-            task("customExport", type: UnityBuildEnginePlayerTask) {
+            task("customExport", type: PlayerBuildEngineUnityTask) {
                 appConfigFile = "${escapedPath(appConfigFile.path)}"
                 version = "0.0.1"  
             }

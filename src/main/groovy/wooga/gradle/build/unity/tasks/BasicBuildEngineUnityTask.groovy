@@ -1,8 +1,8 @@
 package wooga.gradle.build.unity.tasks
 
-class UnityBuildEngineTask extends AbstractUnityBuildEngineTask {
+class BasicBuildEngineUnityTask extends BuildEngineUnityTask {
 
-    UnityBuildEngineTask() {
+    BasicBuildEngineUnityTask() {
         def args = super.defaultArgs()
         super.setupExecution(args)
     }

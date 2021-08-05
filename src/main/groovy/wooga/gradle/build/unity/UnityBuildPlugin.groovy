@@ -30,9 +30,9 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
-import wooga.gradle.build.unity.tasks.AbstractUnityBuildEngineTask
+import wooga.gradle.build.unity.tasks.BuildEngineUnityTask
 import wooga.gradle.build.unity.tasks.GradleBuild
-import wooga.gradle.build.unity.tasks.UnityBuildEnginePlayerTask
+import wooga.gradle.build.unity.tasks.PlayerBuildEngineUnityTask
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -41,6 +41,8 @@ import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.utils.GenericUnityAssetFile
+
+import java.nio.file.Paths
 
 class UnityBuildPlugin implements Plugin<Project> {
 
@@ -159,13 +161,14 @@ class UnityBuildPlugin implements Plugin<Project> {
             })
         })
 
-        project.tasks.withType(AbstractUnityBuildEngineTask).configureEach {t ->
+        project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
             t.outputPath.convention(extension.outputDirectoryBase.asFile.get().path)
+            t.logPath.convention(t.outputPath.map{ Paths.get(it, "logs").toString()})
             t.customArguments.convention(extension.customArguments.map {[it] })
         }
 
-        project.tasks.withType(UnityBuildEnginePlayerTask).configureEach { task ->
+        project.tasks.withType(PlayerBuildEngineUnityTask).configureEach { task ->
             task.build.convention("Player")
             task.toolsVersion.convention(extension.toolsVersion)
             task.commitHash.convention(extension.commitHash)
@@ -202,8 +205,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 TaskProvider<? extends Task> exportTask;
                 def ubsVersion = extension.ubsCompatibilityVersion.getOrElse(UBSVersion.v100)
                 if(ubsVersion >= UBSVersion.v120) {
-                    exportTask = project.tasks.register("export${baseName}", UnityBuildEnginePlayerTask) {
-                        UnityBuildEnginePlayerTask t ->
+                    exportTask = project.tasks.register("export${baseName}", PlayerBuildEngineUnityTask) {
+                        PlayerBuildEngineUnityTask t ->
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
                             t.appConfigFile.set(appConfig.absolutePath)
