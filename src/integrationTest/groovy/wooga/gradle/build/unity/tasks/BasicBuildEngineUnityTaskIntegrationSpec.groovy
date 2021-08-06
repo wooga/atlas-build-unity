@@ -53,7 +53,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "UBSBuild", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export").path, customArgsParts)
-        hasKeyValue("--logPath", new File(projectDir, "build/export/logs").path, customArgsParts)
+        hasKeyValue("--logPath", new File(projectDir, "build/logs/unity").path, customArgsParts)
         hasKeyValue("--key", "value", customArgsParts)
         hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
         !customArgsParts.contains("--config")

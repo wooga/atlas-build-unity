@@ -42,6 +42,7 @@ import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
+import java.nio.file.Path
 import java.nio.file.Paths
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -164,7 +165,10 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
             t.outputPath.convention(extension.outputDirectoryBase.asFile.get().path)
-            t.logPath.convention(t.outputPath.map{ Paths.get(it, "logs").toString()})
+
+            t.logPath.convention(t.unityLogFile.map{logFile ->
+                return logFile.asFile.toPath().parent.toString()
+            })
             t.customArguments.convention(extension.customArguments.map {[it] })
         }
 

@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.2.2-rc.1'
+    id 'net.wooga.plugins' version '2.2.2'
 }
 
 group 'net.wooga.gradle'
