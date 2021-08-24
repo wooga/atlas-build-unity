@@ -16,7 +16,7 @@
 
 package wooga.gradle.xcodebuild
 
-import wooga.gradle.unity.utils.PropertyLookup
+import com.wooga.gradle.PropertyLookup
 
 
 class XcodeBuildPluginConventions {

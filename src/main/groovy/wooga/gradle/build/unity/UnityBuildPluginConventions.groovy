@@ -16,8 +16,9 @@
  */
 
 package wooga.gradle.build.unity
+import com.wooga.gradle.PropertyLookup
 
-import wooga.gradle.unity.utils.PropertyLookup
+//import wooga.gradle.unity.utils.PropertyLookup
 
 
 class UnityBuildPluginConventions {

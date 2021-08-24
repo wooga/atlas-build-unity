@@ -344,4 +344,40 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
                 .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
         expectedTaskName << Gen.any("assemble", "export", "check", "publish").map { "${it}TestConfigFile" }
     }
+
+
+    def "sonarqube task run tests and sonar build"() {
+        given: "applied sonarqube plugin"
+
+        when:
+        def result = runTasks("sonarqube", "--dry-run")
+
+        then:
+        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        tasksLine.contains(":test")
+        tasksLine.contains(":sonarBuildUnity")
+        tasksLine.indexOf(":sonarqube") > tasksLine.indexOf(":test")
+        tasksLine.indexOf(":sonarqube") > tasksLine.indexOf(":sonarBuildUnity")
+    }
+
+    def "sonarqube build task create solutions beforehand"() {
+        given: "applied sonarqube plugin"
+
+        when:
+        def result = runTasks("sonarBuildUnity")
+
+        then:
+        result.wasExecuted(":generateSolution")
+    }
+
+    def "sonarqube build task runs after unity tests"() {
+        given: "applied sonarqube plugin"
+
+        when:
+        def result = runTasks("sonarBuildUnity", "test")
+
+        then:
+        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        tasksLine.indexOf(":sonarBuildUnity") > tasksLine.indexOf(":test")
+    }
 }
