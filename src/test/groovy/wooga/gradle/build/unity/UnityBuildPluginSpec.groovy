@@ -123,6 +123,7 @@ class UnityBuildPluginSpec extends ProjectSpec {
         def buildTask = project.tasks.getByName("sonarBuildUnity") as BuildSolution
         buildTask.solution.get().asFile == new File(projectDir, "${project.name}.sln")
         buildTask.dotnetExecutable.getOrElse(null) == unityExt.dotnetExecutable.getOrElse(null)
-        buildTask.environment.getting("FrameworkPathOverride").getOrElse(null) == unityExt.monoFrameworkDir.getOrElse(null)
+        buildTask.environment.getting("FrameworkPathOverride").getOrElse(null) ==
+                unityExt.monoFrameworkDir.map { it.asFile.absolutePath}.getOrElse(null)
     }
 }
