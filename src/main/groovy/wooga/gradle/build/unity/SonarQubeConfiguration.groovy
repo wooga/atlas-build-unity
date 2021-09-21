@@ -10,6 +10,10 @@ import wooga.gradle.dotnetsonar.tasks.BuildSolution
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+
 class SonarQubeConfiguration {
 
     private Project project
@@ -45,10 +49,18 @@ class SonarQubeConfiguration {
         }
     }
     private void setupSonarBuildUnityDefaults(BuildSolution task, UnityPluginExtension unityExt) {
+        def propsFixResource = SonarQubeConfiguration.class.getResourceAsStream("/atlas-build-unity.project-fixes.props")
+        def propsFixTmpFile = File.createTempFile("atlas-build-unity", ".project-fixes.props")
+        propsFixResource.withStream {inputStream ->
+            Files.copy(inputStream, Paths.get(propsFixTmpFile.absolutePath), StandardCopyOption.REPLACE_EXISTING)
+        }
+
         task.solution.convention(project.layout.projectDirectory.file("${project.name}.sln"))
         task.dotnetExecutable.convention(unityExt.dotnetExecutable)
         task.addEnvironment("FrameworkPathOverride",
                 unityExt.monoFrameworkDir.map{it.asFile.absolutePath} )
+        task.extraArgs.add("/p:CustomBeforeMicrosoftCommonProps=${propsFixTmpFile.absolutePath}")
+
     }
 
     private static Action<? extends SonarQubeProperties> sonarqubeUnityDefaults(String assetsDir, String reportsDir) {

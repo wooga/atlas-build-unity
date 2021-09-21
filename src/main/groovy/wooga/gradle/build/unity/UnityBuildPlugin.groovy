@@ -23,12 +23,10 @@ import org.gradle.api.Project
 import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
-import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
-import org.sonarqube.gradle.SonarQubeProperties
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
@@ -162,6 +160,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(GradleBuild).configureEach({GradleBuild t ->
             t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
         })
+
         configureSonarqubeTasks(project)
 
         project.afterEvaluate {
