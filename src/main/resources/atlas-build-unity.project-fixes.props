@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Our wooga projects get falsely flagged as test projects due to `nunit` reference. -->
+    <SonarQubeTestProject>false</SonarQubeTestProject>
+    <!-- Unity default .sln export adds the Unity installed CSC tools which have issues to work with `.editoconfig` -->
+    <CscToolPath></CscToolPath>
+    <CscToolExe></CscToolExe>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Unity 2020 default export disables all it's references. (known bug: https://issuetracker.unity3d.com/issues/referenceoutputassembly-key-is-set-to-false-in-project-references)  -->
+    <ProjectReference Update="*.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

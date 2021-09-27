@@ -19,10 +19,20 @@ package wooga.gradle.build.unity
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
+import org.gradle.launcher.daemon.protocol.Build
+import org.sonarqube.gradle.SonarPropertyComputer
+import org.sonarqube.gradle.SonarQubeExtension
 import spock.lang.Ignore
 import spock.lang.Unroll
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
+import wooga.gradle.dotnetsonar.SonarScannerExtension
+import wooga.gradle.dotnetsonar.tasks.BuildSolution
+import wooga.gradle.unity.UnityPluginExtension
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 class UnityBuildPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.build-unity'
@@ -34,6 +44,7 @@ class UnityBuildPluginSpec extends ProjectSpec {
 
         when:
         project.plugins.apply(PLUGIN_NAME)
+
 
         then:
         def extension = project.extensions.findByName(UnityBuildPlugin.EXTENSION_NAME)
@@ -63,6 +74,8 @@ class UnityBuildPluginSpec extends ProjectSpec {
         "assemble"                            | DefaultTask
         "build"                               | DefaultTask
         "check"                               | DefaultTask
+        "sonarqube"                           | DefaultTask
+        "sonarBuildUnity"                     | BuildSolution
     }
 
     @Unroll
@@ -79,5 +92,47 @@ class UnityBuildPluginSpec extends ProjectSpec {
 
         where:
         pluginToAdd << ['base', 'net.wooga.unity']
+    }
+
+    def "configures sonarqube extension"() {
+        given: "project without plugin applied"
+        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+
+        when: "applying atlas-build-unity plugin"
+        project.plugins.apply(PLUGIN_NAME)
+        project.evaluate()
+
+        then:
+        def sonarExt = project.extensions.getByType(SonarScannerExtension)
+        def unityExt = project.extensions.getByType(UnityPluginExtension)
+        and: "sonarqube extension is configured with defaults"
+        def properties = sonarExt.computeSonarProperties(project)
+        def assetsDir = unityExt.assetsDir.get().asFile.path
+        def reportsDir = unityExt.reportsDir.get().asFile.path
+        properties["sonar.exclusions"] == "${assetsDir}/Paket.Unity3D/**"
+        properties["sonar.cs.nunit.reportsPaths"] == "${reportsDir}/**/*.xml"
+        properties["sonar.cs.opencover.reportsPaths"] == "${reportsDir}/**/*.xml"
+    }
+
+    def "configures sonarBuildUnity task"() {
+        given: "project without plugin applied"
+        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+        and: "props file with fixes to run unity project on msbuild properly"
+
+
+        when: "applying atlas-build-unity plugin"
+        project.plugins.apply(PLUGIN_NAME)
+
+        then:
+        def unityExt = project.extensions.getByType(UnityPluginExtension)
+        def buildTask = project.tasks.getByName("sonarBuildUnity") as BuildSolution
+        buildTask.solution.get().asFile == new File(projectDir, "${project.name}.sln")
+        buildTask.dotnetExecutable.getOrElse(null) == unityExt.dotnetExecutable.getOrElse(null)
+        buildTask.environment.getting("FrameworkPathOverride").getOrElse(null) ==
+                unityExt.monoFrameworkDir.map { it.asFile.absolutePath}.getOrElse(null)
+        buildTask.extraArgs.get().any {
+            it.startsWith("/p:CustomBeforeMicrosoftCommonProps=") &&
+            it.endsWith(".project-fixes.props")
+        }
     }
 }

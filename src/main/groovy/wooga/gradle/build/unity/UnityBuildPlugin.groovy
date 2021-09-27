@@ -18,20 +18,21 @@
 package wooga.gradle.build.unity
 
 import org.apache.commons.io.FilenameUtils
-import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
-import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
+import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
+import wooga.gradle.dotnetsonar.tasks.BuildSolution
 import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
@@ -49,6 +50,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(PublishingPlugin.class)
         project.pluginManager.apply(UnityPlugin.class)
         project.pluginManager.apply(SecretsPlugin.class)
+        project.pluginManager.apply(DotNetSonarqubePlugin.class)
 
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
         configureExtension(extension, project)
@@ -112,40 +114,32 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def assetsDir = t.projectDirectory.dir("Assets")
                 def assetsFileTree = project.fileTree(assetsDir)
 
-                def includeSpec = new Spec<FileTreeElement>() {
-                    @Override
-                    boolean isSatisfiedBy(FileTreeElement element) {
-                        def path = element.getRelativePath().getPathString().toLowerCase()
-                        def name = element.name.toLowerCase()
-                        def status = true
-                        if (path.contains("plugins")
-                                && !((name == "plugins") || (name == "plugins.meta"))) {
-                            /*
-                             Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
-                             The getPath() method is not the same as {@code File.getPath()}
-                             From the docs:
+                def includeSpec = { FileTreeElement element ->
+                    def path = element.getRelativePath().getPathString().toLowerCase()
+                    def name = element.name.toLowerCase()
+                    def status = true
+                    if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
+                        /*
+                         Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
+                         The getPath() method is not the same as {@code File.getPath()}
+                         From the docs:
 
-                             * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-                             * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-                             *
-                             * @return The path. Never returns null.
-                             */
-                            if (t.getBuildPlatform()) {
-                                status = path.contains("plugins/" + t.getBuildPlatform().get())
-                            } else {
-                                status = true
-                            }
+                         * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
+                         * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
+                         *
+                         * @return The path. Never returns null.
+                         */
+                        if (t.getBuildPlatform()) {
+                            status = path.contains("plugins/" + t.getBuildPlatform().get())
+                        } else {
+                            status = true
                         }
-
-                        status
                     }
+                    return status
                 }
 
-                def excludeSpec = new Spec<FileTreeElement>() {
-                    @Override
-                    boolean isSatisfiedBy(FileTreeElement element) {
-                        return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
-                    }
+                def excludeSpec = { FileTreeElement element  ->
+                    return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
                 }
 
                 assetsFileTree.include(includeSpec)
@@ -166,6 +160,8 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(GradleBuild).configureEach({GradleBuild t ->
             t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
         })
+
+        configureSonarqubeTasks(project)
 
         project.afterEvaluate {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
@@ -220,7 +216,19 @@ class UnityBuildPlugin implements Plugin<Project> {
                         project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }
                 }
+
             }
         }
+    }
+
+    static void configureSonarqubeTasks(Project project) {
+        def unityExt = project.extensions.findByType(UnityPluginExtension)
+        def sonarExt = project.extensions.findByType(SonarQubeExtension)
+
+        new SonarQubeConfiguration(project).with {
+            sonarTaskName = "sonarqube"
+            buildTaskName = "sonarBuildUnity"
+            return it
+        }.configure(unityExt, sonarExt)
     }
 }

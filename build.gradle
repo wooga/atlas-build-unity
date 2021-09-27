@@ -22,11 +22,12 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.2.0'
+    id 'net.wooga.plugins' version '2.2.1'
 }
 
 group 'net.wooga.gradle'
 description = 'a Unity 3d build helper.'
+
 
 pluginBundle {
     website = 'https://wooga.github.io/atlas-unity/'
@@ -58,8 +59,10 @@ repositories {
 }
 
 dependencies {
+    implementation "gradle.plugin.net.wooga.gradle:atlas-dotnet-sonarqube:0.1.0"
+    implementation "gradle.plugin.net.wooga.gradle:atlas-unity:2.2.0"
+    implementation 'com.wooga.gradle:gradle-commons:0.1.0'
     implementation "org.gradle:gradle-tooling-api:+"
-    api 'gradle.plugin.net.wooga.gradle:atlas-unity:2.0.0-rc.6'
     api 'gradle.plugin.net.wooga.gradle:atlas-secrets:1.0.0-rc.1'
     implementation 'xmlwise:xmlwise:1.2.11'
     implementation 'commons-codec:commons-codec:1.14'

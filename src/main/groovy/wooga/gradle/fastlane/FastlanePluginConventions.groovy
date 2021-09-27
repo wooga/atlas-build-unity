@@ -16,7 +16,7 @@
 
 package wooga.gradle.fastlane
 
-import wooga.gradle.unity.utils.PropertyLookup
+import com.wooga.gradle.PropertyLookup
 
 
 class FastlanePluginConventions {
