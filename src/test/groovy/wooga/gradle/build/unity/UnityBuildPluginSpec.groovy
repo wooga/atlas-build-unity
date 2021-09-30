@@ -110,6 +110,8 @@ class UnityBuildPluginSpec extends ProjectSpec {
         def assetsDir = unityExt.assetsDir.get().asFile.path
         def reportsDir = unityExt.reportsDir.get().asFile.path
         properties["sonar.exclusions"] == "${assetsDir}/Paket.Unity3D/**"
+        properties["sonar.cpd.exclusions"] == "${assetsDir}/**/Tests/**"
+        properties["sonar.coverage.exclusions"] == "${assetsDir}/**/Tests/**"
         properties["sonar.cs.nunit.reportsPaths"] == "${reportsDir}/**/*.xml"
         properties["sonar.cs.opencover.reportsPaths"] == "${reportsDir}/**/*.xml"
     }
