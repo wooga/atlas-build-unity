@@ -65,7 +65,8 @@ class SonarQubeConfiguration {
 
     private static Action<? extends SonarQubeProperties> sonarqubeUnityDefaults(String assetsDir, String reportsDir) {
         return {
-
+            addPropertyIfNotExists(it, "sonar.cpd.exclusions", "${assetsDir}/**/Tests/**")
+            addPropertyIfNotExists(it, "sonar.coverage.exclusions", "${assetsDir}/**/Tests/**")
             addPropertyIfNotExists(it, "sonar.exclusions", "${assetsDir}/Paket.Unity3D/**")
             addPropertyIfNotExists(it, "sonar.cs.nunit.reportsPaths", "${reportsDir}/**/*.xml")
             addPropertyIfNotExists(it, "sonar.cs.opencover.reportsPaths", "${reportsDir}/**/*.xml")

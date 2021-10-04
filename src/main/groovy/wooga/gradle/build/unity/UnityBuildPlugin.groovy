@@ -32,7 +32,6 @@ import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
-import wooga.gradle.dotnetsonar.tasks.BuildSolution
 import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
