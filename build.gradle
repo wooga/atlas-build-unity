@@ -59,7 +59,7 @@ repositories {
 }
 
 dependencies {
-    implementation "gradle.plugin.net.wooga.gradle:atlas-dotnet-sonarqube:0.1.0"
+    implementation "gradle.plugin.net.wooga.gradle:atlas-dotnet-sonarqube:(0.2,0.3]"
     implementation "gradle.plugin.net.wooga.gradle:atlas-unity:2.2.0"
     implementation 'com.wooga.gradle:gradle-commons:0.1.0'
     implementation "org.gradle:gradle-tooling-api:+"
