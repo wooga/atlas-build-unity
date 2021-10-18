@@ -380,4 +380,33 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
         tasksLine.indexOf(":sonarBuildUnity") > tasksLine.indexOf(":test")
     }
+
+//    @IgnoreIf({ os.windows })
+    @Unroll
+    def "generates script build task #expectedTaskNames from app config name #appConfigName"() {
+        given: "a project with custom app config directory"
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigsCustom")
+        appConfigsDir.mkdirs()
+
+        buildFile << """
+        unityBuild.appConfigsDirectory = file("${escapedPath(appConfigsDir.path)}")
+        """.stripIndent()
+
+        and: "app config with delimiter in names"
+        Yaml yaml = new Yaml()
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test']]
+        createFile("${appConfigName}.asset", appConfigsDir) << yaml.dump(appConfig)
+
+        expect:
+        expectedTaskNames.each {
+            runTasksSuccessfully(it, '--dry-run')
+        }
+
+        where:
+        appConfigName | expectedTaskNames
+        'test-config-file'| ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
+        'test_config_file'| ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
+        'test config file' | ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
+    }
 }

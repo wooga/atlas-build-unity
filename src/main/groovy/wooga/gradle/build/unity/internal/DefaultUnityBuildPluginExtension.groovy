@@ -51,6 +51,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
     final RegularFileProperty exportInitScript
     final Property<File> exportBuildDirBase
+    final Property<File> exportBuildScript
+    final Property<File> exportTestScript
+    final Property<File> exportPublishScript
     final Property<Boolean> cleanBuildDirBeforeBuild
 
     private final Property<String> appConfigSecretsKey
@@ -84,6 +87,9 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         ignoreFilesForExportUpToDateCheck = project.objects.fileCollection()
         exportInitScript = project.objects.fileProperty()
         exportBuildDirBase = project.objects.property(File)
+        exportBuildScript = project.objects.property(File)
+        exportTestScript = project.objects.property(File)
+        exportPublishScript = project.objects.property(File)
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
         appConfigSecretsKey = project.objects.property(String)
     }

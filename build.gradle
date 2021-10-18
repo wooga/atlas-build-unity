@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.2.1'
+    id 'net.wooga.plugins' version '2.2.2'
 }
 
 group 'net.wooga.gradle'
@@ -70,6 +70,7 @@ dependencies {
     implementation('com.wooga.xcodebuild:xcpretty:(1,2]')
     implementation'com.googlecode.plist:dd-plist:1.23'
     implementation 'org.apache.commons:commons-text:1.8'
+    testImplementation 'com.wooga.gradle:gradle-commons-test:0.3.0'
     testImplementation('com.nagternal:spock-genesis:0.6.0')
     testImplementation "org.yaml:snakeyaml:1.28"
 

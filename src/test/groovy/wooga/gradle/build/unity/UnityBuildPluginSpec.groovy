@@ -19,20 +19,12 @@ package wooga.gradle.build.unity
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
-import org.gradle.launcher.daemon.protocol.Build
-import org.sonarqube.gradle.SonarPropertyComputer
-import org.sonarqube.gradle.SonarQubeExtension
-import spock.lang.Ignore
 import spock.lang.Unroll
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
-import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.SonarScannerExtension
 import wooga.gradle.dotnetsonar.tasks.BuildSolution
 import wooga.gradle.unity.UnityPluginExtension
 
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 
 class UnityBuildPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.build-unity'
