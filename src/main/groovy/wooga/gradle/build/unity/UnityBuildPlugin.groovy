@@ -30,7 +30,6 @@ import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.GradleBuild
-import wooga.gradle.build.unity.tasks.ScriptBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -219,44 +218,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                         project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }
                 }
-
-                project.tasks.register("scriptAssemble${baseName.capitalize()}", ScriptBuild) { ScriptBuild t ->
-                    t.dependsOn exportTask
-                    t.group = LifecycleBasePlugin.BUILD_GROUP
-                    t.description = "executes build.sh script on exported project for app config ${appConfigName}"
-                    t.dir.set(exportTask.flatMap({it.outputDirectory}))
-                    t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                    t.secretsKey.set(secretsExtension.secretsKey)
-                    t.script.convention(extension.exportBuildScript.map{project.layout.projectDirectory.file(it.absolutePath)})
-                    t.logsShellOutput.convention(true)
-                    t.onlyIf { extension.exportBuildScript.present }
-                    project.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).map{it.dependsOn(t)}
-                }
-
-                project.tasks.register("scriptCheck${baseName.capitalize()}", ScriptBuild) { ScriptBuild t ->
-                    t.dependsOn exportTask
-                    t.group = LifecycleBasePlugin.VERIFICATION_GROUP
-                    t.description = "executes publish.sh script on exported project for app config ${appConfigName}"
-                    t.dir.set(exportTask.flatMap({it.outputDirectory}))
-                    t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                    t.secretsKey.set(secretsExtension.secretsKey)
-                    t.script.convention(extension.exportTestScript.map{project.layout.projectDirectory.file(it.absolutePath)})
-                    t.logsShellOutput.convention(true)
-                    t.onlyIf { extension.exportTestScript.present }
-                    project.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).map{it.dependsOn(t)}
-                }
-
-                project.tasks.register("scriptPublish${baseName.capitalize()}", ScriptBuild) { ScriptBuild t ->
-                    t.dependsOn exportTask
-                    t.group = PublishingPlugin.PUBLISH_TASK_GROUP
-                    t.description = "executes publish.sh script on exported project for app config ${appConfigName}"
-                    t.dir.set(exportTask.flatMap({it.outputDirectory}))
-                    t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                    t.secretsKey.set(secretsExtension.secretsKey)
-                    t.script.convention(extension.exportPublishScript.map{project.layout.projectDirectory.file(it.absolutePath)})
-                    t.logsShellOutput.convention(true)
-                    t.onlyIf { extension.exportPublishScript.present }
-                    project.tasks.named(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME).map{it.dependsOn(t)}
+                def scriptBuildConfig = new ScriptBuildConfiguration(project, baseName, appConfigName,
+                        secretsExtension, extension)
+                scriptBuildConfig.with {
+                    configureAssemble(exportTask, fetchSecretsTask)
+                    configureCheck(exportTask, fetchSecretsTask)
+                    configurePublish(exportTask, fetchSecretsTask)
                 }
             }
         }

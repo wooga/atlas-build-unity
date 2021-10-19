@@ -306,11 +306,11 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("version=$expectedValue;")
 
         where:
-        rawValue | type           | expectedValue
-        "1.0.0"  | "String"       | "1.0.0"
-        "1.1.0"  | "Closure"      | "1.1.0"
-        "1.1.1"  | "Callable"     | "1.1.1"
-        "2.0.0"  | "Object"       | "2.0.0"
+        rawValue | type       | expectedValue
+        "1.0.0"  | "String"   | "1.0.0"
+        "1.1.0"  | "Closure"  | "1.1.0"
+        "1.1.1"  | "Callable" | "1.1.1"
+        "2.0.0"  | "Object"   | "2.0.0"
 
         value = wrapValueBasedOnType(rawValue, type)
     }
@@ -353,7 +353,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasks("sonarqube", "--dry-run")
 
         then:
-        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        def tasksLine = result.standardOutput.readLines().find { it.startsWith("Tasks to be executed:") }
         tasksLine.contains(":test")
         tasksLine.contains(":sonarBuildUnity")
         tasksLine.indexOf(":sonarqube") > tasksLine.indexOf(":test")
@@ -377,7 +377,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasks("sonarBuildUnity", "test")
 
         then:
-        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        def tasksLine = result.standardOutput.readLines().find { it.startsWith("Tasks to be executed:") }
         tasksLine.indexOf(":sonarBuildUnity") > tasksLine.indexOf(":test")
     }
 
@@ -404,9 +404,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         }
 
         where:
-        appConfigName | expectedTaskNames
-        'test-config-file'| ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
-        'test_config_file'| ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
+        appConfigName      | expectedTaskNames
+        'test-config-file' | ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
+        'test_config_file' | ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
         'test config file' | ["scriptAssembleTestConfigFile", "scriptCheckTestConfigFile", "scriptPublishTestConfigFile"]
     }
 }
