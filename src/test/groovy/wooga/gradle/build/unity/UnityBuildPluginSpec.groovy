@@ -107,11 +107,10 @@ class UnityBuildPluginSpec extends ProjectSpec {
         def unityExt = project.extensions.getByType(UnityPluginExtension)
         and: "sonarqube extension is configured with defaults"
         def properties = sonarExt.computeSonarProperties(project)
-        def assetsDir = unityExt.assetsDir.get().asFile.path
         def reportsDir = unityExt.reportsDir.get().asFile.path
-        properties["sonar.exclusions"] == "${assetsDir}/Paket.Unity3D/**"
-        properties["sonar.cpd.exclusions"] == "${assetsDir}/**/Tests/**"
-        properties["sonar.coverage.exclusions"] == "${assetsDir}/**/Tests/**"
+        properties["sonar.exclusions"] == "Assets/Paket.Unity3D/**"
+        properties["sonar.cpd.exclusions"] == "Assets/**/Tests/**"
+        properties["sonar.coverage.exclusions"] == "Assets/**/Tests/**"
         properties["sonar.cs.nunit.reportsPaths"] == "${reportsDir}/**/*.xml"
         properties["sonar.cs.opencover.reportsPaths"] == "${reportsDir}/**/*.xml"
     }
