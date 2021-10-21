@@ -82,6 +82,10 @@ class UnityBuildPlugin implements Plugin<Project> {
 
         extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({new File(it)}))
 
+        extension.exportBuildScript.convention(UnityBuildPluginConventions.EXPORT_BUILD_SCRIPT.getStringValueProvider(project).map({new File(it)}))
+        extension.exportTestScript.convention(UnityBuildPluginConventions.EXPORT_TEST_SCRIPT.getStringValueProvider(project).map({new File(it)}))
+        extension.exportPublishScript.convention(UnityBuildPluginConventions.EXPORT_PUBLISH_SCRIPT.getStringValueProvider(project).map({new File(it)}))
+
         extension.cleanBuildDirBeforeBuild.set(UnityBuildPluginConventions.CLEAN_BUILD_DIR_BEFORE_BUILD.getBooleanValueProvider(project))
         extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
     }
@@ -210,12 +214,17 @@ class UnityBuildPlugin implements Plugin<Project> {
                             (config.get("gradleVersion", null) ?: project.gradle.gradleVersion).toString()
                         }))
                     }
-
                     if (defaultAppConfigName == appConfigName) {
                         project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }
                 }
-
+                def scriptBuildConfig = new ScriptBuildConfiguration(project, baseName, appConfigName,
+                        secretsExtension, extension)
+                scriptBuildConfig.with {
+                    configureAssemble(exportTask, fetchSecretsTask)
+                    configureCheck(exportTask, fetchSecretsTask)
+                    configurePublish(exportTask, fetchSecretsTask)
+                }
             }
         }
     }

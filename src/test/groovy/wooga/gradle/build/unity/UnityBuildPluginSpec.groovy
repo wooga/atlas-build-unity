@@ -19,20 +19,20 @@ package wooga.gradle.build.unity
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
-import org.gradle.launcher.daemon.protocol.Build
-import org.sonarqube.gradle.SonarPropertyComputer
-import org.sonarqube.gradle.SonarQubeExtension
-import spock.lang.Ignore
+import org.gradle.api.provider.Provider
+import org.gradle.api.publish.plugins.PublishingPlugin
+import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.yaml.snakeyaml.Yaml
 import spock.lang.Unroll
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.build.unity.tasks.ScriptBuild
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.SonarScannerExtension
 import wooga.gradle.dotnetsonar.tasks.BuildSolution
+import wooga.gradle.secrets.SecretsPluginExtension
+import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPluginExtension
 
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 
 class UnityBuildPluginSpec extends ProjectSpec {
     public static final String PLUGIN_NAME = 'net.wooga.build-unity'
@@ -69,13 +69,13 @@ class UnityBuildPluginSpec extends ProjectSpec {
         taskType.isInstance(task)
 
         where:
-        taskName                              | taskType
-        "publish"                             | DefaultTask
-        "assemble"                            | DefaultTask
-        "build"                               | DefaultTask
-        "check"                               | DefaultTask
-        "sonarqube"                           | DefaultTask
-        "sonarBuildUnity"                     | BuildSolution
+        taskName          | taskType
+        "publish"         | DefaultTask
+        "assemble"        | DefaultTask
+        "build"           | DefaultTask
+        "check"           | DefaultTask
+        "sonarqube"       | DefaultTask
+        "sonarBuildUnity" | BuildSolution
     }
 
     @Unroll
@@ -130,10 +130,65 @@ class UnityBuildPluginSpec extends ProjectSpec {
         buildTask.solution.get().asFile == new File(projectDir, "${project.name}.sln")
         buildTask.dotnetExecutable.getOrElse(null) == unityExt.dotnetExecutable.getOrElse(null)
         buildTask.environment.getting("FrameworkPathOverride").getOrElse(null) ==
-                unityExt.monoFrameworkDir.map { it.asFile.absolutePath}.getOrElse(null)
+                unityExt.monoFrameworkDir.map { it.asFile.absolutePath }.getOrElse(null)
         buildTask.extraArgs.get().any {
             it.startsWith("/p:CustomBeforeMicrosoftCommonProps=") &&
-            it.endsWith(".project-fixes.props")
+                    it.endsWith(".project-fixes.props")
         }
+    }
+
+    @Unroll
+    def "configure script build tasks"() {
+        given: "project without plugin applied"
+        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+        and: "project with app config file"
+        def appConfigName = "AppConfig"
+        def assets = new File(projectDir, "Assets")
+        def appConfigsDir = new File(assets, UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY)
+        appConfigsDir.mkdirs()
+        Yaml yaml = new Yaml()
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test']]
+        def appConfigFile = new File(appConfigsDir, "${appConfigName}.asset")
+        appConfigFile.createNewFile()
+        appConfigFile << yaml.dump(appConfig)
+
+        when: "applying atlas-build-unity plugin"
+        project.plugins.apply(PLUGIN_NAME)
+        def extension = project.extensions.findByType(UnityBuildPluginExtension)
+        extension.exportBuildScript.set(assembleScript)
+        extension.exportTestScript.set(checkScript)
+        extension.exportPublishScript.set(publishScript)
+        and: "after project evaluate"
+        project.evaluate()
+
+        then:
+        def exportTask = project.tasks.findByName("export$appConfigName") as UnityBuildPlayerTask
+        def fetchSecretsTask = project.tasks.findByName("fetchSecrets$appConfigName") as FetchSecrets
+        def secretsExtension = project.extensions.findByType(SecretsPluginExtension)
+        project.tasks.withType(ScriptBuild).every {
+            it.getDependsOn().contains(exportTask)
+            it.dir.get() == exportTask.outputDirectory.get()
+            it.secretsFile == fetchSecretsTask.secretsFile.get()
+            it.secretsKey.get() == secretsExtension.secretsKey.get()
+            it.logsShellOutput.get()
+        }
+        assertBuildScript("scriptAssemble$appConfigName", LifecycleBasePlugin.ASSEMBLE_TASK_NAME, extension.exportBuildScript)
+        assertBuildScript("scriptCheck$appConfigName", LifecycleBasePlugin.CHECK_TASK_NAME, extension.exportTestScript)
+        assertBuildScript("scriptPublish$appConfigName", PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME, extension.exportPublishScript)
+
+        where:
+        assembleScript          | checkScript         | publishScript
+        null                    | null                | null
+        new File("assemble.sh") | new File("test.sh") | new File("publish.sh")
+    }
+
+    def assertBuildScript(String taskName, String gradleBaseTaskName, Provider<File> expectedScriptFile) {
+        def task = project.tasks.findByName(taskName) as ScriptBuild
+        def gradleBaseTask = project.tasks.findByName(gradleBaseTaskName)
+        return task != null &&
+                task.script.getOrNull() == expectedScriptFile.map { task.dir.get().file(it.path) }.getOrNull() &&
+                gradleBaseTask.getTaskDependencies().getDependencies(gradleBaseTask).any { t ->
+                    t.name == taskName
+                }
     }
 }

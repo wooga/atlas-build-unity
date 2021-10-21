@@ -17,12 +17,6 @@
 
 package wooga.gradle.build.unity.tasks
 
-import com.sun.org.apache.xpath.internal.operations.Bool
-import org.gradle.api.DefaultTask
-import org.gradle.api.Transformer
-import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.ListProperty
@@ -36,18 +30,8 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import wooga.gradle.secrets.SecretSpec
-import wooga.gradle.secrets.internal.Secrets
 
-import javax.crypto.spec.SecretKeySpec
-
-class GradleBuild extends DefaultTask implements SecretSpec {
-
-    private final DirectoryProperty dir = project.objects.directoryProperty()
-
-    @Internal
-    DirectoryProperty getDir() {
-        dir
-    }
+class GradleBuild extends SecretsBuild implements SecretSpec {
 
     private final ListProperty<String> tasks = project.objects.listProperty(String.class)
 
@@ -94,102 +78,12 @@ class GradleBuild extends DefaultTask implements SecretSpec {
         gradleVersion
     }
 
-    private final Property<SecretKeySpec> secretsKey
-
-    @Optional
-    @Input
-    Property<SecretKeySpec> getSecretsKey() {
-        secretsKey
-    }
-
-    void setSecretsKey(SecretKeySpec key) {
-        secretsKey.set(key)
-    }
-
-    GradleBuild setSecretsKey(String keyFile) {
-        setSecretsKey(project.file(keyFile))
-    }
-
-    GradleBuild setSecretsKey(File keyFile) {
-        setSecretsKey(new SecretKeySpec(keyFile.bytes, "AES"))
-    }
-
-    @Override
-    GradleBuild secretsKey(SecretKeySpec key) {
-        setSecretsKey(key)
-    }
-
-    @Override
-    GradleBuild secretsKey(String keyFile) {
-        return setSecretsKey(keyFile)
-    }
-
-    @Override
-    GradleBuild secretsKey(File keyFile) {
-        return setSecretsKey(keyFile)
-    }
-
-    private final RegularFileProperty secretsFile
-
-    @Optional
-    @InputFile
-    RegularFileProperty getSecretsFile() {
-        secretsFile
-    }
-
-    protected final Provider<Secrets> secrets
-
-    protected final Provider<Secrets.EnvironmentSecrets> environmentSecrets
-
-    final Map<String, Object> environment
-
-    @Internal
-    Map<String, Object> getEnvironment() {
-        environment
-    }
-
-    void setEnvironment(Map<String, ?> environment) {
-        this.environment.clear()
-        this.environment.putAll(environment)
-    }
-
-    GradleBuild environment(Map<String, ?> environment) {
-        this.environment.putAll(environment)
-        this
-    }
-
-    GradleBuild environment(String key, Object value) {
-        this.environment.put(key, value)
-        this
-    }
-
     GradleBuild() {
+        super()
         initScript = project.objects.fileProperty()
         buildDirBase = project.objects.property(File)
         projectCacheDir = buildDirBase.map({ it -> new File(it, ".gradle") })
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
-
-        secretsKey = project.objects.property(SecretKeySpec.class)
-        secretsFile = project.objects.fileProperty()
-        secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {
-            @Override
-            Secrets transform(RegularFile secretsFile) {
-                Secrets.decode(secretsFile.asFile.text)
-            }
-        })
-
-        environmentSecrets = project.provider({
-            if (secrets.present && secretsKey.present) {
-                def s = secrets.get()
-                def key = secretsKey.get()
-                return s.encodeEnvironment(key)
-            } else {
-                new Secrets.EnvironmentSecrets()
-            }
-        })
-
-        environment = [:]
-        environment.putAll(System.getenv())
     }
 
     @TaskAction

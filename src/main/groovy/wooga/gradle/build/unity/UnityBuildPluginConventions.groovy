@@ -59,6 +59,19 @@ class UnityBuildPluginConventions {
     static PropertyLookup EXPORT_BUILD_DIR_BASE = new PropertyLookup("UNITY_BUILD_EXPORT_BUILD_DIR_BASE", "unityBuild.exportBuildDirBase", null)
 
     /**
+     * A path the the build script file used by the exported shell script build
+     */
+    static PropertyLookup EXPORT_BUILD_SCRIPT = new PropertyLookup("UNITY_BUILD_EXPORT_BUILD_SCRIPT", "unityBuild.exportBuildScript", null)
+    /**
+     * A path the the test script file used by the exported shell script build
+     */
+    static PropertyLookup EXPORT_TEST_SCRIPT = new PropertyLookup("UNITY_BUILD_EXPORT_TEST_SCRIPT", "unityBuild.exportTestScript", null)
+    /**
+     * A path the the publish script file used by the exported shell script build
+     */
+    static PropertyLookup EXPORT_PUBLISH_SCRIPT = new PropertyLookup("UNITY_BUILD_EXPORT_PUBLISH_SCRIPT", "unityBuild.exportPublishScript", null)
+
+    /**
      * The script to be used by the Gradle build tasks
      */
     static PropertyLookup EXPORT_INIT_SCRIPT = new PropertyLookup("UNITY_BUILD_EXPORT_INIT_SCRIPT", "unityBuild.exportInitScript", null)

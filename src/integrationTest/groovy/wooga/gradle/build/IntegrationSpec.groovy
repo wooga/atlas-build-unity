@@ -23,7 +23,7 @@ import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import org.junit.contrib.java.lang.system.ProvideSystemProperty
 
-class IntegrationSpec extends nebula.test.IntegrationSpec{
+class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
 
     @Rule
     ProvideSystemProperty properties = new ProvideSystemProperty("ignoreDeprecations", "true")
