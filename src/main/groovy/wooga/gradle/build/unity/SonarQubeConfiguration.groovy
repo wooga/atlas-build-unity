@@ -43,8 +43,8 @@ class SonarQubeConfiguration {
             task.mustRunAfter(unityTestTask)
         }
         project.afterEvaluate { //needs to be done after evaluate to be able to fill reportsDir property
-            def assetsDir = unityExt.assetsDir.get().asFile.path
-            def reportsDir = unityExt.reportsDir.get().asFile.path
+            def assetsDir = unityExt.assetsDir.get().asFile
+            def reportsDir = unityExt.reportsDir.get().asFile
             sonarExt.properties(sonarqubeUnityDefaults(assetsDir, reportsDir))
         }
     }
@@ -63,13 +63,14 @@ class SonarQubeConfiguration {
 
     }
 
-    private static Action<? extends SonarQubeProperties> sonarqubeUnityDefaults(String assetsDir, String reportsDir) {
+    private Action<? extends SonarQubeProperties> sonarqubeUnityDefaults(File assetsDir, File reportsDir) {
+       def relativeAssetsDir = project.projectDir.relativePath(assetsDir)
         return {
-            addPropertyIfNotExists(it, "sonar.cpd.exclusions", "${assetsDir}/**/Tests/**")
-            addPropertyIfNotExists(it, "sonar.coverage.exclusions", "${assetsDir}/**/Tests/**")
-            addPropertyIfNotExists(it, "sonar.exclusions", "${assetsDir}/Paket.Unity3D/**")
-            addPropertyIfNotExists(it, "sonar.cs.nunit.reportsPaths", "${reportsDir}/**/*.xml")
-            addPropertyIfNotExists(it, "sonar.cs.opencover.reportsPaths", "${reportsDir}/**/*.xml")
+            addPropertyIfNotExists(it, "sonar.cpd.exclusions", "${relativeAssetsDir}/**/Tests/**")
+            addPropertyIfNotExists(it, "sonar.coverage.exclusions", "${relativeAssetsDir}/**/Tests/**")
+            addPropertyIfNotExists(it, "sonar.exclusions", "${relativeAssetsDir}/Paket.Unity3D/**")
+            addPropertyIfNotExists(it, "sonar.cs.nunit.reportsPaths", "${reportsDir.path}/**/*.xml")
+            addPropertyIfNotExists(it, "sonar.cs.opencover.reportsPaths", "${reportsDir.path}/**/*.xml")
         }
     }
 
