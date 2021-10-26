@@ -42,9 +42,6 @@ import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
-import java.nio.file.Path
-import java.nio.file.Paths
-
 class UnityBuildPlugin implements Plugin<Project> {
 
     static final String EXTENSION_NAME = "unityBuild"
@@ -164,7 +161,9 @@ class UnityBuildPlugin implements Plugin<Project> {
 
         project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
-            t.outputPath.convention(extension.outputDirectoryBase.asFile.get().path)
+
+            def outputDir = extension.outputDirectoryBase.dir(t.build.map{new File(it, "project").path})
+            t.outputPath.convention(outputDir.map{it.asFile.absolutePath})
 
             t.logPath.convention(t.unityLogFile.map{logFile ->
                 return logFile.asFile.toPath().parent.toString()
@@ -174,6 +173,12 @@ class UnityBuildPlugin implements Plugin<Project> {
 
         project.tasks.withType(PlayerBuildEngineUnityTask).configureEach { task ->
             task.build.convention("Player")
+            def appConfigName = task.config.orElse(
+                    task.configPath.asFile.map{FilenameUtils.removeExtension(it.name)}
+            )
+            def configRelativePath = appConfigName.map{return new File(it, "project").path }
+            def outputPath = extension.outputDirectoryBase.dir(configRelativePath).map{it.asFile.absolutePath}
+            task.outputPath.convention(outputPath)
             task.toolsVersion.convention(extension.toolsVersion)
             task.commitHash.convention(extension.commitHash)
             task.version.convention(extension.version)
@@ -213,7 +218,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         PlayerBuildEngineUnityTask t ->
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
-                            t.appConfigFile.set(appConfig.absolutePath)
+                            t.configPath.set(appConfig)
                             t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
                             t.secretsKey.set(secretsExtension.secretsKey)
                     }

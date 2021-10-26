@@ -21,6 +21,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
 
     private final Property<String> build
     private final Property<String> config
+    private final RegularFileProperty configPath
     private final Property<String> exportMethodName
     private final Property<String> outputPath
     private final Property<String> logPath
@@ -31,6 +32,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
     BuildEngineUnityTask() {
         this.build = project.objects.property(String)
         this.config = project.objects.property(String)
+        this.configPath = project.objects.fileProperty()
         this.exportMethodName = project.objects.property(String)
         this.outputPath = project.objects.property(String)
         this.logPath = project.objects.property(String)
@@ -39,7 +41,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
         this.customArguments = project.objects.listProperty(Object)
     }
 
-    BuildEngineArgs defaultArgs() {
+    protected BuildEngineArgs defaultArgs() {
         Provider<Directory> outputDir = gradleDirectoryFrom(outputPath)
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
 
@@ -50,9 +52,12 @@ abstract class BuildEngineUnityTask extends UnityTask {
             generateSecretsEnvironment(secrets, secretsKey)
         }.memoize())
 
+
+
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
             addArg("--build", build)
+            addArg("--configPath", configPath)
             addArg("--config", config)
             addArg("--outputPath", outputDir.map{out -> out.asFile.path})
             addArg("--logPath", logDir.map{out -> out.asFile.path})
@@ -62,7 +67,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
         return buildEngineArgs
     }
 
-    def setupExecution(BuildEngineArgs unityArgs) {
+    protected void setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
         unityArgs.argsProviders.each { Provider<List<String>> argsProvider ->
             additionalArguments.addAll(argsProvider)
@@ -71,7 +76,8 @@ abstract class BuildEngineUnityTask extends UnityTask {
         additionalArguments.add(unityArgs.method)
     }
 
-    def generateSecretsEnvironment(Provider<Secrets> secrets, Property<SecretKeySpec> secretsKey) {
+    protected Secrets.EnvironmentSecrets generateSecretsEnvironment(Provider<Secrets> secrets,
+                                                                    Property<SecretKeySpec> secretsKey) {
         if (secrets.present && secretsKey.present) {
             def s = secrets.get()
             def key = secretsKey.get()
@@ -81,7 +87,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
         }
     }
 
-    def gradleDirectoryFrom(Property<String> pathProperty) {
+    protected Provider<Directory> gradleDirectoryFrom(Property<String> pathProperty) {
         return pathProperty.map { path ->
             project.layout.projectDirectory.dir(path)
         }
@@ -127,6 +133,12 @@ abstract class BuildEngineUnityTask extends UnityTask {
         return config
     }
 
+    @Optional @InputFile
+    RegularFileProperty getConfigPath() {
+        return configPath
+    }
+
+
     void setBuild(String build) {
         this.build.set(build)
     }
@@ -159,9 +171,10 @@ abstract class BuildEngineUnityTask extends UnityTask {
         this.config.set(config)
     }
 
-    void setConfig(File config) {
-        this.config.set(config.absolutePath)
+    void setConfigPath(File config) {
+        this.configPath.set(config)
     }
+
 
 
 }

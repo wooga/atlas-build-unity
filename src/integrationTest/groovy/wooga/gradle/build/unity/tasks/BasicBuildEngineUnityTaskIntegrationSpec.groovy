@@ -52,11 +52,11 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         then:
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "UBSBuild", customArgsParts)
-        hasKeyValue("--outputPath", new File(projectDir, "build/export").path, customArgsParts)
+        hasKeyValue("--outputPath", new File(projectDir, "build/export/UBSBuild/project").path, customArgsParts)
         hasKeyValue("--logPath", new File(projectDir, "build/logs/unity").path, customArgsParts)
         hasKeyValue("--key", "value", customArgsParts)
         hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
-        !customArgsParts.contains("--config")
+        !customArgsParts.contains("--configPath")
     }
 
     def "fails if build property isn't set"() {
@@ -144,7 +144,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: BasicBuildEngineUnityTask) {
                 build = "mandatoryBuildName"
-                config = "${escapedPath(configFile.path)}"
+                config = "configName"
             }
         """.stripIndent()
 
@@ -153,7 +153,25 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
-        hasKeyValue("--config", configFile.absolutePath, customArgsParts)
+        hasKeyValue("--config", "configName", customArgsParts)
+    }
+
+
+    def "can configure custom path to config file"() {
+        given: "a export task with a custom output directory"
+        buildFile << """
+            task("customExport", type: BasicBuildEngineUnityTask) {
+                build = "mandatoryBuildName"
+                configPath = ${wrapValueBasedOnType(configFile, File)}
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("customExport")
+
+        then:
+        def customArgsParts = unityArgs(result.standardOutput)
+        hasKeyValue("--configPath", configFile.absolutePath, customArgsParts)
     }
 
     def "can configure extra arguments"() {
@@ -230,13 +248,4 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         secretsFile.text = secrets.encode()
         return secretsFile
     }
-
-    Throwable rootCause(Throwable e) {
-        if(e.cause == null) {
-            return e
-        }
-        return rootCause(e.cause)
-
-    }
-
 }

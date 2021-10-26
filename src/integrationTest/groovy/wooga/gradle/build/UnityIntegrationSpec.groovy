@@ -122,4 +122,11 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         assets.mkdirs()
         createFile("Test.cs", assets)
     }
+
+    Throwable rootCause(Throwable e) {
+        if(e.cause == null) {
+            return e
+        }
+        return rootCause(e.cause)
+    }
 }
