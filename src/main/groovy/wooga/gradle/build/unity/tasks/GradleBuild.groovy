@@ -111,41 +111,6 @@ class GradleBuild extends DefaultTask implements SecretSpec {
         gradleVersion
     }
 
-    private final Property<SecretKeySpec> secretsKey
-
-    @Optional
-    @Input
-    Property<SecretKeySpec> getSecretsKey() {
-        secretsKey
-    }
-
-    void setSecretsKey(SecretKeySpec key) {
-        secretsKey.set(key)
-    }
-
-    GradleBuild setSecretsKey(String keyFile) {
-        setSecretsKey(project.file(keyFile))
-    }
-
-    GradleBuild setSecretsKey(File keyFile) {
-        setSecretsKey(new SecretKeySpec(keyFile.bytes, "AES"))
-    }
-
-    @Override
-    GradleBuild secretsKey(SecretKeySpec key) {
-        setSecretsKey(key)
-    }
-
-    @Override
-    GradleBuild secretsKey(String keyFile) {
-        return setSecretsKey(keyFile)
-    }
-
-    @Override
-    GradleBuild secretsKey(File keyFile) {
-        return setSecretsKey(keyFile)
-    }
-
     private final RegularFileProperty secretsFile
 
     @Optional

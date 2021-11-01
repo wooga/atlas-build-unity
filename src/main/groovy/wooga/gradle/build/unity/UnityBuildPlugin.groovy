@@ -30,6 +30,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
+import wooga.gradle.build.unity.tasks.FetchSecrets
 import wooga.gradle.build.unity.tasks.BuildEngineUnityTask
 import wooga.gradle.build.unity.tasks.GradleBuild
 import wooga.gradle.build.unity.tasks.PlayerBuildEngineUnityTask
@@ -37,7 +38,6 @@ import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
 import wooga.gradle.secrets.SecretsPluginExtension
-import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.UnityTask
@@ -86,7 +86,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.appConfigsDirectory.convention(extension.assetsDir.dir(UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY))
         extension.exportInitScript.convention(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT.getFileValueProvider(project))
 
-        extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({new File(it)}))
+        extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({ new File(it) }))
 
         extension.cleanBuildDirBeforeBuild.set(UnityBuildPluginConventions.CLEAN_BUILD_DIR_BEFORE_BUILD.getBooleanValueProvider(project))
         extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
@@ -151,7 +151,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
         }}
 
-        project.tasks.withType(UnityBuildPlayerTask).configureEach({UnityBuildPlayerTask t ->
+        project.tasks.withType(UnityBuildPlayerTask).configureEach({ UnityBuildPlayerTask t ->
             t.exportMethodName.convention(extension.exportMethodName)
             t.toolsVersion.convention(extension.toolsVersion)
             t.commitHash.convention(extension.commitHash)
@@ -197,10 +197,16 @@ class UnityBuildPlugin implements Plugin<Project> {
             }))
         }
 
-        project.tasks.withType(GradleBuild).configureEach({GradleBuild t ->
+        project.tasks.withType(GradleBuild).configureEach({ GradleBuild t ->
             t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
         })
         configureSonarqubeTasks(project)
+
+        project.tasks.withType(FetchSecrets).configureEach { task ->
+            task.secretsFile.convention(project.provider {
+                project.layout.buildDirectory.dir("secret/${task.name}").get().file("secrets.yml")
+            })
+        }
 
         project.afterEvaluate {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
@@ -250,11 +256,11 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.dependsOn exportTask
                         t.group = groupName
                         t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
-                        t.dir.set(exportTask.flatMap({it.outputDirectory}))
+                        t.dir.set(exportTask.flatMap({ it.outputDirectory }))
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
                         t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
-                        t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
+                        t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                         t.secretsKey.set(secretsExtension.secretsKey)
                         t.tasks.add(taskName)
                         t.gradleVersion.set(project.provider({

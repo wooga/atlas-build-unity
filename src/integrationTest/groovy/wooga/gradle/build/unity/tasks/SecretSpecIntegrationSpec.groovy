@@ -22,8 +22,6 @@ class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
             value = "new javax.crypto.spec.SecretKeySpec(project.file('${keyPath}').bytes, 'AES')"
         } else if (type == "keyFile") {
             value = "project.file('${keyPath}')"
-        } else if (type == "keyPath") {
-            value = "'${keyPath}'"
         }
 
         and: "the key configured"
@@ -68,16 +66,12 @@ class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
         GradleBuild                      | "secretsKey.set" | "key"     | false
         GradleBuild                      | "secretsKey"     | "keyFile" | false
         GradleBuild                      | "secretsKey"     | "keyFile" | true
-        GradleBuild                      | "secretsKey"     | "keyPath" | false
-        GradleBuild                      | "secretsKey"     | "keyPath" | true
 
         UnityBuildPlayerTask             | "secretsKey"     | "key"     | false
         UnityBuildPlayerTask             | "secretsKey"     | "key"     | true
         UnityBuildPlayerTask             | "secretsKey.set" | "key"     | false
         UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | false
         UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | true
-        UnityBuildPlayerTask             | "secretsKey"     | "keyPath" | false
-        UnityBuildPlayerTask             | "secretsKey"     | "keyPath" | true
 
         method = (useSetter) ? "set${property.capitalize()}" : property
         containerTypeName = Task.isAssignableFrom(containerType) ? "task" : "extension"
