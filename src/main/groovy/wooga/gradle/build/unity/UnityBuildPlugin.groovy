@@ -163,7 +163,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map{new File(it, "project").path})
-            t.outputPath.convention(outputDir.map{it.asFile.absolutePath})
+            t.outputDirectory.convention(outputDir.map{it.asFile.absolutePath})
 
             t.logPath.convention(t.unityLogFile.map{logFile ->
                 return logFile.asFile.toPath().parent.toString()
@@ -178,7 +178,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             )
             def configRelativePath = appConfigName.map{return new File(it, "project").path }
             def outputPath = extension.outputDirectoryBase.dir(configRelativePath).map{it.asFile.absolutePath}
-            task.outputPath.convention(outputPath)
+            task.outputDirectory.convention(outputPath)
             task.toolsVersion.convention(extension.toolsVersion)
             task.commitHash.convention(extension.commitHash)
             task.version.convention(extension.version)

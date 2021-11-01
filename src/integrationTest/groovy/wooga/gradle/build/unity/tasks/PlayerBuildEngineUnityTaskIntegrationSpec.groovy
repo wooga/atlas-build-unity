@@ -78,7 +78,7 @@ class PlayerBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: PlayerBuildEngineUnityTask) {
                 version = "0.0.1"  
-                outputPath = "any"
+                outputDirectory = "any"
             }
         """.stripIndent()
 

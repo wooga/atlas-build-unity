@@ -103,7 +103,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: BasicBuildEngineUnityTask) {
                 build = "mandatoryBuildName"
-                outputPath = "${outputPath}"
+                outputDirectory = "${outputPath}"
             }
         """.stripIndent()
 

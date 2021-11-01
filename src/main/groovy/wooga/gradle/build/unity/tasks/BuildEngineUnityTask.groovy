@@ -23,7 +23,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
     private final Property<String> config
     private final RegularFileProperty configPath
     private final Property<String> exportMethodName
-    private final Property<String> outputPath
+    private final Property<String> outputDirectory
     private final Property<String> logPath
     private final RegularFileProperty secretsFile
     private final Property<SecretKeySpec> secretsKey
@@ -34,7 +34,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
         this.config = project.objects.property(String)
         this.configPath = project.objects.fileProperty()
         this.exportMethodName = project.objects.property(String)
-        this.outputPath = project.objects.property(String)
+        this.outputDirectory = project.objects.property(String)
         this.logPath = project.objects.property(String)
         this.secretsFile = project.objects.fileProperty()
         this.secretsKey = project.objects.property(SecretKeySpec.class)
@@ -42,7 +42,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
     }
 
     protected BuildEngineArgs defaultArgs() {
-        Provider<Directory> outputDir = gradleDirectoryFrom(outputPath)
+        Provider<Directory> outputDir = gradleDirectoryFrom(outputDirectory)
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
 
         def secrets = secretsFile.map { RegularFile secretsFile ->
@@ -104,8 +104,8 @@ abstract class BuildEngineUnityTask extends UnityTask {
     }
 
     @Input
-    Property<String> getOutputPath() {
-        return outputPath
+    Property<String> getOutputDirectory() {
+        return outputDirectory
     }
 
     @Optional @Input
@@ -147,8 +147,8 @@ abstract class BuildEngineUnityTask extends UnityTask {
         this.exportMethodName.set(unityMethodName)
     }
 
-    void setOutputPath(String outputPath) {
-        this.outputPath.set(outputPath)
+    void setOutputDirectory(String outputPath) {
+        this.outputDirectory.set(outputPath)
     }
 
     void setLogPath(String logPath) {
