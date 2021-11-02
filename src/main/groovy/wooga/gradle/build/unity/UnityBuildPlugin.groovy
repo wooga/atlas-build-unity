@@ -40,6 +40,8 @@ import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
+import wooga.gradle.unity.UnityTask
+import wooga.gradle.unity.tasks.Unity
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -103,6 +105,51 @@ class UnityBuildPlugin implements Plugin<Project> {
                                        LifecycleBasePlugin.VERIFICATION_GROUP,
                                        LifecycleBasePlugin.BUILD_GROUP,
                                        PublishingPlugin.PUBLISH_TASK_GROUP]
+        def inputFiles = { UnityTask t -> return {
+            def assetsDir = extension.assetsDir
+            def assetsFileTree = project.fileTree(assetsDir)
+
+            def includeSpec = { FileTreeElement element ->
+                def path = element.getRelativePath().getPathString().toLowerCase()
+                def name = element.name.toLowerCase()
+                def status = true
+                if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
+                    /*
+                     Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
+                     The getPath() method is not the same as {@code File.getPath()}
+                     From the docs:
+
+                     * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
+                     * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
+                     *
+                     * @return The path. Never returns null.
+                     */
+                    if (t.buildTarget.isPresent()) {
+                        status = path.contains("plugins/" + t.buildTarget.get())
+                    } else {
+                        status = true
+                    }
+                }
+                return status
+            }
+
+            def excludeSpec = { FileTreeElement element  ->
+                return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
+            }
+
+            assetsFileTree.include(includeSpec)
+            assetsFileTree.exclude(excludeSpec)
+
+            def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
+            def projectSettingsFileTree = project.fileTree(projectSettingsDir)
+            projectSettingsFileTree.exclude(excludeSpec)
+
+            def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
+            def packageManagerDirFileTree = project.fileTree(packageManagerDir)
+            packageManagerDirFileTree.exclude(excludeSpec)
+
+            project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
+        }}
 
         project.tasks.withType(UnityBuildPlayerTask).configureEach({UnityBuildPlayerTask t ->
             t.exportMethodName.convention(extension.exportMethodName)
@@ -112,63 +159,20 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.version.convention(extension.version)
             t.versionCode.convention(extension.versionCode)
             t.customArguments.convention(extension.customArguments)
-            t.inputFiles.from({
-                def assetsDir = t.projectDirectory.dir("Assets")
-                def assetsFileTree = project.fileTree(assetsDir)
-
-                def includeSpec = { FileTreeElement element ->
-                    def path = element.getRelativePath().getPathString().toLowerCase()
-                    def name = element.name.toLowerCase()
-                    def status = true
-                    if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
-                        /*
-                         Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
-                         The getPath() method is not the same as {@code File.getPath()}
-                         From the docs:
-
-                         * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-                         * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-                         *
-                         * @return The path. Never returns null.
-                         */
-                        if (t.getBuildPlatform()) {
-                            status = path.contains("plugins/" + t.getBuildPlatform().get())
-                        } else {
-                            status = true
-                        }
-                    }
-                    return status
-                }
-
-                def excludeSpec = { FileTreeElement element  ->
-                    return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
-                }
-
-                assetsFileTree.include(includeSpec)
-                assetsFileTree.exclude(excludeSpec)
-
-                def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
-                def projectSettingsFileTree = project.fileTree(projectSettingsDir)
-                projectSettingsFileTree.exclude(excludeSpec)
-
-                def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
-                def packageManagerDirFileTree = project.fileTree(packageManagerDir)
-                packageManagerDirFileTree.exclude(excludeSpec)
-
-                project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
-            })
+            t.inputFiles.from(inputFiles(t))
         })
 
         project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map{new File(it, "project").path})
-            t.outputDirectory.convention(outputDir.map{it.asFile.absolutePath})
+            t.outputDirectory.convention(outputDir)
 
             t.logPath.convention(t.unityLogFile.map{logFile ->
                 return logFile.asFile.toPath().parent.toString()
             })
             t.customArguments.convention(extension.customArguments.map {[it] })
+            t.inputFiles.from(inputFiles(t))
         }
 
         project.tasks.withType(PlayerBuildEngineUnityTask).configureEach { task ->
@@ -177,12 +181,16 @@ class UnityBuildPlugin implements Plugin<Project> {
                     task.configPath.asFile.map{FilenameUtils.removeExtension(it.name)}
             )
             def configRelativePath = appConfigName.map{return new File(it, "project").path }
-            def outputPath = extension.outputDirectoryBase.dir(configRelativePath).map{it.asFile.absolutePath}
+            def outputPath = extension.outputDirectoryBase.dir(configRelativePath)
             task.outputDirectory.convention(outputPath)
             task.toolsVersion.convention(extension.toolsVersion)
             task.commitHash.convention(extension.commitHash)
             task.version.convention(extension.version)
             task.versionCode.convention(extension.versionCode)
+            task.buildTarget.convention(task.appConfigFile.map({
+                def config = new GenericUnityAssetFile(it.asFile)
+                config["batchModeBuildTarget"].toString().toLowerCase()
+            }))
         }
 
         project.tasks.withType(GradleBuild).configureEach({GradleBuild t ->

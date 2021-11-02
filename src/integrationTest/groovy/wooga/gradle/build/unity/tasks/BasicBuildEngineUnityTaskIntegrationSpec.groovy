@@ -19,6 +19,7 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.GradleException
 import org.gradle.api.InvalidUserDataException
 import spock.lang.Shared
+import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
@@ -103,7 +104,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: BasicBuildEngineUnityTask) {
                 build = "mandatoryBuildName"
-                outputDirectory = "${outputPath}"
+                outputDirectory = file("${outputPath}")
             }
         """.stripIndent()
 
@@ -247,5 +248,90 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
         secretsFile.text = secrets.encode()
         return secretsFile
+    }
+
+    @Shared
+    def mockProjectFiles = [
+            [new File("Assets/Plugins.meta"), false],
+            [new File("Library/SomeCache.asset"), true],
+            [new File("ProjectSettings/SomeSettings.asset"), false],
+            [new File("UnityPackageManager/manifest.json"), false],
+            [new File("Assets/Plugins/iOS.meta"), true],
+            [new File("Assets/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Nested.meta"), false],
+            [new File("Assets/Nested/Plugins.meta"), false],
+            [new File("Assets/Nested/Plugins/iOS.meta"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m"), true],
+            [new File("Assets/Nested/Plugins/iOS/somefile.m.meta"), true],
+            [new File("Assets/Plugins/WebGL.meta"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL.meta"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts"), true],
+            [new File("Assets/Nested/Plugins/WebGL/somefile.ts.meta"), true],
+            [new File("Assets/Editor.meta"), false],
+            [new File("Assets/Editor/somefile.cs"), false],
+            [new File("Assets/Editor/somefile.cs.meta"), false],
+            [new File("Assets/Nested/Editor/somefile.cs"), false],
+            [new File("Assets/Source.cs"), false],
+            [new File("Assets/Source.cs.meta"), false],
+            [new File("Assets/Nested/LevelEditor.meta"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs"), false],
+            [new File("Assets/Nested/LevelEditor/somefile.cs.meta"), false],
+            [new File("Assets/Plugins/Android.meta"), false],
+            [new File("Assets/Plugins/Android/somefile.java"), false],
+            [new File("Assets/Plugins/Android/somefile.java.meta"), false],
+            [new File("Assets/Nested/Plugins/Android.meta"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java"), false],
+            [new File("Assets/Nested/Plugins/Android/s.java.meta"), false],
+    ]
+
+    @Unroll
+    def "task #statusMessage up-to-date when #file changed with default inputFiles"() {
+        given: "a mocked unity project"
+        //need to convert the relative files to absolute files
+        def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
+
+        buildFile << """
+            def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
+            ext.customArguments.set(["--key":"value"])
+            task("exportCustom", type: BasicBuildEngineUnityTask) {
+                build = "UBSBuild"
+                buildTarget = 'android'
+            }
+        """.stripIndent()
+
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully("exportCustom")
+        assert !result.wasUpToDate('exportCustom')
+
+        result = runTasksSuccessfully("exportCustom")
+        assert result.wasUpToDate('exportCustom')
+
+        when: "change content of one source file"
+        testFile.text = "new content"
+
+        result = runTasksSuccessfully("exportCustom")
+
+        then:
+        result.wasUpToDate('exportCustom') == upToDate
+
+        where:
+        files = mockProjectFiles.collect { it[0] }
+        [file, upToDate] << mockProjectFiles
+        statusMessage = (upToDate) ? "is" : "is not"
+    }
+
+    Tuple prepareMockedProject(File projectDir, Iterable<File> files, File testFile) {
+        files = files.collect { new File(projectDir, it.path) }
+        testFile = new File(projectDir, testFile.path)
+
+        //create directory structure
+        files.each { f ->
+            f.parentFile.mkdirs()
+            f.text = "some content"
+        }
+        new Tuple(files, testFile)
     }
 }

@@ -1,7 +1,9 @@
 package wooga.gradle.build.unity.tasks
 
-
+import groovy.transform.CompileStatic
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -9,7 +11,10 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.SkipWhenEmpty
 import wooga.gradle.build.unity.internal.BuildEngineArgs
 import wooga.gradle.secrets.internal.Secrets
 import wooga.gradle.unity.UnityTask
@@ -23,26 +28,27 @@ abstract class BuildEngineUnityTask extends UnityTask {
     private final Property<String> config
     private final RegularFileProperty configPath
     private final Property<String> exportMethodName
-    private final Property<String> outputDirectory
+    private final DirectoryProperty outputDirectory
     private final Property<String> logPath
     private final RegularFileProperty secretsFile
     private final Property<SecretKeySpec> secretsKey
     private final ListProperty<Object> customArguments
+    private final ConfigurableFileCollection inputFiles
 
     BuildEngineUnityTask() {
         this.build = project.objects.property(String)
         this.config = project.objects.property(String)
         this.configPath = project.objects.fileProperty()
         this.exportMethodName = project.objects.property(String)
-        this.outputDirectory = project.objects.property(String)
+        this.outputDirectory = project.objects.directoryProperty()
         this.logPath = project.objects.property(String)
         this.secretsFile = project.objects.fileProperty()
         this.secretsKey = project.objects.property(SecretKeySpec.class)
         this.customArguments = project.objects.listProperty(Object)
+        this.inputFiles = project.objects.fileCollection()
     }
 
     protected BuildEngineArgs defaultArgs() {
-        Provider<Directory> outputDir = gradleDirectoryFrom(outputDirectory)
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
 
         def secrets = secretsFile.map { RegularFile secretsFile ->
@@ -53,14 +59,13 @@ abstract class BuildEngineUnityTask extends UnityTask {
         }.memoize())
 
 
-
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
             addArg("--build", build)
             addArg("--configPath", configPath)
             addArg("--config", config)
-            addArg("--outputPath", outputDir.map{out -> out.asFile.path})
-            addArg("--logPath", logDir.map{out -> out.asFile.path})
+            addArg("--outputPath", outputDirectory.map { out -> out.asFile.path })
+            addArg("--logPath", logDir.map { out -> out.asFile.path })
             addRawArgs(customArguments)
             addEnvs(environmentSecrets)
         }
@@ -93,6 +98,12 @@ abstract class BuildEngineUnityTask extends UnityTask {
         }
     }
 
+    @SkipWhenEmpty
+    @InputFiles
+    ConfigurableFileCollection getInputFiles() {
+        inputFiles
+    }
+
     @Input
     Property<String> getBuild() {
         return build
@@ -103,37 +114,43 @@ abstract class BuildEngineUnityTask extends UnityTask {
         return exportMethodName
     }
 
-    @Input
-    Property<String> getOutputDirectory() {
+    @OutputDirectory
+    Provider<Directory> getOutputDirectory() {
         return outputDirectory
     }
 
-    @Optional @Input
+    @Optional
+    @Input
     Property<String> getLogPath() {
         return logPath
     }
 
-    @Optional @InputFile
+    @Optional
+    @InputFile
     RegularFileProperty getSecretsFile() {
         return secretsFile
     }
 
-    @Optional @Input
+    @Optional
+    @Input
     Property<SecretKeySpec> getSecretsKey() {
         return secretsKey
     }
 
-    @Optional @Input
+    @Optional
+    @Input
     ListProperty<Object> getCustomArguments() {
         return customArguments
     }
 
-    @Optional @Input
+    @Optional
+    @Input
     Property<String> getConfig() {
         return config
     }
 
-    @Optional @InputFile
+    @Optional
+    @InputFile
     RegularFileProperty getConfigPath() {
         return configPath
     }
@@ -147,7 +164,7 @@ abstract class BuildEngineUnityTask extends UnityTask {
         this.exportMethodName.set(unityMethodName)
     }
 
-    void setOutputDirectory(String outputPath) {
+    void setOutputDirectory(File outputPath) {
         this.outputDirectory.set(outputPath)
     }
 
@@ -174,7 +191,4 @@ abstract class BuildEngineUnityTask extends UnityTask {
     void setConfigPath(File config) {
         this.configPath.set(config)
     }
-
-
-
 }

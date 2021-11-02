@@ -78,12 +78,12 @@ class PlayerBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: PlayerBuildEngineUnityTask) {
                 version = "0.0.1"  
-                outputDirectory = "any"
+                outputDirectory = file("any")
             }
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        runTasksSuccessfully("customExport")
 
         then:
         def e = thrown(GradleException)
