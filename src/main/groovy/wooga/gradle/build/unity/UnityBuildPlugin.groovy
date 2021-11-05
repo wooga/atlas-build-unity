@@ -173,6 +173,10 @@ class UnityBuildPlugin implements Plugin<Project> {
             })
             t.customArguments.convention(extension.customArguments.map {[it] })
             t.inputFiles.from(inputFiles(t))
+            t.buildTarget.convention(t.configPath.map({
+                def config = new GenericUnityAssetFile(it.asFile)
+                return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
+            }))
         }
 
         project.tasks.withType(PlayerBuildEngineUnityTask).configureEach { task ->
@@ -189,7 +193,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             task.versionCode.convention(extension.versionCode)
             task.buildTarget.convention(task.appConfigFile.map({
                 def config = new GenericUnityAssetFile(it.asFile)
-                config["batchModeBuildTarget"].toString().toLowerCase()
+                return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
             }))
         }
 

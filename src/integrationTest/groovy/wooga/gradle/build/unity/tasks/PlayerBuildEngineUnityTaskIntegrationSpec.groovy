@@ -39,6 +39,9 @@ class PlayerBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         hasKeyValue("--version", version, customArgsParts)
         hasKeyValue("--outputPath",
                 new File(projectDir, "build/export/${appConfigName}/project").path, customArgsParts)
+        if(argName == "configPath") {
+            hasKeyValue("-buildTarget", "android", customArgsParts)
+        }
 
         where:
         configProperty  | argName      | configValue                         | configValueType

@@ -173,6 +173,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         then:
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--configPath", configFile.absolutePath, customArgsParts)
+        hasKeyValue("-buildTarget", "android", customArgsParts)
     }
 
     def "can configure extra arguments"() {

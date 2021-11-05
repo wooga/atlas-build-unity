@@ -9,19 +9,16 @@ import org.gradle.api.tasks.Optional
 class PlayerBuildEngineUnityTask extends BuildEngineUnityTask {
 
     private final Property<String> version
-    private final RegularFileProperty appConfigFile
     private final Property<String> versionCode
     private final Property<String> toolsVersion
     private final Property<String> commitHash
 
     PlayerBuildEngineUnityTask() {
         this.version = project.objects.property(String)
-        this.appConfigFile = project.objects.fileProperty()
         this.versionCode = project.objects.property(String)
         this.toolsVersion = project.objects.property(String)
         this.commitHash = project.objects.property(String)
 
-        this.configPath.convention(appConfigFile)
         super.build.convention("Player")
         this.doFirst {
             if(!configPath.present && !config.present) {
@@ -46,7 +43,7 @@ class PlayerBuildEngineUnityTask extends BuildEngineUnityTask {
 
     @Optional @InputFile
     RegularFileProperty getAppConfigFile() {
-        return appConfigFile
+        return configPath
     }
 
     @Optional @Input
@@ -69,11 +66,11 @@ class PlayerBuildEngineUnityTask extends BuildEngineUnityTask {
     }
 
     void setAppConfigFile(String appConfigFile) {
-        this.appConfigFile.set(new File(appConfigFile))
+        this.configPath.set(new File(appConfigFile))
     }
 
     void setAppConfigFile(File appConfigFile) {
-        this.appConfigFile.set(appConfigFile)
+        this.configPath.set(appConfigFile)
     }
 
 
