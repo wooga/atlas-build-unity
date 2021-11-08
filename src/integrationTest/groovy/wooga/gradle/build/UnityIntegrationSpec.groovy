@@ -17,6 +17,8 @@
 
 package wooga.gradle.build
 
+import org.apache.commons.lang3.StringUtils
+import org.yaml.snakeyaml.Yaml
 import wooga.gradle.build.unity.UnityBuildPlugin
 
 abstract class UnityIntegrationSpec extends IntegrationSpec {
@@ -32,6 +34,7 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         if (osName.contains("windows")) {
             unityTestLocation << """
                 @echo off
+                echo arguments
                 echo %*
                 echo environment
                 set
@@ -52,6 +55,44 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
 
         unityTestLocation
     }
+
+    File createAppConfig(String path) {
+        def appConfigsDir = new File(projectDir, path)
+        appConfigsDir.mkdirs()
+
+        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
+        ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            it << UNITY_ASSET_HEADER
+            it << "\n"
+            Yaml yaml = new Yaml()
+            it << yaml.dump(appConfig)
+        }
+        return new File(appConfigsDir, "custom.asset")
+    }
+
+    String[] unityArgs(String base) {
+        def tailString = substringAt(base, "arguments").replace("arguments", "")
+        def endIndex = tailString.indexOf("environment")
+        def argsString = tailString.substring(0, endIndex)
+        def parts = argsString.split(" ").
+                findAll {!StringUtils.isEmpty(it) }.collect{ it.trim() }
+        return parts
+    }
+
+    String substringAt(String base, String expression) {
+        def customArgsIndex = base.indexOf(expression)
+        return base.substring(customArgsIndex)
+    }
+
+    boolean hasKeyValue(String key, String value, String[] customArgParts) {
+        return customArgParts.any {
+            def keyIndex = customArgParts.findIndexOf {
+                it == key
+            }
+            return value == customArgParts[keyIndex+1]
+        }
+    }
+
 
     public static final String UNITY_ASSET_HEADER = """
             %YAML 1.1
@@ -80,5 +121,12 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         def assets = new File(projectDir, "Assets")
         assets.mkdirs()
         createFile("Test.cs", assets)
+    }
+
+    Throwable rootCause(Throwable e) {
+        if(e.cause == null) {
+            return e
+        }
+        return rootCause(e.cause)
     }
 }

@@ -19,14 +19,12 @@ package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
-
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.build.unity.UnityBuildPluginExtension
 
@@ -37,6 +35,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final DirectoryProperty appConfigsDirectory
     final DirectoryProperty outputDirectoryBase
     final Property<String> toolsVersion
+    final Property<UBSVersion> ubsCompatibilityVersion
     final Property<String> version
     final Property<String> versionCode
     final Property<String> commitHash
@@ -74,6 +73,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         appConfigsDirectory = project.objects.directoryProperty()
         outputDirectoryBase = project.objects.directoryProperty()
         toolsVersion = project.objects.property(String)
+        ubsCompatibilityVersion = project.objects.property(UBSVersion)
         version = project.objects.property(String)
         versionCode = project.objects.property(String)
         commitHash = project.objects.property(String)

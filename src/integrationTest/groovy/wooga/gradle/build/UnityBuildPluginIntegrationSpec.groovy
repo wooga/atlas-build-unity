@@ -25,10 +25,9 @@ import spock.genesis.transform.Iterations
 import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.models.UnityCommandLineOption
-
-import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
@@ -82,20 +81,27 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "#taskToRun calls Unity export method without buildType when not contained in appConfig"() {
+    def "#taskToRun calls Unity export method corresponding to ubs version #ubsVersion without buildType when not contained in appConfig"() {
         given: "a project with multiple appConfigs"
         and: "a custom appConfig without buildTarget"
-
+        and: "a set ubs version"
+        buildFile << "import wooga.gradle.build.unity.UBSVersion"
+        buildFile << (ubsVersion? """
+            import wooga.gradle.build.unity.UBSVersion
+            unityBuild.ubsCompatibilityVersion=UBSVersion.${ubsVersion.name()}
+        """ : "")
         when:
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
+        result.standardOutput.contains("-executeMethod ${expectedMethod}")
         !result.standardOutput.contains(expectedParameters)
 
         where:
-        taskToRun      | expectedParameters
-        "exportCustom" | "${UnityCommandLineOption.buildTarget}"
+        taskToRun      | expectedMethod                                                     | expectedParameters                      | ubsVersion
+        "exportCustom" |"Wooga.UnifiedBuildSystem.Build.Export"                             | "${UnityCommandLineOption.buildTarget}" | null
+        "exportCustom" |"Wooga.UnifiedBuildSystem.Build.Export"                             | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v100
+        "exportCustom" |"Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment"  | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v120
     }
 
     String convertPropertyToEnvName(String property) {
