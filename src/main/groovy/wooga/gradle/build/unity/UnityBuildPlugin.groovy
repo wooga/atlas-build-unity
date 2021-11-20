@@ -21,13 +21,13 @@ import org.apache.commons.io.FilenameUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
+import wooga.gradle.build.unity.internal.UnityInputFilesFactory
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.BuildEngineUnityTask
@@ -40,8 +40,6 @@ import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.secrets.tasks.FetchSecrets
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
-import wooga.gradle.unity.UnityTask
-import wooga.gradle.unity.tasks.Unity
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -94,62 +92,8 @@ class UnityBuildPlugin implements Plugin<Project> {
 
     static void configureTasks(UnityBuildPluginExtension extension, Project project) {
 
+        def inputFiles = new UnityInputFilesFactory(project, extension)
         def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
-
-        def baseLifecycleTaskNames = [LifecycleBasePlugin.ASSEMBLE_TASK_NAME,
-                                      LifecycleBasePlugin.CHECK_TASK_NAME,
-                                      LifecycleBasePlugin.BUILD_TASK_NAME,
-                                      PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME]
-
-        def baseLifecycleTaskGroups = [LifecycleBasePlugin.BUILD_GROUP,
-                                       LifecycleBasePlugin.VERIFICATION_GROUP,
-                                       LifecycleBasePlugin.BUILD_GROUP,
-                                       PublishingPlugin.PUBLISH_TASK_GROUP]
-        def inputFiles = { UnityTask t -> return {
-            def assetsDir = extension.assetsDir
-            def assetsFileTree = project.fileTree(assetsDir)
-
-            def includeSpec = { FileTreeElement element ->
-                def path = element.getRelativePath().getPathString().toLowerCase()
-                def name = element.name.toLowerCase()
-                def status = true
-                if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
-                    /*
-                     Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
-                     The getPath() method is not the same as {@code File.getPath()}
-                     From the docs:
-
-                     * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-                     * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-                     *
-                     * @return The path. Never returns null.
-                     */
-                    if (t.buildTarget.isPresent()) {
-                        status = path.contains("plugins/" + t.buildTarget.get())
-                    } else {
-                        status = true
-                    }
-                }
-                return status
-            }
-
-            def excludeSpec = { FileTreeElement element  ->
-                return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
-            }
-
-            assetsFileTree.include(includeSpec)
-            assetsFileTree.exclude(excludeSpec)
-
-            def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
-            def projectSettingsFileTree = project.fileTree(projectSettingsDir)
-            projectSettingsFileTree.exclude(excludeSpec)
-
-            def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
-            def packageManagerDirFileTree = project.fileTree(packageManagerDir)
-            packageManagerDirFileTree.exclude(excludeSpec)
-
-            project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
-        }}
 
         project.tasks.withType(UnityBuildPlayerTask).configureEach({UnityBuildPlayerTask t ->
             t.exportMethodName.convention(extension.exportMethodName)
@@ -159,20 +103,18 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.version.convention(extension.version)
             t.versionCode.convention(extension.versionCode)
             t.customArguments.convention(extension.customArguments)
-            t.inputFiles.from(inputFiles(t))
+            t.inputFiles.from(inputFiles.unityTaskInputFilesProvider(t.buildTarget, t.projectDirectory))
         })
 
         project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
-
             def outputDir = extension.outputDirectoryBase.dir(t.build.map{new File(it, "project").path})
             t.outputDirectory.convention(outputDir)
-
             t.logPath.convention(t.unityLogFile.map{logFile ->
                 return logFile.asFile.toPath().parent.toString()
             })
             t.customArguments.convention(extension.customArguments.map {[it] })
-            t.inputFiles.from(inputFiles(t))
+            t.inputFiles.from(inputFiles.unityTaskInputFilesProvider(t.buildTarget, t.projectDirectory))
             t.buildTarget.convention(t.configPath.map({
                 def config = new GenericUnityAssetFile(it.asFile)
                 return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
@@ -203,73 +145,9 @@ class UnityBuildPlugin implements Plugin<Project> {
         configureSonarqubeTasks(project)
 
         project.afterEvaluate {
-            def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
+            def appConfigConfiguration = new AppConfigTasksConfiguration(project)
             extension.getAppConfigs().each { File appConfig ->
-                def appConfigName = FilenameUtils.removeExtension(appConfig.name)
-                def config = new GenericUnityAssetFile(appConfig)
-
-                def characterPattern = ':_\\-<>|*\\\\?/ '
-                def baseName = appConfigName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
-                baseName = baseName.replaceAll(~/[$characterPattern]/, '')
-
-                TaskProvider<FetchSecrets> fetchSecretsTask = project.tasks.register("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
-                    t.group = "secrets"
-                    t.description = "fetches all secrets configured in ${appConfigName}"
-                    t.secretIds.convention(project.provider({
-                        if (config.containsKey(extension.appConfigSecretsKey.get())) {
-                            return config[extension.appConfigSecretsKey.get()] as List<String>
-                        }
-                        []
-                    }))
-                }
-
-                TaskProvider<? extends Task> exportTask;
-                def ubsVersion = extension.ubsCompatibilityVersion.getOrElse(UBSVersion.v100)
-                if(ubsVersion >= UBSVersion.v120) {
-                    exportTask = project.tasks.register("export${baseName}", PlayerBuildEngineUnityTask) {
-                        PlayerBuildEngineUnityTask t ->
-                            t.group = "build unity"
-                            t.description = "exports player targeted gradle project for app config ${appConfigName}"
-                            t.configPath.set(appConfig)
-                            t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                            t.secretsKey.set(secretsExtension.secretsKey)
-                    }
-                } else {
-                    exportTask = project.tasks.register("export${baseName}", UnityBuildPlayerTask) {
-                        UnityBuildPlayerTask t ->
-                            t.group = "build unity"
-                            t.description = "exports gradle project for app config ${appConfigName}"
-                            t.appConfigFile.set(appConfig)
-                            t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                            t.secretsKey.set(secretsExtension.secretsKey)
-                    }
-                }
-
-                [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
-                    def gradleBuild = project.tasks.register("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
-                        t.dependsOn exportTask
-                        t.group = groupName
-                        t.description = "executes :${taskName} task on exported project for app config ${appConfigName}"
-                        t.dir.set(exportTask.flatMap({it.outputDirectory}))
-                        t.initScript.set(extension.exportInitScript)
-                        t.buildDirBase.set(extension.exportBuildDirBase)
-                        t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
-                        t.secretsFile.set(fetchSecretsTask.flatMap({it.secretsFile}))
-                        t.secretsKey.set(secretsExtension.secretsKey)
-                        t.tasks.add(taskName)
-                        t.gradleVersion.set(project.provider({
-                            if (!config.isValid()) {
-                                throw new StopExecutionException('provided appConfig is invalid')
-                            }
-                            (config.get("gradleVersion", null) ?: project.gradle.gradleVersion).toString()
-                        }))
-                    }
-
-                    if (defaultAppConfigName == appConfigName) {
-                        project.tasks.getByName(taskName).dependsOn(gradleBuild)
-                    }
-                }
-
+                appConfigConfiguration.configure(appConfig, extension, secretsExtension.secretsKey)
             }
         }
     }
@@ -277,11 +155,12 @@ class UnityBuildPlugin implements Plugin<Project> {
     static void configureSonarqubeTasks(Project project) {
         def unityExt = project.extensions.findByType(UnityPluginExtension)
         def sonarExt = project.extensions.findByType(SonarQubeExtension)
-
-        new SonarQubeConfiguration(project).with {
+        def sonarConfiguration = new SonarQubeConfiguration(project).with {
             sonarTaskName = "sonarqube"
             buildTaskName = "sonarBuildUnity"
             return it
-        }.configure(unityExt, sonarExt)
+        }
+
+        sonarConfiguration.configure(unityExt, sonarExt)
     }
 }
