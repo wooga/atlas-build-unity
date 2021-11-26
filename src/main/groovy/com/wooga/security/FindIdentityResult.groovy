@@ -31,7 +31,10 @@ class FindIdentityResult {
             def line = it.trim()
             if (line =~ /\d+\) ([A-Z0-9]{40}) "(.*?)"/) {
                 def list = parseMatchingIdentities ? matchingIdentities : validIdentities
-                list.push(Matcher.lastMatcher[0][2].toString())
+                def fullId = Matcher.lastMatcher[0][2].toString()
+                def partialId = fullId.replaceAll(/ \(.*\)$/, '')
+                list.push(fullId)
+                list.push(partialId)
             } else if (line == "Matching identities") {
                 parseMatchingIdentities = true
                 parseValidIdentities = false
