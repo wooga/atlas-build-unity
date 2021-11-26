@@ -71,7 +71,7 @@ class KeychainTaskSpec extends IntegrationSpec {
             ${applyPlugin(IOSBuildPlugin)}
 
             iosBuild {
-                certificatePassphrase = "$certPassword"
+                codeSigningIdentityFilePassphrase = "$certPassword"
                 keychainPassword = "$certPassword"
             }
         """.stripIndent()
@@ -101,7 +101,7 @@ class KeychainTaskSpec extends IntegrationSpec {
     def "fails with security stderr printed to error log"() {
         given: "wrong certificatePassphrase"
         buildFile << """
-            iosBuild.certificatePassphrase = "randomPassphrase"
+            iosBuild.codeSigningIdentityFilePassphrase = "randomPassphrase"
         """.stripIndent()
 
         when:

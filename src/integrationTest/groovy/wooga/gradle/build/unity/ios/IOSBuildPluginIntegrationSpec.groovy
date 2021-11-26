@@ -17,16 +17,30 @@
 
 package wooga.gradle.build.unity.ios
 
+import com.wooga.gradle.test.ConventionSource
+import com.wooga.gradle.test.PropertyLocation
+import com.wooga.gradle.test.PropertyQueryTaskWriter
 import nebula.test.functional.ExecutionResult
 import net.wooga.system.ProcessList
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Timeout
 import spock.lang.Unroll
-import wooga.gradle.build.IntegrationSpec
+import wooga.gradle.build.unity.ios.tasks.KeychainTask
+import wooga.gradle.fastlane.tasks.PilotUpload
+import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.xcodebuild.tasks.ExportArchive
+import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
-@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
-class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
+import static com.wooga.gradle.PlatformUtils.escapedPath
+import static com.wooga.gradle.test.PropertyUtils.*
+
+@Requires({ os.macOs })
+class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
+
+    static final String extensionName = IOSBuildPlugin.EXTENSION_NAME
+    String subjectUnderTestName = "buildIosPluginTask"
+    String subjectUnderTestTypeName = ""
 
     @Shared
     File xcProject
@@ -71,11 +85,6 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
     def setup() {
         buildFile << """
             ${applyPlugin(IOSBuildPlugin)}
-
-            iosBuild {
-                certificatePassphrase = "$certPassword"
-                keychainPassword = "$certPassword"
-            }
         """.stripIndent()
 
         xcProject = new File(projectDir, "test.xcodeproj")
@@ -94,10 +103,12 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         keychainLookupList.reset()
     }
 
+    @Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
     @Unroll("creates custom build keychain")
     def "creates custom build keychain"() {
         given: "default project"
         environmentVariables.set("ATLAS_BUILD_UNITY_IOS_RESET_KEYCHAINS", resetKeychainsEnabled ? "YES" : "NO")
+        setupTestKeychainProperties()
 
         when:
         def result = runTasksSuccessfully("addKeychain")
@@ -118,6 +129,8 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
 
     def "removes custom build keychain"() {
         given: "an added build keychain"
+        setupTestKeychainProperties()
+
         def result = runTasksSuccessfully("addKeychain")
         assert !result.wasUpToDate("addKeychain")
         assert buildKeychain.exists()
@@ -134,6 +147,7 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         keychainLookupList.remove(buildKeychain)
     }
 
+    @Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
     @Timeout(value = 10)
     @Unroll
     def "#removes custom build keychain when shutdown with signal #signal"() {
@@ -141,6 +155,8 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         fork = true
         and: "a different gradle version to recognize the daemon PID"
         gradleVersion = gradleDaemonVersion
+
+        setupTestKeychainProperties()
 
         and: "a long running task"
         buildFile << """
@@ -203,6 +219,8 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
             project.importProvisioningProfiles.onlyIf({${!success}})
         """.stripIndent()
 
+        setupTestKeychainProperties()
+
         when:
         def result = runTasks("assemble")
 
@@ -222,10 +240,13 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         "succeeds" || true
     }
 
+    @Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
     @Unroll
     def "task #taskToRun resets keychains before build when #message"() {
         given: "project which will succeed/fail the assemble task"
         //skip these tasks to succeed the build
+        setupTestKeychainProperties()
+
         buildFile << """
             project.xcodeArchive.onlyIf({false})
             project.xcodeArchiveExport.onlyIf({false})
@@ -249,5 +270,206 @@ class IOSBuildPluginIntegrationSpec extends IntegrationSpec {
         "addKeychain" | true
         "addKeychain" | false
         message = (resetEnabled) ? "reset is enabled" : "reset is disabled"
+    }
+
+    def setupTestKeychainProperties() {
+        buildFile << """
+        iosBuild {
+                codeSigningIdentityFilePassphrase = "$certPassword"
+                keychainPassword = "$certPassword"
+        } 
+        """.stripIndent()
+    }
+
+    @Unroll
+    def "sets convention for task type #taskType.simpleName and property #property"() {
+        given: "write convention source assignment"
+        if (conventionSource != _) {
+            conventionSource.write(buildFile, value.toString())
+        }
+
+        and: "a task to query property from"
+
+        buildFile << """
+        class ${taskType.simpleName}Impl extends ${taskType.name} {
+        }
+        
+        task ${subjectUnderTestName}(type: ${taskType.simpleName}Impl)
+        """.stripIndent()
+
+        and: "the test value with replace placeholders"
+        if (testValue instanceof String) {
+            testValue = testValue.replaceAll("#projectDir#", escapedPath(projectDir.path))
+            testValue = testValue.replaceAll("#taskName#", subjectUnderTestName)
+        }
+
+        when:
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}", invocation.toString())
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, testValue)
+
+        where:
+        taskType      | property              | rawValue                            | type          | conventionSource                                                               | inv | expectedValue
+        XcodeArchive  | "clean"               | false                               | "Boolean"     | _                                                                              | _   | _
+        XcodeArchive  | "scheme"              | "test.scheme"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        XcodeArchive  | "configuration"       | "test.config"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        XcodeArchive  | "teamId"              | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+
+        ExportArchive | "exportOptionsPlist"  | "some_exportOptions.plist"          | "RegularFile" | ConventionSource.extension(extensionName, property)                            | _   | "#projectDir#/${rawValue}".toString()
+
+        KeychainTask  | "baseName"            | "build"                             | "String"      | _                                                                              | ""  | _
+        KeychainTask  | "extension"           | "keychain"                          | "String"      | _                                                                              | ""  | _
+        KeychainTask  | "password"            | "some_password"                     | "String"      | ConventionSource.extension(extensionName, 'keychainPassword')                  | ""  | _
+        KeychainTask  | "certificatePassword" | "some_passphrase"                   | "String"      | ConventionSource.extension(extensionName, 'codeSigningIdentityFilePassphrase') | ""  | _
+        KeychainTask  | "destinationDir"      | "#projectDir#/build/sign/keychains" | "File"        | _                                                                              | ""  | _
+
+        SighRenew     | "username"            | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
+        PilotUpload   | "username"            | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
+        SighRenew     | "password"            | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
+        PilotUpload   | "password"            | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
+
+        SighRenew     | "teamId"              | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        SighRenew     | "appIdentifier"       | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        SighRenew     | "destinationDir"      | "#projectDir#/build/tmp/#taskName#" | "Directory"   | _                                                                              | _   | _
+        SighRenew     | "provisioningName"    | "provisioningNameValue"             | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        SighRenew     | "adhoc"               | true                                | "Boolean"     | ConventionSource.extension(extensionName, property)                            | _   | _
+        SighRenew     | "fileName"            | "signing.mobileprovision"           | "String"      | _                                                                              | _   | _
+
+        PilotUpload   | "devPortalTeamId"     | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, "teamId")                            | _   | _
+        PilotUpload   | "appIdentifier"       | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+
+        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
+        testValue = (expectedValue == _) ? rawValue : expectedValue
+        invocation = (inv == _) ? ".getOrNull()" : inv
+    }
+
+    @Unroll
+    def "extension property :#property returns '#testValue' if #reason"() {
+        given: "a set value"
+        switch (location) {
+            case PropertyLocation.script:
+                buildFile << "${extensionName}.${invocation}"
+                break
+            case PropertyLocation.property:
+                def propertiesFile = createFile("gradle.properties")
+                propertiesFile << "${extensionName}.${property} = ${escapedValue}"
+                break
+            case PropertyLocation.environment:
+                def envPropertyKey = envNameFromProperty(extensionName, property)
+                environmentVariables.set(envPropertyKey, value.toString())
+                break
+            default:
+                break
+        }
+
+        and: "the test value with replace placeholders"
+        if (testValue instanceof String) {
+            testValue = testValue.replaceAll("#projectDir#", escapedPath(projectDir.path))
+        }
+
+        when:
+        def query = new PropertyQueryTaskWriter("${extensionName}.${property}")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, testValue)
+
+        where:
+        property                            | method                      | rawValue                       | expectedValue                               | type                     | location
+        "keychainPassword"                  | _                           | _                              | null                                        | "Provider<String>"       | PropertyLocation.none
+        "keychainPassword"                  | toSetter(property)          | "password1"                    | _                                           | "Provider<String>"       | PropertyLocation.script
+        "keychainPassword"                  | toSetter(property)          | "password1"                    | _                                           | "String"                 | PropertyLocation.script
+        "keychainPassword"                  | toProviderSet(property)     | "password1"                    | _                                           | "Provider<String>"       | PropertyLocation.script
+        "keychainPassword"                  | toProviderSet(property)     | "password1"                    | _                                           | "String"                 | PropertyLocation.script
+
+        "signingIdentities"                 | _                           | _                              | []                                          | _                        | PropertyLocation.none
+        "signingIdentities"                 | toSetter(property)          | ["ID1", "ID2"]                 | _                                           | "List<String>"           | PropertyLocation.script
+        "signingIdentities"                 | toSetter(property)          | ["ID3", "ID4"]                 | _                                           | "Provider<List<String>>" | PropertyLocation.script
+        "signingIdentities"                 | toProviderSet(property)     | ["ID5", "ID6"]                 | _                                           | "List<String>"           | PropertyLocation.script
+        "signingIdentities"                 | toProviderSet(property)     | ["ID7", "ID8"]                 | _                                           | "Provider<List<String>>" | PropertyLocation.script
+        "signingIdentities"                 | toSetter("signingIdentity") | "code sign: ID3"               | [rawValue]                                  | "String"                 | PropertyLocation.script
+        "signingIdentities"                 | toSetter("signingIdentity") | "code sign: ID4"               | [rawValue]                                  | "Provider<String>"       | PropertyLocation.script
+
+        "codeSigningIdentityFile"           | _                           | _                              | null                                        | "Provider<RegularFile>"  | PropertyLocation.none
+        "codeSigningIdentityFile"           | property                    | "/path/to/p12"                 | _                                           | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | property                    | "/path/to/p12"                 | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | toProviderSet(property)     | "/path/to/p12"                 | _                                           | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | toProviderSet(property)     | "/path/to/p12"                 | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | toSetter(property)          | "/path/to/p12"                 | _                                           | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | toSetter(property)          | "/path/to/p12"                 | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
+
+        "codeSigningIdentityFilePassphrase" | _                           | _                              | null                                        | "Provider<String>"       | PropertyLocation.none
+        "codeSigningIdentityFilePassphrase" | property                    | "testPassphrase1"              | _                                           | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | property                    | "testPassphrase2"              | _                                           | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | toProviderSet(property)     | "testPassphrase3"              | _                                           | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | toProviderSet(property)     | "testPassphrase4"              | _                                           | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | toSetter(property)          | "testPassphrase5"              | _                                           | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | toSetter(property)          | "testPassphrase6"              | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "appIdentifier"                     | property                    | "com.test.app.1"               | _                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | property                    | "com.test.app.2"               | _                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | toProviderSet(property)     | "com.test.app.3"               | _                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | toProviderSet(property)     | "com.test.app.4"               | _                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | toSetter(property)          | "com.test.app.5"               | _                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | toSetter(property)          | "com.test.app.6"               | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "teamId"                            | property                    | "team1"                        | _                                           | "String"                 | PropertyLocation.script
+        "teamId"                            | property                    | "team2"                        | _                                           | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | toProviderSet(property)     | "team3"                        | _                                           | "String"                 | PropertyLocation.script
+        "teamId"                            | toProviderSet(property)     | "team4"                        | _                                           | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | toSetter(property)          | "team5"                        | _                                           | "String"                 | PropertyLocation.script
+        "teamId"                            | toSetter(property)          | "team6"                        | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "scheme"                            | property                    | "value1"                       | _                                           | "String"                 | PropertyLocation.script
+        "scheme"                            | property                    | "value2"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | toProviderSet(property)     | "value3"                       | _                                           | "String"                 | PropertyLocation.script
+        "scheme"                            | toProviderSet(property)     | "value4"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | toSetter(property)          | "value5"                       | _                                           | "String"                 | PropertyLocation.script
+        "scheme"                            | toSetter(property)          | "value6"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "configuration"                     | property                    | "value1"                       | _                                           | "String"                 | PropertyLocation.script
+        "configuration"                     | property                    | "value2"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | toProviderSet(property)     | "value3"                       | _                                           | "String"                 | PropertyLocation.script
+        "configuration"                     | toProviderSet(property)     | "value4"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | toSetter(property)          | "value5"                       | _                                           | "String"                 | PropertyLocation.script
+        "configuration"                     | toSetter(property)          | "value6"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "provisioningName"                  | property                    | "value1"                       | _                                           | "String"                 | PropertyLocation.script
+        "provisioningName"                  | property                    | "value2"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | toProviderSet(property)     | "value3"                       | _                                           | "String"                 | PropertyLocation.script
+        "provisioningName"                  | toProviderSet(property)     | "value4"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | toSetter(property)          | "value5"                       | _                                           | "String"                 | PropertyLocation.script
+        "provisioningName"                  | toSetter(property)          | "value6"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+
+        "adhoc"                             | property                    | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | property                    | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | toProviderSet(property)     | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | toProviderSet(property)     | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | toSetter(property)          | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | toSetter(property)          | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+
+        "publishToTestFlight"               | property                    | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | property                    | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | toProviderSet(property)     | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | toProviderSet(property)     | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | toSetter(property)          | true                           | _                                           | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | toSetter(property)          | true                           | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+
+        "exportOptionsPlist"                | _                           | "exportOptions.plist"          | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | toProviderSet(property)     | "path/to/exportOptions1.plist" | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | toProviderSet(property)     | "path/to/exportOptions1.plist" | "#projectDir#/build/${rawValue}".toString() | "Provider<RegularFile>"  | PropertyLocation.script
+        "exportOptionsPlist"                | toSetter(property)          | "path/to/exportOptions1.plist" | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | toSetter(property)          | "path/to/exportOptions1.plist" | "#projectDir#/build/${rawValue}".toString() | "Provider<RegularFile>"  | PropertyLocation.script
+
+        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
+        providedValue = (location == PropertyLocation.script) ? type : value
+        testValue = (expectedValue == _) ? rawValue : expectedValue
+        reason = location.reason() + ((location == PropertyLocation.none) ? "" : "  with '$providedValue' ")
+        escapedValue = (value instanceof String) ? escapedPath(value) : value
+        invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
     }
 }
