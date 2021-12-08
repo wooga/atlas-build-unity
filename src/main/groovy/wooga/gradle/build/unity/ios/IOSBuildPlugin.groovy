@@ -27,7 +27,10 @@ import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
-import wooga.gradle.build.unity.ios.tasks.*
+import wooga.gradle.build.unity.ios.tasks.KeychainTask
+import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
+import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
+import wooga.gradle.build.unity.ios.tasks.PodInstallTask
 import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
 import wooga.gradle.fastlane.tasks.PilotUpload
@@ -58,22 +61,23 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
         def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
+        extension.exportOptionsPlist.convention(project.layout.projectDirectory.file("exportOptions.plist"))
 
         //register some defaults
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
             void execute(XcodeArchive task) {
                 task.clean(false)
-                task.scheme.set(project.provider({ extension.getScheme() }))
-                task.configuration.set(project.provider({ extension.getConfiguration() }))
-                task.teamId.set(project.provider({ extension.getTeamId() }))
+                task.scheme.set(extension.getScheme())
+                task.configuration.set(extension.getConfiguration())
+                task.teamId.set(extension.getTeamId())
             }
         })
 
         project.tasks.withType(ExportArchive.class, new Action<ExportArchive>() {
             @Override
             void execute(ExportArchive task) {
-                task.exportOptionsPlist.set(project.file("exportOptions.plist"))
+                task.exportOptionsPlist.set(extension.exportOptionsPlist)
             }
         })
 
@@ -83,8 +87,8 @@ class IOSBuildPlugin implements Plugin<Project> {
                 def conventionMapping = task.getConventionMapping()
                 conventionMapping.map("baseName", { "build" })
                 conventionMapping.map("extension", { "keychain" })
-                conventionMapping.map("password", { extension.getKeychainPassword() })
-                conventionMapping.map("certificatePassword", { extension.getCertificatePassphrase() })
+                conventionMapping.map("password", { extension.getKeychainPassword().get() })
+                conventionMapping.map("certificatePassword", { extension.getCodeSigningIdentityFilePassphrase().get() })
                 conventionMapping.map("destinationDir", {
                     project.file("${project.buildDir}/sign/keychains")
                 })
@@ -108,34 +112,34 @@ class IOSBuildPlugin implements Plugin<Project> {
                     fastlaneExtension.password.getOrNull()
                 }))
 
-                task.teamId.set(project.provider({ extension.getTeamId() }))
-                task.appIdentifier.set(project.provider({ extension.getAppIdentifier() }))
-                task.destinationDir.set(task.temporaryDir)
-                task.provisioningName.set(project.provider({ extension.getProvisioningName() }))
-                task.adhoc.set(project.provider({ extension.getAdhoc() }))
-                task.fileName.set('signing.mobileprovision')
+                task.teamId.convention(extension.getTeamId())
+                task.appIdentifier.convention(extension.getAppIdentifier())
+                task.destinationDir.convention(project.layout.dir(project.provider({ task.getTemporaryDir() })))
+                task.provisioningName.convention(extension.getProvisioningName())
+                task.adhoc.convention(extension.adhoc)
+                task.fileName.convention('signing.mobileprovision')
             }
         })
 
         project.tasks.withType(PilotUpload.class, new Action<PilotUpload>() {
             @Override
             void execute(PilotUpload task) {
-                task.username.set(project.provider({
+                task.username.convention(project.provider({
                     if (extension.fastlaneCredentials.username) {
                         return extension.fastlaneCredentials.username
                     }
-                    fastlaneExtension.username.getOrNull()
-                }))
+                    null
+                }).orElse(fastlaneExtension.username))
 
                 task.password.set(project.provider({
                     if (extension.fastlaneCredentials.password) {
                         return extension.fastlaneCredentials.password
                     }
-                    fastlaneExtension.password.getOrNull()
-                }))
+                    null
+                }).orElse(fastlaneExtension.getPassword()))
 
-                task.devPortalTeamId.set(project.provider({ extension.getTeamId() }))
-                task.appIdentifier.set(project.provider({ extension.getAppIdentifier() }))
+                task.devPortalTeamId.convention(extension.getTeamId())
+                task.appIdentifier.convention(extension.getAppIdentifier())
             }
         })
 
@@ -199,7 +203,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         def shutdownHook = new Thread({
             System.err.println("shutdown hook called")
             System.err.flush()
-            if(addKeychain.didWork) {
+            if (addKeychain.didWork) {
                 System.err.println("task ${addKeychain.name} did run. Execute ${removeKeychain.name} shutdown action")
                 removeKeychain.shutdown()
             } else {
@@ -219,7 +223,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
             it.dependsOn addKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString() )
+            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
         }
 
         PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
@@ -248,7 +252,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         project.afterEvaluate(new Action<Project>() {
             @Override
             void execute(Project _) {
-                if (extension.publishToTestFlight) {
+                if (extension.publishToTestFlight.getOrElse(false)) {
                     def lifecyclePublishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
                     lifecyclePublishTask.dependsOn(publishTestFlight)
                 }

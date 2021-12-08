@@ -157,7 +157,7 @@ class IOSBuildPluginSpec extends ProjectSpec {
         and: "a project with property set"
         project.plugins.apply(PLUGIN_NAME)
         IOSBuildPluginExtension extension = project.extensions.findByName(IOSBuildPlugin.EXTENSION_NAME) as IOSBuildPluginExtension
-        extension.publishToTestFlight(publishToTestflight)
+        extension.setPublishToTestFlight(publishToTestflight)
 
         and: "a dummpy xcode project"
         xcProject = new File(projectDir, "test.xcodeproj")
@@ -178,27 +178,5 @@ class IOSBuildPluginSpec extends ProjectSpec {
         message = (dependsOnTask) ? "depends" : "depends not"
     }
 
-    @Unroll
-    def 'extension returns #defaultValue value for property #property'() {
-        given:
-        project.plugins.apply(PLUGIN_NAME)
 
-        and: "the extension"
-        DefaultIOSBuildPluginExtension extension = project.extensions.findByName(IOSBuildPlugin.EXTENSION_NAME) as DefaultIOSBuildPluginExtension
-
-        expect:
-        extension.getProperty(property) == defaultValue
-
-        where:
-        property                | defaultValue
-        "keychainPassword"      | null
-        "certificatePassphrase" | null
-        "appIdentifier"         | null
-        "teamId"                | null
-        "scheme"                | null
-        "configuration"         | null
-        "provisioningName"      | null
-        "adhoc"                 | false
-        "publishToTestFlight"   | false
-    }
 }
