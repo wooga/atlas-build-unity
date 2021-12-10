@@ -19,9 +19,10 @@
 
 package wooga.gradle.xcodebuild.config
 
+import org.gradle.api.internal.changedetection.state.BuildSessionScopeFileTimeStampInspector
 import sun.invoke.empty.Empty
 
-class BuildSettings implements GroovyInterceptable {
+class BuildSettings implements GroovyInterceptable, Cloneable {
 
     private final Map<String, List<String>> rawSettings
 
@@ -44,7 +45,7 @@ class BuildSettings implements GroovyInterceptable {
     }
 
     BuildSettings clone() {
-        new BuildSettings(rawSettings)
+        new BuildSettings(rawSettings.clone() as Map<String, List<String>>)
     }
 
     BuildSettings otherCodeSignFlags(String flag, String value) {

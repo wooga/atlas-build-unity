@@ -358,4 +358,38 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         property        | archiveName            | destinationDir | expectedXcArchivePath
         "xcArchivePath" | "test-0.0.0.xcarchive" | "/some/path"   | "/some/path/test-0.0.0.xcarchive"
     }
+
+    def "multiple calls to buildArguments will not add build keychain path multiple times"() {
+        given:
+        buildFile << """
+        task("customXcodeArchive", type: ${taskType.name}) {
+            scheme = "${xcodeProject.schemeName}"
+            projectPath = new File("${xcodeProject.xcodeProject.path}")
+        }
+        """.stripIndent()
+
+        and: "a task to read the build arguments"
+        buildFile << """
+            task("readValue") {
+                doLast {
+                    customXcodeArchive.buildArguments.get()
+                    customXcodeArchive.buildArguments.get()
+                    println("arguments: " + customXcodeArchive.buildArguments.get().join(" "))
+                }
+            }
+        """.stripIndent()
+
+        and: "a set property"
+        buildFile << """
+            customXcodeArchive.buildKeychain.set(new File("/path/to/keychain"))
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("readValue")
+
+        then:
+        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain --keychain /path/to/keychain --keychain /path/to/keychain")
+        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain --keychain /path/to/keychain")
+        outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain")
+    }
 }
