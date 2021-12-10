@@ -255,7 +255,7 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
 
         buildArguments = project.provider({
             List<String> arguments = new ArrayList<String>()
-            BuildSettings settings = buildSettings.getOrElse(BuildSettings.EMPTY)
+            BuildSettings settings = buildSettings.getOrElse(BuildSettings.EMPTY).clone()
             arguments << "xcodebuild"
 
             if (clean.present && clean.get()) {
