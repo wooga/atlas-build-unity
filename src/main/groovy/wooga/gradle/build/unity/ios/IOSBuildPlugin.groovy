@@ -27,14 +27,13 @@ import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
 import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
-import wooga.gradle.build.unity.ios.tasks.KeychainTask
-import wooga.gradle.build.unity.ios.tasks.ListKeychainTask
-import wooga.gradle.build.unity.ios.tasks.LockKeychainTask
+import wooga.gradle.build.unity.ios.tasks.ImportCodeSigningIdentities
 import wooga.gradle.build.unity.ios.tasks.PodInstallTask
 import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.macOS.security.tasks.*
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
@@ -81,17 +80,13 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
-        project.tasks.withType(KeychainTask.class, new Action<KeychainTask>() {
+        project.tasks.withType(SecurityCreateKeychain.class, new Action<SecurityCreateKeychain>() {
             @Override
-            void execute(KeychainTask task) {
-                def conventionMapping = task.getConventionMapping()
-                conventionMapping.map("baseName", { "build" })
-                conventionMapping.map("extension", { "keychain" })
-                conventionMapping.map("password", { extension.getKeychainPassword().get() })
-                conventionMapping.map("certificatePassword", { extension.getCodeSigningIdentityFilePassphrase().get() })
-                conventionMapping.map("destinationDir", {
-                    project.file("${project.buildDir}/sign/keychains")
-                })
+            void execute(SecurityCreateKeychain task) {
+                task.baseName.convention("build")
+                task.extension.convention("keychain")
+                task.password.convention(extension.keychainPassword)
+                task.destinationDir.convention(project.layout.buildDirectory.dir("sign/keychains"))
             }
         })
 
@@ -143,6 +138,13 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
+        project.tasks.withType(ImportCodeSigningIdentities.class, new Action<ImportCodeSigningIdentities>() {
+            @Override
+            void execute(ImportCodeSigningIdentities task) {
+                task.applicationAccessPaths.convention(["/usr/bin/codesign"])
+            }
+        })
+
         def projects = project.fileTree(project.projectDir) { it.include("*.xcodeproj/project.pbxproj") }.files
         projects.each { File xcodeProject ->
             def base = xcodeProject.parentFile
@@ -167,37 +169,43 @@ class IOSBuildPlugin implements Plugin<Project> {
 
     void generateBuildTasks(final String baseName, final Project project, File xcodeProject, IOSBuildPluginExtension extension) {
         def tasks = project.tasks
-        def buildKeychain = tasks.create(maybeBaseName(baseName, "buildKeychain"), KeychainTask) {
+        def buildKeychain = tasks.create(maybeBaseName(baseName, "buildKeychain"), SecurityCreateKeychain) {
             it.baseName = maybeBaseName(baseName, "build")
-            it.certificates = project.fileTree(project.projectDir) { it.include("*.p12") }
         }
 
-        def unlockKeychain = tasks.create(maybeBaseName(baseName, "unlockKeychain"), LockKeychainTask) {
-            it.lockAction = LockKeychainTask.LockAction.unlock
-            it.password = { buildKeychain.getPassword() }
-            it.keychain = buildKeychain
+        def unlockKeychain = tasks.create(maybeBaseName(baseName, "unlockKeychain"), SecurityUnlockKeychain) {
+            it.dependsOn(buildKeychain, buildKeychain)
+            it.password.set(buildKeychain.password)
+            it.keychain.set(buildKeychain.keychain)
         }
 
-        def lockKeychain = tasks.create(maybeBaseName(baseName, "lockKeychain"), LockKeychainTask) {
-            it.lockAction = LockKeychainTask.LockAction.lock
-            it.password = { buildKeychain.getPassword() }
-            it.keychain = buildKeychain
+        def lockKeychain = tasks.create(maybeBaseName(baseName, "lockKeychain"), SecurityLockKeychain) {
+            it.dependsOn(buildKeychain)
+            it.keychain(buildKeychain.keychain.map({ it.asFile }))
         }
 
-        def resetKeychains = tasks.create(maybeBaseName(baseName, "resetKeychains"), ListKeychainTask) {
-            it.action = ListKeychainTask.Action.reset
-            it.keychain buildKeychain
-        }
+        def resetKeychains = tasks.create(maybeBaseName(baseName, "resetKeychains"), SecurityResetKeychainSearchList)
 
-        def addKeychain = tasks.create(maybeBaseName(baseName, "addKeychain"), ListKeychainTask) {
-            it.action = ListKeychainTask.Action.add
-            it.keychain buildKeychain
+        def addKeychain = tasks.create(maybeBaseName(baseName, "addKeychain"), SecuritySetKeychainSearchList) {
+            it.dependsOn(buildKeychain)
+            it.action = SecuritySetKeychainSearchList.Action.add
+            it.keychain(buildKeychain.keychain.map({ it.asFile }))
             dependsOn(resetKeychains)
         }
 
-        def removeKeychain = tasks.create(maybeBaseName(baseName, "removeKeychain"), ListKeychainTask) {
-            it.action = ListKeychainTask.Action.remove
-            it.keychain buildKeychain
+        def removeKeychain = tasks.create(maybeBaseName(baseName, "removeKeychain"), SecuritySetKeychainSearchList) {
+            it.dependsOn(buildKeychain)
+            it.action = SecuritySetKeychainSearchList.Action.remove
+            it.keychain(buildKeychain.keychain.map({ it.asFile }))
+        }
+
+        def importCodeSigningIdentities = tasks.create(maybeBaseName(baseName, "importCodeSigningIdentities"), ImportCodeSigningIdentities) {
+            it.keychain.set(buildKeychain.getKeychain())
+            it.signingIdentities.convention(extension.signingIdentities)
+            it.passphrase.convention(extension.codeSigningIdentityFilePassphrase)
+            it.p12.convention(extension.codeSigningIdentityFile)
+            dependsOn(buildKeychain, unlockKeychain)
+            finalizedBy(removeKeychain, lockKeychain)
         }
 
         def shutdownHook = new Thread({
@@ -214,14 +222,17 @@ class IOSBuildPlugin implements Plugin<Project> {
         })
 
         addKeychain.doLast {
+            addKeychain.logger.info("Add shutdown hook")
             Runtime.getRuntime().addShutdownHook(shutdownHook)
         }
 
         removeKeychain.doLast {
+            removeKeychain.logger.info("Remove shutdown hook")
             Runtime.getRuntime().removeShutdownHook(shutdownHook)
         }
+
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
-            it.dependsOn addKeychain, unlockKeychain
+            it.dependsOn addKeychain, importCodeSigningIdentities, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
             it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
         }
@@ -239,7 +250,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 }
                 return d.dir(xcodeProject.path)
             }))
-            it.buildKeychain = buildKeychain.outputPath
+            it.buildKeychain.set(buildKeychain.keychain)
         }
 
         ExportArchive xcodeExport = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX) as ExportArchive

@@ -224,11 +224,6 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
         this
     }
 
-    @OutputFiles
-    protected FileCollection getOutputFiles() {
-        project.files(xcArchivePath)
-    }
-
     @OutputDirectory
     final Provider<Directory> xcArchivePath
 

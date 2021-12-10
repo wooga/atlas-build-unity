@@ -85,6 +85,11 @@ class ImportCodeSigningIdentities extends DefaultTask implements BaseSpec {
         keychain.set(value)
     }
 
+    @OutputFile
+    protected Provider<RegularFile> getOutputFile() {
+        keychain
+    }
+
     private final ListProperty<String> signingIdentities = objects.listProperty(String)
 
     @Input
