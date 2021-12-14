@@ -7,6 +7,7 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
+import wooga.gradle.build.unity.ios.tasks.ImportCodeSigningIdentities
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
 import wooga.gradle.macOS.security.tasks.*
@@ -93,18 +94,19 @@ class IOSBuildPluginSpec extends ProjectSpec {
         taskType.isInstance(task)
 
         where:
-        taskName                     | taskType
-        "buildKeychain"              | SecurityCreateKeychain
-        "unlockKeychain"             | SecurityUnlockKeychain
-        "lockKeychain"               | SecurityLockKeychain
-        "resetKeychains"             | SecurityResetKeychainSearchList
-        "addKeychain"                | SecuritySetKeychainSearchList
-        "removeKeychain"             | SecuritySetKeychainSearchList
-        "importProvisioningProfiles" | SighRenew
-        "xcodeArchive"               | XcodeArchive
-        "xcodeArchiveExport"         | ExportArchive
-        "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
-        "publishTestFlight"          | PilotUpload
+        taskName                      | taskType
+        "createKeychain"              | SecurityCreateKeychain
+        "importCodeSigningIdentities" | ImportCodeSigningIdentities
+        "unlockKeychain"              | SecurityUnlockKeychain
+        "lockKeychain"                | SecurityLockKeychain
+        "resetKeychains"              | SecurityResetKeychainSearchList
+        "addKeychain"                 | SecuritySetKeychainSearchList
+        "removeKeychain"              | SecuritySetKeychainSearchList
+        "importProvisioningProfiles"  | SighRenew
+        "xcodeArchive"                | XcodeArchive
+        "xcodeArchiveExport"          | ExportArchive
+        "xcodeArchiveDSYMs"           | ArchiveDebugSymbols
+        "publishTestFlight"           | PilotUpload
     }
 
     @Unroll()
@@ -130,7 +132,8 @@ class IOSBuildPluginSpec extends ProjectSpec {
 
         where:
         taskName                     | taskType
-        "buildKeychain"              | SecurityCreateKeychain
+        "createKeychain"              | SecurityCreateKeychain
+        "importCodeSigningIdentities" | ImportCodeSigningIdentities
         "unlockKeychain"             | SecurityUnlockKeychain
         "lockKeychain"               | SecurityLockKeychain
         "resetKeychains"             | SecurityResetKeychainSearchList
