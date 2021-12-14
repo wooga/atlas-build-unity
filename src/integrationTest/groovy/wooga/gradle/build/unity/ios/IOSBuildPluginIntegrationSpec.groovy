@@ -26,9 +26,9 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Timeout
 import spock.lang.Unroll
-import wooga.gradle.build.unity.ios.tasks.KeychainTask
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.macOS.security.tasks.SecurityCreateKeychain
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
@@ -199,7 +199,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         where:
         signal                  | removeKeychain
         ProcessList.Signal.HUP  | true
-        //ProcessList.Signal.INT  | true
+        // ProcessList.Signal.INT  | true
         ProcessList.Signal.ABRT | false
         ProcessList.Signal.KILL | false
         ProcessList.Signal.ALRM | false
@@ -312,34 +312,33 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         query.matches(result, testValue)
 
         where:
-        taskType      | property              | rawValue                            | type          | conventionSource                                                               | inv | expectedValue
-        XcodeArchive  | "clean"               | false                               | "Boolean"     | _                                                                              | _   | _
-        XcodeArchive  | "scheme"              | "test.scheme"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
-        XcodeArchive  | "configuration"       | "test.config"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
-        XcodeArchive  | "teamId"              | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        taskType               | property             | rawValue                            | type          | conventionSource                                              | inv | expectedValue
+        XcodeArchive           | "clean"              | false                               | "Boolean"     | _                                                             | _   | _
+        XcodeArchive           | "scheme"             | "test.scheme"                       | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
+        XcodeArchive           | "configuration"      | "test.config"                       | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
+        XcodeArchive           | "teamId"             | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
 
-        ExportArchive | "exportOptionsPlist"  | "some_exportOptions.plist"          | "RegularFile" | ConventionSource.extension(extensionName, property)                            | _   | "#projectDir#/${rawValue}".toString()
+        ExportArchive          | "exportOptionsPlist" | "some_exportOptions.plist"          | "RegularFile" | ConventionSource.extension(extensionName, property)           | _   | "#projectDir#/${rawValue}".toString()
 
-        KeychainTask  | "baseName"            | "build"                             | "String"      | _                                                                              | ""  | _
-        KeychainTask  | "extension"           | "keychain"                          | "String"      | _                                                                              | ""  | _
-        KeychainTask  | "password"            | "some_password"                     | "String"      | ConventionSource.extension(extensionName, 'keychainPassword')                  | ""  | _
-        KeychainTask  | "certificatePassword" | "some_passphrase"                   | "String"      | ConventionSource.extension(extensionName, 'codeSigningIdentityFilePassphrase') | ""  | _
-        KeychainTask  | "destinationDir"      | "#projectDir#/build/sign/keychains" | "File"        | _                                                                              | ""  | _
+        SecurityCreateKeychain | "baseName"           | "build"                             | "String"      | _                                                             | _   | _
+        SecurityCreateKeychain | "extension"          | "keychain"                          | "String"      | _                                                             | _   | _
+        SecurityCreateKeychain | "password"           | "some_password"                     | "String"      | ConventionSource.extension(extensionName, 'keychainPassword') | _   | _
+        SecurityCreateKeychain | "destinationDir"     | "#projectDir#/build/sign/keychains" | "File"        | _                                                             | _   | _
 
-        SighRenew     | "username"            | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
-        PilotUpload   | "username"            | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
-        SighRenew     | "password"            | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
-        PilotUpload   | "password"            | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)                               | _   | _
+        SighRenew              | "username"           | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)              | _   | _
+        PilotUpload            | "username"           | "user1"                             | "String"      | ConventionSource.extension("fastlane", property)              | _   | _
+        SighRenew              | "password"           | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)              | _   | _
+        PilotUpload            | "password"           | "user2"                             | "String"      | ConventionSource.extension("fastlane", property)              | _   | _
 
-        SighRenew     | "teamId"              | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
-        SighRenew     | "appIdentifier"       | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
-        SighRenew     | "destinationDir"      | "#projectDir#/build/tmp/#taskName#" | "Directory"   | _                                                                              | _   | _
-        SighRenew     | "provisioningName"    | "provisioningNameValue"             | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
-        SighRenew     | "adhoc"               | true                                | "Boolean"     | ConventionSource.extension(extensionName, property)                            | _   | _
-        SighRenew     | "fileName"            | "signing.mobileprovision"           | "String"      | _                                                                              | _   | _
+        SighRenew              | "teamId"             | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
+        SighRenew              | "appIdentifier"      | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
+        SighRenew              | "destinationDir"     | "#projectDir#/build/tmp/#taskName#" | "Directory"   | _                                                             | _   | _
+        SighRenew              | "provisioningName"   | "provisioningNameValue"             | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
+        SighRenew              | "adhoc"              | true                                | "Boolean"     | ConventionSource.extension(extensionName, property)           | _   | _
+        SighRenew              | "fileName"           | "signing.mobileprovision"           | "String"      | _                                                             | _   | _
 
-        PilotUpload   | "devPortalTeamId"     | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, "teamId")                            | _   | _
-        PilotUpload   | "appIdentifier"       | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)                            | _   | _
+        PilotUpload            | "devPortalTeamId"    | "test.teamId"                       | "String"      | ConventionSource.extension(extensionName, "teamId")           | _   | _
+        PilotUpload            | "appIdentifier"      | "test.appIdentifier"                | "String"      | ConventionSource.extension(extensionName, property)           | _   | _
 
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
         testValue = (expectedValue == _) ? rawValue : expectedValue

@@ -52,7 +52,6 @@ class SecurityLockKeychain extends AbstractInteractiveSecurityTask {
     }
 
     void keychain(Provider<File> keychain) {
-
         keychains.from(keychain)
     }
 
@@ -83,7 +82,7 @@ class SecurityLockKeychain extends AbstractInteractiveSecurityTask {
     }
 
     SecurityLockKeychain() {
-        keychains = project.layout.configurableFiles()
+        keychains = project.objects.fileCollection()
         all = project.objects.property(Boolean)
         all.set(null)
 

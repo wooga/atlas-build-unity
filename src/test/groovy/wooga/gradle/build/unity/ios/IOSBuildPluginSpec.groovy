@@ -7,9 +7,9 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
-import wooga.gradle.build.unity.ios.tasks.*
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.macOS.security.tasks.*
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
@@ -94,12 +94,12 @@ class IOSBuildPluginSpec extends ProjectSpec {
 
         where:
         taskName                     | taskType
-        "buildKeychain"              | KeychainTask
-        "unlockKeychain"             | LockKeychainTask
-        "lockKeychain"               | LockKeychainTask
-        "resetKeychains"             | ListKeychainTask
-        "addKeychain"                | ListKeychainTask
-        "removeKeychain"             | ListKeychainTask
+        "buildKeychain"              | SecurityCreateKeychain
+        "unlockKeychain"             | SecurityUnlockKeychain
+        "lockKeychain"               | SecurityLockKeychain
+        "resetKeychains"             | SecurityResetKeychainSearchList
+        "addKeychain"                | SecuritySetKeychainSearchList
+        "removeKeychain"             | SecuritySetKeychainSearchList
         "importProvisioningProfiles" | SighRenew
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive
@@ -130,12 +130,12 @@ class IOSBuildPluginSpec extends ProjectSpec {
 
         where:
         taskName                     | taskType
-        "buildKeychain"              | KeychainTask
-        "unlockKeychain"             | LockKeychainTask
-        "lockKeychain"               | LockKeychainTask
-        "resetKeychains"             | ListKeychainTask
-        "addKeychain"                | ListKeychainTask
-        "removeKeychain"             | ListKeychainTask
+        "buildKeychain"              | SecurityCreateKeychain
+        "unlockKeychain"             | SecurityUnlockKeychain
+        "lockKeychain"               | SecurityLockKeychain
+        "resetKeychains"             | SecurityResetKeychainSearchList
+        "addKeychain"                | SecuritySetKeychainSearchList
+        "removeKeychain"             | SecuritySetKeychainSearchList
         "importProvisioningProfiles" | SighRenew
         "xcodeArchive"               | XcodeArchive
         "xcodeArchiveExport"         | ExportArchive

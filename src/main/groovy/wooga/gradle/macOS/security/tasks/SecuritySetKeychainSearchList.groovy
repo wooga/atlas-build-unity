@@ -96,7 +96,7 @@ class SecuritySetKeychainSearchList extends AbstractSecurityKeychainSearchListTa
 
 
     SecuritySetKeychainSearchList() {
-        keychains = project.layout.configurableFiles()
+        keychains = project.objects.fileCollection()
         action = project.objects.property(Action)
 
         onlyIf(new Spec<Task>() {
@@ -115,6 +115,18 @@ class SecuritySetKeychainSearchList extends AbstractSecurityKeychainSearchListTa
                 }
             }
         })
+    }
+
+    void shutdown() {
+        if(this.action.get() == Action.remove) {
+            if(!this.didWork) {
+                System.err.println("task ${this.name} did not run yet. Force execution")
+                list()
+            } else {
+                System.err.println("task ${this.name} did run.")
+            }
+            System.err.flush()
+        }
     }
 
     @TaskAction

@@ -134,11 +134,18 @@ class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements 
         tempLockFile = destinationDir.file(fileName.map({
             getTempKeychainFileName(it)
         }))
+
+        outputs.upToDateWhen {
+            keychain.get().asFile.exists()
+        }
     }
 
     @TaskAction
     protected void createKeychain() {
+        //If we need to rerun the task make sure the keychain does not yet exist
+        keychain.get().asFile.delete()
         MacOsKeychain keychain = MacOsKeychain.create(keychain.get().asFile, password.get())
+
         keychain.unlock()
         if (lockKeychainWhenSleep.isPresent()) {
             keychain.lockWhenSystemSleeps = lockKeychainWhenSleep.get()
