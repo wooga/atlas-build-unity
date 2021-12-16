@@ -33,6 +33,7 @@ import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.macOS.security.SecurityKeychainOutputSpec
 import wooga.gradle.macOS.security.tasks.*
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
@@ -83,6 +84,16 @@ class IOSBuildPlugin implements Plugin<Project> {
         project.tasks.withType(SecurityCreateKeychain.class, new Action<SecurityCreateKeychain>() {
             @Override
             void execute(SecurityCreateKeychain task) {
+                task.baseName.convention("build")
+                task.extension.convention("keychain")
+                task.password.convention(extension.keychainPassword)
+                task.destinationDir.convention(project.layout.buildDirectory.dir("sign/keychains"))
+            }
+        })
+
+        project.tasks.withType(ImportCodeSigningIdentities.class, new Action<ImportCodeSigningIdentities>() {
+            @Override
+            void execute(ImportCodeSigningIdentities task) {
                 task.baseName.convention("build")
                 task.extension.convention("keychain")
                 task.password.convention(extension.keychainPassword)
@@ -169,13 +180,22 @@ class IOSBuildPlugin implements Plugin<Project> {
 
     void generateBuildTasks(final String baseName, final Project project, File xcodeProject, IOSBuildPluginExtension extension) {
         def tasks = project.tasks
-        def buildKeychain = tasks.create(maybeBaseName(baseName, "buildKeychain"), SecurityCreateKeychain) {
+
+        def createKeychain = tasks.create(maybeBaseName(baseName, "createKeychain"), SecurityCreateKeychain) {
             it.baseName = maybeBaseName(baseName, "build")
+        }
+
+        ImportCodeSigningIdentities buildKeychain = tasks.create(maybeBaseName(baseName, "importCodeSigningIdentities"), ImportCodeSigningIdentities) {
+            it.inputKeychain.set(createKeychain.getKeychain())
+            it.signingIdentities.convention(extension.signingIdentities)
+            it.passphrase.convention(extension.codeSigningIdentityFilePassphrase)
+            it.p12.convention(extension.codeSigningIdentityFile)
+            dependsOn(createKeychain)
         }
 
         def unlockKeychain = tasks.create(maybeBaseName(baseName, "unlockKeychain"), SecurityUnlockKeychain) {
             it.dependsOn(buildKeychain, buildKeychain)
-            it.password.set(buildKeychain.password)
+            it.password.set(createKeychain.password)
             it.keychain.set(buildKeychain.keychain)
         }
 
@@ -199,14 +219,7 @@ class IOSBuildPlugin implements Plugin<Project> {
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
         }
 
-        def importCodeSigningIdentities = tasks.create(maybeBaseName(baseName, "importCodeSigningIdentities"), ImportCodeSigningIdentities) {
-            it.keychain.set(buildKeychain.getKeychain())
-            it.signingIdentities.convention(extension.signingIdentities)
-            it.passphrase.convention(extension.codeSigningIdentityFilePassphrase)
-            it.p12.convention(extension.codeSigningIdentityFile)
-            dependsOn(buildKeychain, unlockKeychain)
-            finalizedBy(removeKeychain, lockKeychain)
-        }
+        buildKeychain.finalizedBy(removeKeychain, lockKeychain)
 
         def shutdownHook = new Thread({
             System.err.println("shutdown hook called")
@@ -232,7 +245,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
-            it.dependsOn addKeychain, importCodeSigningIdentities, unlockKeychain
+            it.dependsOn addKeychain, buildKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
             it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
         }
@@ -242,7 +255,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XcodeArchive) {
-            it.dependsOn addKeychain, unlockKeychain, podInstall, importProvisioningProfiles
+            it.dependsOn addKeychain, unlockKeychain, podInstall, buildKeychain
             it.projectPath.set(project.provider({
                 def d = project.layout.buildDirectory.get()
                 if (podInstall.workspace.exists()) {

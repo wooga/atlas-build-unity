@@ -23,6 +23,7 @@ class ImportCodeSigningIdentitiesIntegrationSpec extends IOSBuildIntegrationSpec
     def setup() {
         buildFile << """
         task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
+            //inputKeychain = file('${buildKeychain.location}') 
             keychain = file('${buildKeychain.location}')
         }
         """.stripIndent()
@@ -158,43 +159,51 @@ class ImportCodeSigningIdentitiesIntegrationSpec extends IOSBuildIntegrationSpec
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
     }
 
-    @Unroll
-    def "#expectedBehavior task if #message"() {
-        given: "a test certificate"
+    def "is up-to-date when #reason"() {
+        given: "an invalid sighing certificate"
         def passphrase = "123456"
-        def identityName = "codesign test"
-        def cert = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: identityName], passphrase)
-
-        if (identityIsInKeychain) {
-            buildKeychain.importFile(cert, [passphrase: passphrase])
-        }
+        def cert = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: signingIdentity], passphrase)
+        def futureKeychain = new File(projectDir, "build/keychains/test.keychain")
+        assert !futureKeychain.exists()
 
         buildFile << """
         ${subjectUnderTestName} {
             passphrase = "${passphrase}"
             p12 = file('${cert.path}')
-            signingIdentity = "${identityName}"
+            signingIdentity = "${signingIdentity}"
             ignoreInvalidSigningIdentity = true
-            applicationAccessPaths = ${appAccessPathsValue} 
+            inputKeychain = file('${buildKeychain.location}') 
+            keychain = file('${futureKeychain.path}')
+            password = "123456" 
         }
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
-        result.wasSkipped(subjectUnderTestName) == wasSkipped
+        result.success
+        !result.wasSkipped(subjectUnderTestName)
+        futureKeychain.exists()
+
+        when:
+        result = runTasks(subjectUnderTestName)
+
+        then:
+        result.success
+        result.wasUpToDate(subjectUnderTestName)
+
+        when:
+        futureKeychain.delete()
+        result = runTasks(subjectUnderTestName)
+
+        then:
+        result.success
+        !result.wasUpToDate(subjectUnderTestName)
 
         where:
-        appAccessPaths        | identityIsInKeychain | wasSkipped
-        []                    | true                 | true
-        []                    | false                | false
-        ['/usr/bin/codesign'] | true                 | false
-        ['/usr/bin/codesign'] | false                | false
-        expectedBehavior = wasSkipped ? "skips" : "does not skip"
-        appAccessPathsMessage = appAccessPaths.empty ? "no app access paths are configured" : "app access path are configured"
-        message = identityIsInKeychain ? "identity is already in keychain and ${appAccessPathsMessage}" : "identity is not in keychain and ${appAccessPathsMessage}"
-        appAccessPathsValue = wrapValueBasedOnType(appAccessPaths, "List<String>")
+        signingIdentity            | _
+        "test signing: Wooga GmbH" | _
     }
 
     def "skips with NO-SOURCE when p12 file is not set"() {

@@ -25,92 +25,10 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.macOS.security.SecurityKeychainOutputSpec
 import wooga.gradle.macOS.security.internal.SecurityKeychainSettingsSpec
 
-class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements SecurityKeychainSettingsSpec {
-
-    final Property<String> fileName
-
-    void setFileName(String value) {
-        fileName.set(value)
-    }
-
-    void setFileName(Provider<String> value) {
-        fileName.set(value)
-    }
-
-    SecurityCreateKeychain fileName(String value) {
-        setFileName(value)
-        this
-    }
-
-    SecurityCreateKeychain fileName(Provider<String> value) {
-        setFileName(value)
-        this
-    }
-
-    final Property<String> baseName
-
-    void setBaseName(String value) {
-        baseName.set(value)
-    }
-
-    void setBaseName(Provider<String> value) {
-        baseName.set(value)
-    }
-
-    SecurityCreateKeychain baseName(String value) {
-        setBaseName(value)
-        this
-    }
-
-    SecurityCreateKeychain baseName(Provider<String> value) {
-        setBaseName(value)
-        this
-    }
-
-    final Property<String> extension
-
-    void setExtension(String value) {
-        extension.set(value)
-    }
-
-    void setExtension(Provider<String> value) {
-        extension.set(value)
-    }
-
-    SecurityCreateKeychain extension(String value) {
-        setExtension(value)
-        this
-    }
-
-    SecurityCreateKeychain extension(Provider<String> value) {
-        setExtension(value)
-        this
-    }
-
-    final DirectoryProperty destinationDir
-
-    void setDestinationDir(File value) {
-        destinationDir.set(value)
-    }
-
-    void setDestinationDir(Provider<Directory> value) {
-        destinationDir.set(value)
-    }
-
-    SecurityCreateKeychain destinationDir(File value) {
-        setDestinationDir(value)
-        this
-    }
-
-    SecurityCreateKeychain destinationDir(Provider<Directory> value) {
-        setDestinationDir(value)
-        this
-    }
-
-    @OutputFile
-    final Provider<RegularFile> keychain
+class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements SecurityKeychainSettingsSpec, SecurityKeychainOutputSpec {
 
     @Internal
     final Provider<RegularFile> tempLockFile
@@ -118,22 +36,19 @@ class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements 
     SecurityCreateKeychain() {
         lockKeychainWhenSleep.set(null)
         lockKeychainAfterTimeout.set(null)
-        baseName = project.objects.property(String)
-        extension = project.objects.property(String)
-        fileName = project.objects.property(String)
 
-        fileName.set(baseName.map({
+        fileName.convention(baseName.map({
             if (extension.present) {
                 return it + "." + extension.get()
             }
             it
         }))
 
-        destinationDir = project.objects.directoryProperty()
-        keychain = destinationDir.file(fileName)
         tempLockFile = destinationDir.file(fileName.map({
             getTempKeychainFileName(it)
         }))
+
+        keychain.convention(destinationDir.file(fileName))
 
         outputs.upToDateWhen {
             keychain.get().asFile.exists()
