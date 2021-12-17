@@ -26,7 +26,6 @@ import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
-import java.util.regex.Pattern
 
 class GradleBuildIntegrationSpec extends IntegrationSpec {
 
@@ -295,6 +294,82 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         'debug' | ['debug', 'error', 'info', 'lifecycle', 'quiet', 'warn'] | []
         'info'  | ['error', 'info', 'lifecycle', 'quiet', 'warn']          | ['debug']
         'quiet' | ['error', 'quiet']                                       | ['debug', 'info', 'lifecycle', 'warn']
+    }
+
+    @Unroll("#willPassMessage continueOnFailure flag on external build when #whenFinal")
+    def "passes continueOnFailure flag down to external build"() {
+        given: "build script with exernal execution task"
+        buildFile << """
+            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
+                dir = file("${escapedPath(externalDir.path)}")
+                tasks = ['failTask', 'successTask']
+            }
+        """.stripIndent()
+
+        if(continueFlagInBuildArguments) {
+            buildFile << """
+                externalGradle.buildArguments.add('--continue')
+            """.stripIndent()
+        }
+
+        if (continueOnFailureFlagSet) {
+            buildFile << """
+                externalGradle.setContinueOnFailure(${continueOnFailureFlagValue})
+            """.stripIndent()
+        }
+
+        and: "print custom log messages"
+        externalGradle << """
+            task failTask {
+                doLast {
+                    println "Running failTask"
+                    throw new TaskExecutionException(
+                    this, 
+                    new Exception('Fail task on purpose'))
+                }
+            }
+
+            task successTask {
+                doLast {
+                    println "Running successTask"
+                }
+            }
+        """.stripIndent()
+        def result
+        when:
+        if (continueFlagInStartParameter) {
+            result = runTasks('externalGradle', '--continue')
+        } else {
+            result = runTasks('externalGradle')
+        }
+
+        then:
+        outputContains(result, "Running failTask")
+        outputContains(result, "Running successTask") == passContinueOnFailureFlagToExternalGradle
+        !result.success
+
+        where:
+        continueFlagInBuildArguments | continueOnFailureFlagSet | continueOnFailureFlagValue | continueFlagInStartParameter
+        true                         | true                     | true                       | true
+        true                         | true                     | false                      | true
+        true                         | false                    | _                          | true
+        true                         | false                    | _                          | false
+        true                         | true                     | true                       | false
+        true                         | true                     | false                      | false
+        false                        | true                     | true                       | true
+        false                        | true                     | false                      | true
+        false                        | false                    | _                          | true
+        false                        | false                    | _                          | false
+        false                        | true                     | true                       | false
+        false                        | true                     | false                      | false
+
+        passContinueOnFailureFlagToExternalGradle = continueFlagInBuildArguments ? true : continueOnFailureFlagSet ? continueOnFailureFlagValue : continueFlagInStartParameter
+        willPassMessage = (passContinueOnFailureFlagToExternalGradle) ? "sets" : "will not set"
+        whenArguments = continueFlagInBuildArguments ? "'--continue' flag is set in build arguments" : ""
+        whenFlagSet = continueOnFailureFlagSet ? "'continueOnFailure' property is set with value '${continueOnFailureFlagValue}'" : ""
+        whenStartFlag = continueFlagInStartParameter ? "'--continue' flag is present in gradle start parameters" : ""
+        when = [whenArguments,(!whenFlagSet.isEmpty()) ? "and " + whenFlagSet : "", (!whenStartFlag.isEmpty()) ? "and " + whenStartFlag : ""].join(" ")
+        whenFinal = when.trim().isEmpty() ? "nothing is set" : when
     }
 
     @Unroll
