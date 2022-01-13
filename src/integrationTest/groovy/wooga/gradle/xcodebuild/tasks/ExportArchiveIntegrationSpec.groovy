@@ -66,7 +66,7 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
             return "▸ \u001B[39;1mExport\u001B[0m Succeeded"
         }
 
-        return """error: exportArchive: No signing certificate "iOS Development" found"""
+        "\u001B[31m❌  error: exportArchive: No signing certificate \"iOS Development\" found\u001B[0m"
     }
 
     @Override
@@ -75,7 +75,8 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         if (System.getenv("TEST_TEAM_ID")) {
             return "> Export Succeeded"
         }
-        return """error: exportArchive: No signing certificate "iOS Development" found"""
+        "[x] error: exportArchive: No signing certificate \"iOS Development\""
+
     }
 
     @Override
@@ -84,7 +85,7 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         if (System.getenv("TEST_TEAM_ID")) {
             return "▸ Export Succeeded"
         }
-        return """error: exportArchive: No signing certificate "iOS Development" found"""
+        return """❌  error: exportArchive: No signing certificate "iOS Development" found"""
     }
 
     File exportOptions
