@@ -19,7 +19,7 @@
 
 package wooga.gradle.xcodebuild.tasks
 
-import nebula.test.IntegrationBase
+
 import net.wooga.test.xcode.XcodeTestProject
 import org.junit.ClassRule
 import spock.lang.Requires
@@ -52,29 +52,16 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
     }
     """.stripIndent()
 
-
     String expectedPrettyColoredUnicodeLogOutput = """
         ▸ \u001B[39;1mLinking\u001B[0m xcodebuildPluginTest
-        ▸ \u001B[39;1mProcessing\u001B[0m Info.plist
-        ▸ \u001B[39;1mGenerating 'xcodebuildPluginTest.app.dSYM'\u001B[0m
-        ▸ \u001B[39;1mTouching\u001B[0m xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
-        ▸ \u001B[39;1mArchive\u001B[0m Succeeded
     """.stripIndent().trim()
 
     String expectedPrettyUnicodeLogOutput = """
         ▸ Linking xcodebuildPluginTest
-        ▸ Processing Info.plist
-        ▸ Generating 'xcodebuildPluginTest.app.dSYM'
-        ▸ Touching xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
-        ▸ Archive Succeeded
         """.stripIndent().trim()
 
     String expectedPrettyLogOutput = """
         > Linking xcodebuildPluginTest
-        > Processing Info.plist
-        > Generating 'xcodebuildPluginTest.app.dSYM'
-        > Touching xcodebuildPluginTest.app (in target 'xcodebuildPluginTest' from project 'xcodebuildPluginTest')
-        > Archive Succeeded
         """.stripIndent().trim()
 
     @Unroll

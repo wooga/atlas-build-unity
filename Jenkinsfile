@@ -25,7 +25,7 @@ withCredentials([
     ]
 
     def testLabels = [
-        'macos': 'xcode_12'
+        'macos': 'xcode'
     ]
     buildGradlePlugin platforms: ['macos','windows', 'linux'], coverallsToken: coveralls_token, sonarToken: sonar_token, testEnvironment:env, testLabels: testLabels
 }

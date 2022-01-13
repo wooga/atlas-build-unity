@@ -46,6 +46,7 @@ class XcodeBuildAction implements XcodeAction {
         TextStream handler = new ForkTextStream()
 
         def outStream = new LineBufferingOutputStream(handler)
+        def errStream = new LineBufferingOutputStream(handler)
         def logWriter = System.out.newPrintWriter()
         if (logFile) {
             logFile.parentFile.mkdirs()
@@ -65,6 +66,7 @@ class XcodeBuildAction implements XcodeAction {
                     executable "/usr/bin/xcrun"
                     args = buildArguments
                     standardOutput = outStream
+                    errorOutput = errStream
                 }
             }
         })

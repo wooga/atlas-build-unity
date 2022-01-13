@@ -16,10 +16,13 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+import com.wooga.gradle.test.run.result.GradleRunResult
 import spock.lang.Unroll
 import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeBuildIntegrationSpec
 import wooga.gradle.xcodebuild.config.BuildSettings
+
+import java.util.regex.Pattern
 
 abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpec {
 
@@ -216,8 +219,8 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
             expectedPrintOutput = expectedPrettyLogOutput
         }
 
-        outputContains(result, expectedPrintOutput)
-        outputContains(result, logFile.text) == !usePrettyPrint
+        def log = new GradleRunResult(result).getAt(testTaskName).getTaskLog()
+        log.contains(expectedPrintOutput)
 
         where:
         usePrettyPrint | useUniCode | colorize                           | logType                 | reason
