@@ -87,6 +87,23 @@ class GradleBuild extends DefaultTask implements SecretSpec {
         buildArguments
     }
 
+    private final Property<Boolean> continueOnFailure = project.objects.property(Boolean)
+
+    @Input
+    @Optional
+    Property<Boolean> getContinueOnFailure() {
+        continueOnFailure
+    }
+
+    void setContinueOnFailure(Provider<Boolean> value) {
+        continueOnFailure.set(value)
+    }
+
+    void setContinueOnFailure(Boolean value) {
+        continueOnFailure.set(value)
+    }
+
+
     private final Property<String> gradleVersion = project.objects.property(String.class)
 
     @Input
@@ -249,6 +266,10 @@ class GradleBuild extends DefaultTask implements SecretSpec {
                     args << '--quiet'
                     break
             }
+        }
+
+        if(!args.contains('--continue') && continueOnFailure.getOrElse(this.project.gradle.startParameter.continueOnFailure)) {
+            args << '--continue'
         }
 
         ProjectConnection connection = GradleConnector.newConnector()
