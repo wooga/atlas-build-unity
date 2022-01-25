@@ -255,7 +255,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         }
 
         def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XcodeArchive) {
-            it.dependsOn addKeychain, unlockKeychain, podInstall, buildKeychain
+            it.dependsOn addKeychain, unlockKeychain, importProvisioningProfiles, podInstall, buildKeychain
             it.projectPath.set(project.provider({
                 def d = project.layout.buildDirectory.get()
                 if (podInstall.workspace.exists()) {
