@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.2.3'
+    id 'net.wooga.plugins' version '2.2.4'
 }
 
 group 'net.wooga.gradle'
@@ -81,9 +81,6 @@ dependencies {
 
     integrationTestImplementation('com.wooga.spock.extensions:spock-macos-keychain-extension:(1,2]')
     integrationTestImplementation('commons-io:commons-io:2.6')
-
-    //TODO: https://github.com/wooga/atlas-plugins/issues/56
-    integrationTestImplementation sourceSets.test.output
 }
 
 configurations.all {
