@@ -117,47 +117,12 @@ class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
         versionCode
     }
 
-    private final Property<SecretKeySpec> secretsKey
-
-    @Optional
-    @Input
-    Property<SecretKeySpec> getSecretsKey() {
-        secretsKey
-    }
-
-    void setSecretsKey(SecretKeySpec key) {
-        secretsKey.set(key)
-    }
-
     private final MapProperty<String, ?> customArguments
 
     @Optional
     @Input
     MapProperty<String, ?> getCustomArguments() {
         customArguments
-    }
-
-    UnityBuildPlayerTask setSecretsKey(String keyFile) {
-        setSecretsKey(project.file(keyFile))
-    }
-
-    UnityBuildPlayerTask setSecretsKey(File keyFile) {
-        setSecretsKey(new SecretKeySpec(keyFile.bytes, "AES"))
-    }
-
-    @Override
-    UnityBuildPlayerTask secretsKey(SecretKeySpec key) {
-        setSecretsKey(key)
-    }
-
-    @Override
-    UnityBuildPlayerTask secretsKey(String keyFile) {
-        return setSecretsKey(keyFile)
-    }
-
-    @Override
-    UnityBuildPlayerTask secretsKey(File keyFile) {
-        return setSecretsKey(keyFile)
     }
 
     private final RegularFileProperty secretsFile
