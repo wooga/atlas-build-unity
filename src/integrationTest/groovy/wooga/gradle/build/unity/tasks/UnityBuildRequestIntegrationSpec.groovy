@@ -27,13 +27,12 @@ import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
 
-class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
+class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     @Shared
     File configFile;
 
     def setup() {
-        buildFile << "import wooga.gradle.build.unity.tasks.BasicBuildEngineUnityTask\n".stripIndent()
         configFile = createAppConfig("Assets/CustomConfigs")
     }
 
@@ -42,7 +41,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "UBSBuild"
             }
         """.stripIndent()
@@ -65,7 +64,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
             }
         """.stripIndent()
 
@@ -82,7 +81,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure custom unity entrypoint"() {
         given: "a export task with a custom unity entrypoint"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 exportMethodName = "${entrypoint}"
             }
@@ -102,7 +101,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure custom output directory"() {
         given: "a export task with a custom output directory"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 outputDirectory = file("${outputPath}")
             }
@@ -122,7 +121,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure custom log directory"() {
         given: "a export task with a custom log directory"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 logPath = "${logPath}"
             }
@@ -143,7 +142,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure custom configuration"() {
         given: "a export task with a custom output directory"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 config = "configName"
             }
@@ -161,7 +160,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure custom path to config file"() {
         given: "a export task with a custom output directory"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 configPath = ${wrapValueBasedOnType(configFile, File)}
             }
@@ -179,7 +178,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
     def "can configure extra arguments"() {
         given: "a export task custom configuration"
         buildFile << """
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
                 customArguments = ${extraArgsString}
             }
@@ -209,7 +208,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         given: "a basic export task"
         buildFile << """
             import javax.crypto.spec.SecretKeySpec
-            task("customExport", type: BasicBuildEngineUnityTask) {
+            task("customExport", type: ${UnityBuildRequest.class.name}) {
                 build = "mandatoryBuildName"
         """.stripIndent()
 
@@ -297,7 +296,7 @@ class BasicBuildEngineUnityTaskIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("exportCustom", type: BasicBuildEngineUnityTask) {
+            task("exportCustom", type: ${UnityBuildRequest.class.name}) {
                 build = "UBSBuild"
                 buildTarget = 'android'
             }
