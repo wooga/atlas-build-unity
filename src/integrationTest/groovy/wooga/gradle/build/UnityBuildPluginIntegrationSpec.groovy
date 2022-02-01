@@ -86,7 +86,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         and: "a custom appConfig without buildTarget"
         and: "a set ubs version"
         buildFile << "import wooga.gradle.build.unity.UBSVersion"
-        buildFile << (ubsVersion? """
+        buildFile << (ubsVersion ? """
             import wooga.gradle.build.unity.UBSVersion
             unityBuild.ubsCompatibilityVersion=UBSVersion.${ubsVersion.name()}
         """ : "")
@@ -99,9 +99,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun      | expectedMethod                                                     | expectedParameters                      | ubsVersion
-        "exportCustom" |"Wooga.UnifiedBuildSystem.Build.Export"                             | "${UnityCommandLineOption.buildTarget}" | null
-        "exportCustom" |"Wooga.UnifiedBuildSystem.Build.Export"                             | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v100
-        "exportCustom" |"Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment"  | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v120
+        "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | null
+        "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v100
+        "exportCustom" | "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment" | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v120
     }
 
     String convertPropertyToEnvName(String property) {
@@ -223,7 +223,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     public final EnvironmentVariables envs = new EnvironmentVariables()
 
     @Unroll
-    def "#taskToRun executes override default #override in #location with #value task"() {
+    def "#taskToRun executes #expectedHandlerTask when override default #override in #location with #value task"() {
         given: "a default gradle project with adjusted default platform/environment settings"
         def extensionKey = 'unityBuild.defaultAppConfigName'
         def propertiesKey = 'unityBuild.defaultAppConfigName'
@@ -240,7 +240,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         }
 
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
-        def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
+        def handleTaskName = "${expectedHandlerTask}"
 
         when:
         def result = runTasks(taskToRun)
@@ -260,6 +260,50 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "publish"  | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
         "publish"  | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
         "publish"  | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "export"   | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "export"   | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "export"   | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        expectedHandlerTask = taskToRun + expectedDefaultHandlerTask
+    }
+
+    @Unroll
+    def "skip export task action of task #taskToRun when skipExport is set in #location"() {
+        given: "a default gradle project with adjusted default platform/environment settings"
+        def extensionKey = 'unityBuild.skipExport'
+        def propertiesKey = 'unityBuild.skipExport'
+        def envKey = 'UNITY_BUILD_SKIP_EXPORT'
+
+        envs.clear(envKey)
+
+        if (location == "environment") {
+            envs.set(envKey, value.toString())
+        } else if (location == "properties") {
+            createFile("gradle.properties") << "${propertiesKey}=${value}"
+        } else {
+            buildFile << "${extensionKey} = ${wrapValueBasedOnType(value, Boolean)}"
+        }
+
+        def expectedExportTask = "export${expectedDefaultHandlerTask}"
+
+        when:
+        def result = runTasks(taskToRun)
+
+        then:
+        result.wasExecuted(expectedExportTask)
+        result.wasSkipped(expectedExportTask)
+        result.wasExecuted(taskToRun)
+
+        where:
+        override     | location      | value | expectedDefaultHandlerTask | taskToRun
+        "skipExport" | "environment" | true  | 'IosCi'                    | "assemble${expectedDefaultHandlerTask}"
+        "skipExport" | "properties"  | true  | 'AndroidCi'                | "assemble${expectedDefaultHandlerTask}"
+        "skipExport" | "extension"   | true  | 'WebGLCi'                  | "assemble${expectedDefaultHandlerTask}"
+        "skipExport" | "environment" | true  | 'IosCi'                    | "check${expectedDefaultHandlerTask}"
+        "skipExport" | "properties"  | true  | 'AndroidCi'                | "check${expectedDefaultHandlerTask}"
+        "skipExport" | "extension"   | true  | 'WebGLCi'                  | "check${expectedDefaultHandlerTask}"
+        "skipExport" | "environment" | true  | 'IosCi'                    | "publish${expectedDefaultHandlerTask}"
+        "skipExport" | "properties"  | true  | 'AndroidCi'                | "publish${expectedDefaultHandlerTask}"
+        "skipExport" | "extension"   | true  | 'WebGLCi'                  | "publish${expectedDefaultHandlerTask}"
     }
 
     @Unroll
@@ -312,11 +356,11 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.standardOutput.contains("version=$expectedValue;")
 
         where:
-        rawValue | type           | expectedValue
-        "1.0.0"  | "String"       | "1.0.0"
-        "1.1.0"  | "Closure"      | "1.1.0"
-        "1.1.1"  | "Callable"     | "1.1.1"
-        "2.0.0"  | "Object"       | "2.0.0"
+        rawValue | type       | expectedValue
+        "1.0.0"  | "String"   | "1.0.0"
+        "1.1.0"  | "Closure"  | "1.1.0"
+        "1.1.1"  | "Callable" | "1.1.1"
+        "2.0.0"  | "Object"   | "2.0.0"
 
         value = wrapValueBasedOnType(rawValue, type)
     }
@@ -359,7 +403,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasks("sonarqube", "--dry-run")
 
         then:
-        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        def tasksLine = result.standardOutput.readLines().find { it.startsWith("Tasks to be executed:") }
         tasksLine.contains(":test")
         tasksLine.contains(":sonarBuildUnity")
         tasksLine.indexOf(":sonarqube") > tasksLine.indexOf(":test")
@@ -383,7 +427,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasks("sonarBuildUnity", "test")
 
         then:
-        def tasksLine = result.standardOutput.readLines().find {it.startsWith("Tasks to be executed:")}
+        def tasksLine = result.standardOutput.readLines().find { it.startsWith("Tasks to be executed:") }
         tasksLine.indexOf(":sonarBuildUnity") > tasksLine.indexOf(":test")
     }
 }

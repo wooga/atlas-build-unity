@@ -51,6 +51,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     final RegularFileProperty exportInitScript
     final Property<File> exportBuildDirBase
     final Property<Boolean> cleanBuildDirBeforeBuild
+    final Property<Boolean> skipExport
 
     private final Property<String> appConfigSecretsKey
     Property<String> getAppConfigSecretsKey() {
@@ -85,6 +86,7 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
         exportInitScript = project.objects.fileProperty()
         exportBuildDirBase = project.objects.property(File)
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
+        skipExport = project.objects.property(Boolean)
         appConfigSecretsKey = project.objects.property(String)
     }
 
