@@ -31,9 +31,9 @@ import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.FetchSecrets
-import wooga.gradle.build.unity.tasks.BuildEngineUnityTask
 import wooga.gradle.build.unity.tasks.GradleBuild
-import wooga.gradle.build.unity.tasks.PlayerBuildEngineUnityTask
+import wooga.gradle.build.unity.tasks.UnityBuildEngineTask
+import wooga.gradle.build.unity.tasks.UnityBuildPlayer
 import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -41,7 +41,6 @@ import wooga.gradle.secrets.SecretsPluginExtension
 import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.UnityTask
-import wooga.gradle.unity.tasks.Unity
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
 class UnityBuildPlugin implements Plugin<Project> {
@@ -162,7 +161,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.inputFiles.from(inputFiles(t))
         })
 
-        project.tasks.withType(BuildEngineUnityTask).configureEach { t ->
+        project.tasks.withType(UnityBuildEngineTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map{new File(it, "project").path})
@@ -179,7 +178,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             }))
         }
 
-        project.tasks.withType(PlayerBuildEngineUnityTask).configureEach { task ->
+        project.tasks.withType(UnityBuildPlayer).configureEach { task ->
             task.build.convention("Player")
             def appConfigName = task.config.orElse(
                     task.configPath.asFile.map{FilenameUtils.removeExtension(it.name)}
@@ -232,8 +231,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 TaskProvider<? extends Task> exportTask;
                 def ubsVersion = extension.ubsCompatibilityVersion.getOrElse(UBSVersion.v100)
                 if(ubsVersion >= UBSVersion.v120) {
-                    exportTask = project.tasks.register("export${baseName}", PlayerBuildEngineUnityTask) {
-                        PlayerBuildEngineUnityTask t ->
+                    exportTask = project.tasks.register("export${baseName}", UnityBuildPlayer) {
+                        UnityBuildPlayer t ->
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
                             t.configPath.set(appConfig)
