@@ -39,8 +39,10 @@ interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
     RegularFileProperty getExportInitScript()
     Property<File> getExportBuildDirBase()
     Property<Boolean> getCleanBuildDirBeforeBuild()
+    Property<Boolean> getSkipExport()
     FileCollection getAppConfigs()
     DirectoryProperty getAssetsDir()
+
 
     ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
 

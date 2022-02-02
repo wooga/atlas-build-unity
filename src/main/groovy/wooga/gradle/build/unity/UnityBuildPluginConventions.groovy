@@ -69,6 +69,11 @@ class UnityBuildPluginConventions {
     static PropertyLookup CLEAN_BUILD_DIR_BEFORE_BUILD = new PropertyLookup("UNITY_BUILD_CLEAN_BUILD_DIR_BEFORE_BUILD", "unityBuild.cleanBuildDirBeforeBuild", false)
 
     /**
+     * Wheater to skip the default export task action
+     */
+    static PropertyLookup SKIP_EXPORT = new PropertyLookup("UNITY_BUILD_SKIP_EXPORT", "unityBuild.skipExport", false)
+
+    /**
      * The key used for looking up secrets in the AppConfig during a build
      */
     static PropertyLookup APP_CONFIG_SECRETS_KEY = new PropertyLookup("UNITY_BUILD_APP_CONFIG_SECRETS_KEY", "unityBuild.appConfigSecretsKey", "secretIds")
