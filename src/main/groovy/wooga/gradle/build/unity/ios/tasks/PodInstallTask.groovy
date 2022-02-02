@@ -1,48 +1,87 @@
 package wooga.gradle.build.unity.ios.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import wooga.gradle.build.unity.internal.ExecUtil
 
 class PodInstallTask extends DefaultTask {
-    private Object projectPath
+    private final DirectoryProperty projectDirectory = project.objects.directoryProperty()
 
     @Internal
-    File getProjectPath() {
-        project.files(projectPath).getSingleFile()
+    DirectoryProperty getProjectDirectory() {
+        projectDirectory
     }
 
-    void setProjectPath(Object path) {
-        projectPath = path
+    void setProjectDirectory(Provider<Directory> value) {
+        projectDirectory.set(value)
     }
 
-    PodInstallTask projectPath(Object path) {
-        setProjectPath(path)
-        this
+    void setProjectDirectory(File value) {
+        projectDirectory.set(value)
     }
 
     @InputFiles
     @SkipWhenEmpty
     protected FileCollection getInputFiles() {
-        def podFile = project.file("Podfile")
+        def podFile = projectDirectory.file("Podfile")
         def inputFiles = [podFile]
 
-        if(podFile.exists()) {
-            inputFiles << project.file( "Podfile.lock")
+        if (podFile.get().asFile.exists()) {
+            inputFiles << projectDirectory.file("Podfile.lock")
         }
 
-        project.files(inputFiles.findAll { it.exists() }.toArray())
+        project.files(inputFiles.findAll { it.get().asFile.exists() }.toArray())
     }
 
     @OutputDirectory
     protected getPodsDir() {
-        project.file("Pods")
+        projectDirectory.file("Pods")
     }
 
+    private final Property<String> xcodeWorkspaceFileName = project.objects.property(String)
+
+    @Input
+    Property<String> getXcodeWorkspaceFileName() {
+        xcodeWorkspaceFileName
+    }
+
+    void setXcodeWorkspaceFileName(Provider<String> value) {
+        xcodeWorkspaceFileName.set(value)
+    }
+
+    void setXcodeWorkspaceFileName(String value) {
+        xcodeWorkspaceFileName.set(value)
+    }
+
+    private final Property<String> xcodeProjectFileName = project.objects.property(String)
+
+    @Input
+    Property<String> getXcodeProjectFileName() {
+        xcodeProjectFileName
+    }
+
+    void setXcodeProjectFileName(Provider<String> value) {
+        xcodeProjectFileName.set(value)
+    }
+
+    void setXcodeProjectFileName(String value) {
+        xcodeProjectFileName.set(value)
+    }
+
+
     @OutputDirectory
-    File getWorkspace() {
-        project.file(getProjectPath().path.replaceAll('xcodeproj', 'xcworkspace'))
+    Provider<Directory> getXcodeWorkspacePath() {
+        projectDirectory.dir(xcodeWorkspaceFileName)
+    }
+
+    @InputDirectory
+    Provider<Directory> getXcodeProjectPath() {
+        projectDirectory.dir(xcodeProjectFileName)
     }
 
     @TaskAction
@@ -56,7 +95,9 @@ class PodInstallTask extends DefaultTask {
 
         project.exec {
             executable executablePath
+            workingDir
             args 'install'
+            args '--project-directory', projectDirectory.get().asFile.absolutePath
         }
     }
 }

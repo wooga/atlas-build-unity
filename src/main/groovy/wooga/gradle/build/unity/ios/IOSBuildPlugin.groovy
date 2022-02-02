@@ -25,7 +25,6 @@ import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
-import org.gradle.util.GUtil
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.ImportCodeSigningIdentities
 import wooga.gradle.build.unity.ios.tasks.PodInstallTask
@@ -33,7 +32,6 @@ import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
-import wooga.gradle.macOS.security.SecurityKeychainOutputSpec
 import wooga.gradle.macOS.security.tasks.*
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
@@ -61,12 +59,19 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
         def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
+
         extension.exportOptionsPlist.convention(project.layout.projectDirectory.file("exportOptions.plist"))
+        extension.preferWorkspace.convention(true)
+        extension.xcodeProjectDirectory.convention(project.layout.projectDirectory)
+        extension.projectBaseName.convention("Unity-iPhone")
+        extension.xcodeProjectPath.convention(extension.xcodeProjectDirectory.dir(extension.xcodeProjectFileName))
+        extension.xcodeWorkspacePath.convention(extension.xcodeProjectDirectory.dir(extension.xcodeWorkspaceFileName))
 
         //register some defaults
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
             void execute(XcodeArchive task) {
+                task.projectPath.convention(extension.projectPath)
                 task.clean(false)
                 task.scheme.set(extension.getScheme())
                 task.configuration.set(extension.getConfiguration())
@@ -156,36 +161,15 @@ class IOSBuildPlugin implements Plugin<Project> {
             }
         })
 
-        def projects = project.fileTree(project.projectDir) { it.include("*.xcodeproj/project.pbxproj") }.files
-        projects.each { File xcodeProject ->
-            def base = xcodeProject.parentFile
-            def taskNameBase = base.name.replace('.xcodeproj', '').toLowerCase().replaceAll(/[-_.]/, '')
-            if (projects.size() == 1) {
-                taskNameBase = ""
-            }
-            generateBuildTasks(taskNameBase, project, base, extension)
-        }
+        generateBuildTasks(project, extension)
     }
 
-    private static String maybeBaseName(String baseName, String taskName) {
-        if (GUtil.isTrue(taskName)) {
-            if (GUtil.isTrue(baseName)) {
-                return baseName + taskName.capitalize()
-            } else {
-                return taskName
-            }
-        }
-        return ""
-    }
-
-    void generateBuildTasks(final String baseName, final Project project, File xcodeProject, IOSBuildPluginExtension extension) {
+    void generateBuildTasks(final Project project, IOSBuildPluginExtension extension) {
         def tasks = project.tasks
 
-        def createKeychain = tasks.create(maybeBaseName(baseName, "createKeychain"), SecurityCreateKeychain) {
-            it.baseName = maybeBaseName(baseName, "build")
-        }
+        def createKeychain = tasks.create("createKeychain", SecurityCreateKeychain)
 
-        ImportCodeSigningIdentities buildKeychain = tasks.create(maybeBaseName(baseName, "importCodeSigningIdentities"), ImportCodeSigningIdentities) {
+        ImportCodeSigningIdentities buildKeychain = tasks.create("importCodeSigningIdentities", ImportCodeSigningIdentities) {
             it.inputKeychain.set(createKeychain.getKeychain())
             it.signingIdentities.convention(extension.signingIdentities)
             it.passphrase.convention(extension.codeSigningIdentityFilePassphrase)
@@ -193,27 +177,27 @@ class IOSBuildPlugin implements Plugin<Project> {
             dependsOn(createKeychain)
         }
 
-        def unlockKeychain = tasks.create(maybeBaseName(baseName, "unlockKeychain"), SecurityUnlockKeychain) {
+        def unlockKeychain = tasks.create("unlockKeychain", SecurityUnlockKeychain) {
             it.dependsOn(buildKeychain, buildKeychain)
             it.password.set(createKeychain.password)
             it.keychain.set(buildKeychain.keychain)
         }
 
-        def lockKeychain = tasks.create(maybeBaseName(baseName, "lockKeychain"), SecurityLockKeychain) {
+        def lockKeychain = tasks.create("lockKeychain", SecurityLockKeychain) {
             it.dependsOn(buildKeychain)
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
         }
 
-        def resetKeychains = tasks.create(maybeBaseName(baseName, "resetKeychains"), SecurityResetKeychainSearchList)
+        def resetKeychains = tasks.create("resetKeychains", SecurityResetKeychainSearchList)
 
-        def addKeychain = tasks.create(maybeBaseName(baseName, "addKeychain"), SecuritySetKeychainSearchList) {
+        def addKeychain = tasks.create("addKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
             it.action = SecuritySetKeychainSearchList.Action.add
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
             dependsOn(resetKeychains)
         }
 
-        def removeKeychain = tasks.create(maybeBaseName(baseName, "removeKeychain"), SecuritySetKeychainSearchList) {
+        def removeKeychain = tasks.create("removeKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
             it.action = SecuritySetKeychainSearchList.Action.remove
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
@@ -244,30 +228,26 @@ class IOSBuildPlugin implements Plugin<Project> {
             Runtime.getRuntime().removeShutdownHook(shutdownHook)
         }
 
-        def importProvisioningProfiles = tasks.create(maybeBaseName(baseName, "importProvisioningProfiles"), SighRenew) {
+        def importProvisioningProfiles = tasks.create("importProvisioningProfiles", SighRenew) {
             it.dependsOn addKeychain, buildKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.fileName.set("${maybeBaseName(baseName, 'signing')}.mobileprovision".toString())
+            it.fileName.set("${'signing'}.mobileprovision".toString())
         }
 
-        PodInstallTask podInstall = tasks.create(maybeBaseName(baseName, "podInstall"), PodInstallTask) {
-            it.projectPath = xcodeProject
+        PodInstallTask podInstall = tasks.create("podInstall", PodInstallTask) {
+            it.projectDirectory.set(extension.xcodeProjectDirectory)
+            it.xcodeWorkspaceFileName.set(extension.xcodeWorkspaceFileName)
+            it.xcodeProjectFileName.set(extension.xcodeProjectFileName)
         }
 
-        def xcodeArchive = tasks.create(maybeBaseName(baseName, "xcodeArchive"), XcodeArchive) {
+        def xcodeArchive = tasks.create("xcodeArchive", XcodeArchive) {
             it.dependsOn addKeychain, unlockKeychain, importProvisioningProfiles, podInstall, buildKeychain
-            it.projectPath.set(project.provider({
-                def d = project.layout.buildDirectory.get()
-                if (podInstall.workspace.exists()) {
-                    return d.dir(podInstall.workspace.path)
-                }
-                return d.dir(xcodeProject.path)
-            }))
+            it.projectPath.set(extension.projectPath)
             it.buildKeychain.set(buildKeychain.keychain)
         }
 
         ExportArchive xcodeExport = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX) as ExportArchive
-        def publishTestFlight = tasks.create(maybeBaseName(baseName, "publishTestFlight"), PilotUpload) {
+        def publishTestFlight = tasks.create("publishTestFlight", PilotUpload) {
             it.ipa.set(xcodeExport.outputPath)
             it.group = PublishingPlugin.PUBLISH_TASK_GROUP
             it.description = "Upload binary to TestFlightApp"
@@ -288,7 +268,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def archiveDSYM = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX) as ArchiveDebugSymbols
 
-        def collectOutputs = tasks.create(maybeBaseName(baseName, "collectOutputs"), Sync) {
+        def collectOutputs = tasks.create("collectOutputs", Sync) {
             it.from(xcodeExport, archiveDSYM)
             into(project.file("${project.buildDir}/outputs"))
         }

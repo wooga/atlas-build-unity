@@ -110,46 +110,6 @@ class IOSBuildPluginSpec extends ProjectSpec {
     }
 
     @Unroll()
-    def 'Creates xcode tasks #taskNames when project contains multiple xcode projects'() {
-        given: "a dummpy xcode project"
-        xcodeProjectNames.each {
-            xcProject = new File(projectDir, "${it}.xcodeproj")
-            xcProject.mkdirs()
-            xcProjectConfig = new File(xcProject, "project.pbxproj")
-            xcProjectConfig << ""
-        }
-
-        when:
-        project.plugins.apply(PLUGIN_NAME)
-        List<Task> tasks
-        project.afterEvaluate {
-            tasks = taskNames.collect { project.tasks.findByName(it) }
-        }
-
-        then:
-        project.evaluate()
-        tasks.every { taskType.isInstance(it) }
-
-        where:
-        taskName                     | taskType
-        "createKeychain"              | SecurityCreateKeychain
-        "importCodeSigningIdentities" | ImportCodeSigningIdentities
-        "unlockKeychain"             | SecurityUnlockKeychain
-        "lockKeychain"               | SecurityLockKeychain
-        "resetKeychains"             | SecurityResetKeychainSearchList
-        "addKeychain"                | SecuritySetKeychainSearchList
-        "removeKeychain"             | SecuritySetKeychainSearchList
-        "importProvisioningProfiles" | SighRenew
-        "xcodeArchive"               | XcodeArchive
-        "xcodeArchiveExport"         | ExportArchive
-        "xcodeArchiveDSYMs"          | ArchiveDebugSymbols
-        "publishTestFlight"          | PilotUpload
-
-        xcodeProjectNames = ["first", "second", "third"]
-        taskNames = ["first", "second", "third"].collect { it + taskName.capitalize() }
-    }
-
-    @Unroll()
     def "task #taskName #message on task #dependedTask when publishToTestflight is #publishToTestflight"() {
         given: "a dummpy xcode project"
         xcProject = new File(projectDir, "test.xcodeproj")

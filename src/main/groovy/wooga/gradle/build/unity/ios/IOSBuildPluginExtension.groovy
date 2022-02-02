@@ -3,6 +3,8 @@ package wooga.gradle.build.unity.ios
 import com.wooga.gradle.BaseSpec
 import org.gradle.api.Action
 import org.gradle.api.credentials.PasswordCredentials
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -213,4 +215,87 @@ trait IOSBuildPluginExtension extends BaseSpec {
         exportOptionsPlist.set(value)
     }
 
+    private final DirectoryProperty xcodeProjectPath = objects.directoryProperty()
+
+    DirectoryProperty getXcodeProjectPath() {
+        xcodeProjectPath
+    }
+
+    void setXcodeProjectPath(Provider<Directory> value) {
+        xcodeProjectPath.set(value)
+    }
+
+    void setXcodeProjectPath(File value) {
+        xcodeProjectPath.set(value)
+    }
+
+    private final DirectoryProperty xcodeWorkspacePath = objects.directoryProperty()
+
+    DirectoryProperty getXcodeWorkspacePath() {
+        xcodeWorkspacePath
+    }
+
+    void setXcodeWorkspacePath(Provider<Directory> value) {
+        xcodeWorkspacePath.set(value)
+    }
+
+    void setXcodeWorkspacePath(File value) {
+        xcodeWorkspacePath.set(value)
+    }
+
+    private final DirectoryProperty xcodeProjectDirectory = objects.directoryProperty()
+
+    DirectoryProperty getXcodeProjectDirectory() {
+        xcodeProjectDirectory
+    }
+
+    void setXcodeProjectDirectory(Provider<Directory> value) {
+        xcodeProjectDirectory.set(value)
+    }
+
+    void setXcodeProjectDirectory(File value) {
+        xcodeProjectDirectory.set(value)
+    }
+
+    private final Property<Boolean> preferWorkspace = objects.property(Boolean)
+
+    Property<Boolean> getPreferWorkspace() {
+        preferWorkspace
+    }
+
+    void setPreferWorkspace(Provider<Boolean> value) {
+        preferWorkspace.set(value)
+    }
+
+    void setPreferWorkspace(Boolean value) {
+        preferWorkspace.set(value)
+    }
+
+    private final Property<String> projectBaseName = objects.property(String)
+
+    Property<String> getProjectBaseName() {
+        projectBaseName
+    }
+
+    void setProjectBaseName(Provider<String> value) {
+        projectBaseName.set(value)
+    }
+
+    void setProjectBaseName(String value) {
+        projectBaseName.set(value)
+    }
+
+    Provider<String> xcodeProjectFileName = projectBaseName.map({ it + ".xcodeproj" })
+    Provider<String> xcodeWorkspaceFileName = projectBaseName.map({ it + ".xcworkspace" })
+    Provider<String> preferredProjectFileName = preferWorkspace.flatMap({
+        it ? xcodeWorkspaceFileName : xcodeProjectFileName
+    })
+
+    Provider<Directory> projectPath = xcodeProjectDirectory.flatMap({
+        def firstCheck = it.dir(preferredProjectFileName)
+        if (firstCheck.forUseAtConfigurationTime().get().asFile.exists()) {
+            return firstCheck
+        }
+        it.dir(xcodeProjectFileName)
+    })
 }
