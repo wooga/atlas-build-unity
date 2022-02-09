@@ -29,11 +29,13 @@ import spock.lang.Unroll
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
 import wooga.gradle.macOS.security.tasks.SecurityCreateKeychain
+import wooga.gradle.xcodebuild.config.ExportOptions
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.test.PropertyUtils.*
+import static wooga.gradle.xcodebuild.config.ExportOptions.DistributionManifest.distributionManifest
 
 @Requires({ os.macOs })
 class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
@@ -444,6 +446,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         "provisioningName"                  | toSetter(property)          | "value5"                                | _                                           | "String"                 | PropertyLocation.script
         "provisioningName"                  | toSetter(property)          | "value6"                                | _                                           | "Provider<String>"       | PropertyLocation.script
 
+        "adhoc"                             | _                           | false                                   | _                                           | "Boolean"                | PropertyLocation.script
         "adhoc"                             | property                    | true                                    | _                                           | "Boolean"                | PropertyLocation.script
         "adhoc"                             | property                    | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
         "adhoc"                             | toProviderSet(property)     | true                                    | _                                           | "Boolean"                | PropertyLocation.script
@@ -512,5 +515,130 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         reason = location.reason() + ((location == PropertyLocation.none) ? "" : "  with '$providedValue' ")
         escapedValue = (value instanceof String) ? escapedPath(value) : value
         invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
+    }
+
+    @Unroll
+    def "extension property :#property returns '#testValue' if value is provided through exportPlist with key '#plistOption' and value '#rawValue'"() {
+        given: "a exportOptions object"
+        def options = new ExportOptions()
+
+        and: "the test value set"
+        options.setProperty(plistOption, rawValue)
+
+        and: "a exportOptions.plist file"
+        def exportOptionsPlist = createFile("exportOptions.plist")
+        exportOptionsPlist << options.toXMLPropertyList()
+
+        when:
+        def query = new PropertyQueryTaskWriter("${extensionName}.${property}")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, testValue)
+
+        where:
+        property            | plistOption                    | rawValue                   || expectedValue
+        "adhoc"             | "method"                       | "ad-hoc"                   || true
+        "adhoc"             | "method"                       | "enterprise"               || false
+        "teamId"            | "teamID"                       | "testTeamId"               || _
+        "appIdentifier"     | "distributionBundleIdentifier" | "test.bundle.id"           || _
+        "signingIdentities" | "signingCertificate"           | "iPhone Test Distribution" || ["iPhone Test Distribution"]
+
+        testValue = (expectedValue == _) ? rawValue : expectedValue
+    }
+
+    @Unroll("can set #property with value of type #type in exportOptions plist file through export options object")
+    def "can set value in exportOptions plist file through export options object"() {
+        given: "a exportOptions object"
+        def options = new ExportOptions()
+        and: "the initial value set"
+        options.uploadBitcode = true
+        options.uploadSymbols = true
+        options.compileBitcode = true
+        options.teamID = "some value"
+        options.setProperty(property, initialValue)
+
+        and: "a exportOptions.plist file"
+        def exportOptionsPlist = createFile("exportOptions.plist")
+        exportOptionsPlist << options.toXMLPropertyList()
+
+        and: "a value set in export options"
+        buildFile << """
+        ${extensionName}.exportOptions {
+            ${property} = ${value} 
+        }
+        """.stripIndent()
+
+        when:
+        def query = new PropertyQueryTaskWriter("${extensionName}.exportOptions.get().${property}", "")
+        query.write(buildFile)
+
+        def query2 = new PropertyQueryTaskWriter("${extensionName}.exportOptionsPlist")
+        query2.write(buildFile)
+
+        def result = runTasksSuccessfully(query.taskName, query2.taskName)
+
+        then:
+        query.matches(result, testValue)
+
+        where:
+        property                                   | initialValue                     | rawValue                                                                                                                | type                                 || expectedValue
+        "compileBitcode"                           | false                            | true                                                                                                                    | "Boolean"                            || _
+        "destination"                              | "upload"                         | "export"                                                                                                                | "String"                             || _
+        "distributionBundleIdentifier"             | "com.wooga.test"                 | "net.wooga.foo"                                                                                                         | "String"                             || _
+        "embedOnDemandResourcesAssetPacksInBundle" | false                            | true                                                                                                                    | "Boolean"                            || _
+        "generateAppStoreInformation"              | true                             | false                                                                                                                   | "Boolean"                            || _
+        "iCloudContainerEnvironment"               | "Development"                    | "Production"                                                                                                            | "String"                             || _
+        "installerSigningCertificate"              | "Developer ID Installer"         | "Mac Installer Distribution"                                                                                            | "String"                             || _
+        "manifest"                                 | null                             | distributionManifest("http://some/url", "http://some/other/url", "http://yet/another/url")                              | "ExportOptions.DistributionManifest" || _
+        "manifest"                                 | null                             | ["appURL": "http://some/url", "displayImageURL": "http://some/other/url", "fullSizeImageURL": "http://yet/another/url"] | "Map"                                || distributionManifest(rawValue)
+        "method"                                   | "development"                    | "enterprise"                                                                                                            | "String"                             || _
+        "onDemandResourcesAssetPacksBaseURL"       | "http://some/url"                | "http://some/other/url"                                                                                                 | "String"                             || _
+        "provisioningProfiles"                     | ["com.wooga.app1": "provision1"] | ["com.wooga.app2": "provision2", "com.wooga.sticker1": "provision3"]                                                    | "Map"                                || _
+        "signingCertificate"                       | "Mac Developer"                  | "iOS Distribution"                                                                                                      | "String"                             || _
+        "signingStyle"                             | "manual"                         | "automatic"                                                                                                             | "String"                             || _
+        "stripSwiftSymbols"                        | false                            | true                                                                                                                    | "Boolean"                            || _
+        "teamID"                                   | "team1"                          | "team2"                                                                                                                 | "String"                             || _
+        "thinning"                                 | "<none>"                         | "<thin-for-all-variants>"                                                                                               | "String"                             || _
+        "uploadBitcode"                            | false                            | true                                                                                                                    | "Boolean"                            || _
+        "uploadSymbols"                            | false                            | true                                                                                                                    | "Boolean"                            || _
+
+        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
+        testValue = (expectedValue == _) ? rawValue : expectedValue
+    }
+
+    def "export options configuration actions are transactional"() {
+        given: "a exportOptions object"
+        def options = new ExportOptions()
+        and: "the initial value set"
+        options.teamID = "initial value"
+
+        and: "a exportOptions.plist file"
+        def exportOptionsPlist = createFile("exportOptions.plist")
+        exportOptionsPlist << options.toXMLPropertyList()
+
+        and: "a value set in export options"
+        buildFile << """
+        ${extensionName}.exportOptions {
+            teamID = teamID + " with a value appended" 
+        }
+        """.stripIndent()
+
+        and: "another value set in export options"
+        buildFile << """
+        ${extensionName}.exportOptions {
+            teamID = "a prefixed " + teamID 
+        }
+        """.stripIndent()
+
+        when:
+        def query = new PropertyQueryTaskWriter("${extensionName}.exportOptions.get().teamID", "")
+        query.write(buildFile)
+
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, "a prefixed initial value with a value appended")
     }
 }

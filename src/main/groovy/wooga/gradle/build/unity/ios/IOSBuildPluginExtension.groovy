@@ -11,6 +11,9 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import wooga.gradle.xcodebuild.config.ExportOptions
+
+import static org.gradle.util.ConfigureUtil.configureUsing
 
 trait IOSBuildPluginExtension extends BaseSpec {
 
@@ -200,19 +203,50 @@ trait IOSBuildPluginExtension extends BaseSpec {
         publishToTestFlight.set(value)
     }
 
-    private final RegularFileProperty exportOptionsPlist = objects.fileProperty()
+    private final RegularFileProperty baseExportOptionsPlist = objects.fileProperty()
+    private final RegularFileProperty finalExportOptionsPlist = objects.fileProperty()
 
-    @Input
     RegularFileProperty getExportOptionsPlist() {
-        exportOptionsPlist
+        baseExportOptionsPlist
+    }
+
+    Provider<RegularFile> getFinalExportOptionsPlist() {
+        finalExportOptionsPlist.present ? finalExportOptionsPlist : baseExportOptionsPlist
     }
 
     void setExportOptionsPlist(Provider<RegularFile> value) {
-        exportOptionsPlist.set(value)
+        baseExportOptionsPlist.set(value)
     }
 
     void setExportOptionsPlist(File value) {
-        exportOptionsPlist.set(value)
+        baseExportOptionsPlist.set(value)
+    }
+
+    Provider<ExportOptions> getExportOptions() {
+        baseExportOptionsPlist.map({
+            def options = it.asFile.exists() ? ExportOptions.open(it.asFile) : new ExportOptions()
+            exportOptionsActions.each {
+                it.execute(options)
+            }
+            options
+        })
+    }
+
+    private final List<Action<ExportOptions>> exportOptionsActions = []
+
+    void exportOptions(Action<ExportOptions> action) {
+        exportOptionsActions << action
+
+        finalExportOptionsPlist.set(layout.buildDirectory.file("export/exportOptions.plist").map({
+            def f = it.asFile
+            f.parentFile.mkdirs()
+            it.asFile.text = exportOptions.get().toXMLPropertyList()
+            it
+        }))
+    }
+
+    void exportOptions(Closure closure) {
+        exportOptions(configureUsing(closure))
     }
 
     private final DirectoryProperty xcodeProjectPath = objects.directoryProperty()
