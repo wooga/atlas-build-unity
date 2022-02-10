@@ -61,6 +61,11 @@ class IOSBuildPlugin implements Plugin<Project> {
         def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
 
         extension.exportOptionsPlist.convention(project.layout.projectDirectory.file("exportOptions.plist"))
+        extension.teamId.convention(extension.exportOptions.map({ it.teamID }))
+        extension.signingIdentities.convention(extension.exportOptions.map({it.signingCertificate ? [it.signingCertificate] : []}).orElse(project.provider({ new ArrayList<String>() })))
+        extension.adhoc.convention(extension.exportOptions.map({ it.method == 'ad-hoc' }).orElse(false))
+        extension.appIdentifier.convention(extension.exportOptions.map({ it.distributionBundleIdentifier }))
+
         extension.preferWorkspace.convention(true)
         extension.xcodeProjectDirectory.convention(project.layout.projectDirectory)
         extension.projectBaseName.convention("Unity-iPhone")
@@ -82,7 +87,7 @@ class IOSBuildPlugin implements Plugin<Project> {
         project.tasks.withType(ExportArchive.class, new Action<ExportArchive>() {
             @Override
             void execute(ExportArchive task) {
-                task.exportOptionsPlist.set(extension.exportOptionsPlist)
+                task.exportOptionsPlist.convention(extension.finalExportOptionsPlist)
             }
         })
 
@@ -128,7 +133,7 @@ class IOSBuildPlugin implements Plugin<Project> {
                 task.destinationDir.convention(project.layout.dir(project.provider({ task.getTemporaryDir() })))
                 task.provisioningName.convention(extension.getProvisioningName())
                 task.adhoc.convention(extension.adhoc)
-                task.fileName.convention('signing.mobileprovision')
+                task.fileName.convention(extension.appIdentifier.map({ "signing${it}.mobileprovision".toString() }).orElse("signing.mobileprovision"))
             }
         })
 

@@ -19,6 +19,8 @@ package wooga.gradle.xcodebuild.config
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static wooga.gradle.xcodebuild.config.ExportOptions.DistributionManifest.distributionManifest
+
 class ExportOptionsSpec extends Specification {
 
     def plistFile = """
@@ -51,6 +53,8 @@ class ExportOptionsSpec extends Specification {
           <key>assetPackManifestURL</key>
           <string>http://some/url</string>
       </dict>
+      <key>manageAppVersionAndBuildNumber</key>
+      <false/>
       <key>method</key>
       <string>development</string>
       <key>onDemandResourcesAssetPacksBaseURL</key>
@@ -128,6 +132,7 @@ class ExportOptionsSpec extends Specification {
         file1.iCloudContainerEnvironment == file2.iCloudContainerEnvironment
         file1.installerSigningCertificate == file2.installerSigningCertificate
         file1.manifest == file2.manifest
+        file1.manageAppVersionAndBuildNumber == file2.manageAppVersionAndBuildNumber
         file1.method == file2.method
         file1.onDemandResourcesAssetPacksBaseURL == file2.onDemandResourcesAssetPacksBaseURL
         file1.provisioningProfiles == file2.provisioningProfiles
@@ -161,12 +166,13 @@ class ExportOptionsSpec extends Specification {
         expect:
         with(options) {
             compileBitcode
-            destination == null
+            destination == 'export'
             distributionBundleIdentifier == null
             embedOnDemandResourcesAssetPacksInBundle
             !generateAppStoreInformation
             iCloudContainerEnvironment == null
             installerSigningCertificate == null
+            manageAppVersionAndBuildNumber
             manifest == null
             method == null
             onDemandResourcesAssetPacksBaseURL == null
@@ -278,7 +284,7 @@ class ExportOptionsSpec extends Specification {
         def emptyOptions = new ExportOptions()
 
         and: "a custom distribution manifest"
-        def distributionManifest = new ExportOptions.DistributionManifest(emptyOptions, appURL, displayImageURL, fullSizeImageURL, assetPackManifestURL)
+        def distributionManifest = new ExportOptions.DistributionManifest(appURL, displayImageURL, fullSizeImageURL, assetPackManifestURL)
 
         when:
         emptyOptions.manifest = distributionManifest
@@ -305,7 +311,7 @@ class ExportOptionsSpec extends Specification {
         def emptyOptions = new ExportOptions()
 
         and: "a custom distribution manifest"
-        def distributionManifest = new ExportOptions.DistributionManifest(emptyOptions, appURL, displayImageURL, fullSizeImageURL, assetPackManifestURL)
+        def distributionManifest = distributionManifest(appURL, displayImageURL, fullSizeImageURL, assetPackManifestURL)
 
         when:
         emptyOptions.manifest = distributionManifest
@@ -329,7 +335,7 @@ class ExportOptionsSpec extends Specification {
         def emptyOptions = new ExportOptions()
 
         and: "a custom distribution manifest"
-        def distributionManifest = new ExportOptions.DistributionManifest(emptyOptions, "test", "test", "test", "test")
+        def distributionManifest = distributionManifest("test", "test", "test", "test")
         emptyOptions.manifest = distributionManifest
 
         when:
