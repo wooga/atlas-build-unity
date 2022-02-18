@@ -97,7 +97,7 @@ class PodInstallTask extends DefaultTask {
             executable executablePath
             workingDir
             args 'install'
-            args '--project-directory', projectDirectory.get().asFile.absolutePath
+            args "--project-directory=${projectDirectory.get().asFile.absolutePath}"
         }
     }
 }
