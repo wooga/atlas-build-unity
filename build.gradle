@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '2.2.4'
+    id 'net.wooga.plugins' version '3.2.0'
     id 'net.wooga.snyk' version '0.10.0'
     id "net.wooga.snyk-gradle-plugin" version "0.2.0"
     id "net.wooga.cve-dependency-resolution" version "0.4.0"
@@ -31,23 +31,26 @@ plugins {
 group 'net.wooga.gradle'
 description = 'a Unity 3d build helper.'
 
-
 pluginBundle {
     website = 'https://wooga.github.io/atlas-unity/'
     vcsUrl = 'https://github.com/wooga/atlas-unity'
     tags = ['Unity3D']
+}
 
+gradlePlugin {
     plugins {
         unity {
             id = 'net.wooga.build-unity'
             displayName = 'Gradle Unity build plugin'
             description = 'This plugin provides tasks for exporting platform projects from Unity3D projects'
+            implementationClass = 'wooga.gradle.build.unity.UnityBuildPlugin'
         }
 
         ios {
             id = 'net.wooga.build-unity-ios'
             displayName = 'Gradle Unity iOS build plugin'
             description = 'This plugin provides tasks for building exported iOS projects from Unity3D'
+            implementationClass = 'wooga.gradle.build.unity.ios.IOSBuildPlugin'
         }
     }
 }
@@ -66,16 +69,16 @@ repositories {
 }
 
 dependencies {
-    implementation "gradle.plugin.net.wooga.gradle:atlas-dotnet-sonarqube:[0.2,0.3["
-    implementation "gradle.plugin.net.wooga.gradle:atlas-unity:[2.2,3["
+    implementation "net.wooga.gradle:dotnet-sonarqube:[0.4,0.5["
+    implementation "net.wooga.gradle:unity:[3,4["
     implementation 'com.wooga.gradle:gradle-commons:[1,2['
     implementation "org.gradle:gradle-tooling-api:+"
-    api 'gradle.plugin.net.wooga.gradle:atlas-secrets:1.0.0-rc.3'
+    api 'net.wooga.gradle:secrets:1.0.0-rc.6'
+    api 'software.amazon.awssdk:secretsmanager:[2.16,3['
     implementation 'xmlwise:xmlwise:1.2.11'
     implementation 'commons-codec:commons-codec:1.14'
-    api 'software.amazon.awssdk:secretsmanager:[2.16,3['
-    implementation('com.wooga.xcodebuild:xcpretty:[1,2[')
-    implementation'com.googlecode.plist:dd-plist:1.23'
+    implementation 'com.wooga.xcodebuild:xcpretty:[1,2['
+    implementation 'com.googlecode.plist:dd-plist:1.23'
     implementation 'org.apache.commons:commons-text:1.8'
     testImplementation('com.nagternal:spock-genesis:0.6.0') {
         // This library tries to pull groovy-all in version 2.4 which is not compatible with groovy-all 2.5

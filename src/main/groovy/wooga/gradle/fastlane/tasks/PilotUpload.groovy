@@ -25,6 +25,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.SkipWhenEmpty
 
 class PilotUpload extends AbstractFastlaneTask {
@@ -38,7 +39,12 @@ class PilotUpload extends AbstractFastlaneTask {
         project.files()
     }
 
-    final RegularFileProperty ipa
+    private final RegularFileProperty ipa
+
+    @Internal
+    RegularFileProperty getIpa() {
+        ipa
+    }
 
     void setIpa(File value) {
         ipa.set(value)
@@ -58,7 +64,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> appIdentifier
+    private final Property<String> appIdentifier
+
+    @Internal
+    Property<String> getAppIdentifier() {
+        appIdentifier
+    }
 
     void setAppIdentifier(String value) {
         appIdentifier.set(value)
@@ -78,7 +89,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> teamId
+    private final Property<String> teamId
+
+    @Internal
+    Property<String> getTeamId() {
+        teamId
+    }
 
     void setTeamId(String value) {
         teamId.set(value)
@@ -98,7 +114,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> teamName
+    private final Property<String> teamName
+
+    @Internal
+    Property<String> getTeamName() {
+        teamName
+    }
 
     void setTeamName(String value) {
         teamName.set(value)
@@ -118,7 +139,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> username
+    private final Property<String> username
+
+    @Internal
+    Property<String> getUsername() {
+        username
+    }
 
     void setUsername(String value) {
         username.set(value)
@@ -138,7 +164,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> password
+    private final Property<String> password
+
+    @Internal
+    Property<String> getPassword() {
+        password
+    }
 
     void setPassword(String value) {
         password.set(value)
@@ -158,7 +189,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> devPortalTeamId
+    private final Property<String> devPortalTeamId
+
+    @Internal
+    Property<String> getDevPortalTeamId() {
+        devPortalTeamId
+    }
 
     void setDevPortalTeamId(String value) {
         devPortalTeamId.set(value)
@@ -178,7 +214,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> itcProvider
+    private final Property<String> itcProvider
+
+    @Internal
+    Property<String> getItcProvider() {
+        itcProvider
+    }
 
     void setItcProvider(String value) {
         itcProvider.set(value)
@@ -198,7 +239,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<Boolean> skipSubmission
+    private final Property<Boolean> skipSubmission
+
+    @Internal
+    Property<Boolean> getSkipSubmission() {
+        skipSubmission
+    }
 
     void setSkipSubmission(Boolean value) {
         skipSubmission.set(value)
@@ -218,7 +264,12 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    final Property<Boolean> skipWaitingForBuildProcessing
+    private final Property<Boolean> skipWaitingForBuildProcessing
+
+    @Internal
+    Property<Boolean> getSkipWaitingForBuildProcessing() {
+        skipWaitingForBuildProcessing
+    }
 
     void setSkipWaitingForBuildProcessing(Boolean value) {
         skipWaitingForBuildProcessing.set(value)
@@ -238,11 +289,19 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    @Input
-    final Provider<List<String>> arguments
+    private final Provider<List<String>> arguments
 
     @Input
-    final Provider<Map<String, String>> environment
+    Provider<List<String>> getArguments() {
+        arguments
+    }
+
+    private final Provider<Map<String, String>> environment
+
+    @Input
+    Provider<Map<String, String>> getEnvironment() {
+        environment
+    }
 
     PilotUpload() {
         ipa = project.objects.fileProperty()
@@ -270,7 +329,7 @@ class PilotUpload extends AbstractFastlaneTask {
                 environment['FASTLANE_PASSWORD'] = password.get()
             }
 
-            environment
+            environment as Map<String, String>
         })
 
         arguments = project.provider({

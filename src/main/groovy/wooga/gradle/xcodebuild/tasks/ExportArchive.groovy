@@ -29,7 +29,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskDependency
 import wooga.gradle.xcodebuild.XcodeExportActionSpec
@@ -39,6 +41,7 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
 
     protected final PublishArtifact internalPublishArtifact
 
+    @Internal
     PublishArtifact getPublishArtifact() {
         internalPublishArtifact
     }

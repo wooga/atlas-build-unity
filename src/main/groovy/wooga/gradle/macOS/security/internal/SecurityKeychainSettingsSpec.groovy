@@ -19,11 +19,17 @@ package wooga.gradle.macOS.security.internal
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 
 trait SecurityKeychainSettingsSpec extends SecurityKeychainSpec {
 
-    final Property<Boolean> lockKeychainWhenSleep = project.objects.property(Boolean)
-    
+    private final Property<Boolean> lockKeychainWhenSleep = objects.property(Boolean)
+
+    @Internal
+    Property<Boolean> getLockKeychainWhenSleep() {
+        lockKeychainWhenSleep
+    }
+
     void setLockKeychainWhenSleep(Boolean value) {
         lockKeychainWhenSleep.set(value)
     }
@@ -42,7 +48,12 @@ trait SecurityKeychainSettingsSpec extends SecurityKeychainSpec {
         this
     }
     
-    final Property<Integer> lockKeychainAfterTimeout = project.objects.property(Integer)
+    private final Property<Integer> lockKeychainAfterTimeout = objects.property(Integer)
+
+    @Internal
+    Property<Integer> getLockKeychainAfterTimeout() {
+        lockKeychainAfterTimeout
+    }
     
     void setLockKeychainAfterTimeout(Integer value) {
         lockKeychainAfterTimeout.set(value)

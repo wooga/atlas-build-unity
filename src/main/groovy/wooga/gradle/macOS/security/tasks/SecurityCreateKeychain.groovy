@@ -30,8 +30,12 @@ import wooga.gradle.macOS.security.internal.SecurityKeychainSettingsSpec
 
 class SecurityCreateKeychain extends AbstractInteractiveSecurityTask implements SecurityKeychainSettingsSpec, SecurityKeychainOutputSpec {
 
+    private final Provider<RegularFile> tempLockFile
+
     @Internal
-    final Provider<RegularFile> tempLockFile
+    Provider<RegularFile> getTempLockFile() {
+        tempLockFile
+    }
 
     SecurityCreateKeychain() {
         lockKeychainWhenSleep.set(null)
