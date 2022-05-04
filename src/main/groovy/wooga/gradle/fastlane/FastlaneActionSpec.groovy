@@ -19,10 +19,14 @@ package wooga.gradle.fastlane
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 
 interface FastlaneActionSpec<T extends FastlaneActionSpec> {
+    @Input
     Provider<List<String>> getArguments()
 
+    @Internal
     Provider<Map<String, String>> getEnvironment()
 
     RegularFileProperty getLogFile()

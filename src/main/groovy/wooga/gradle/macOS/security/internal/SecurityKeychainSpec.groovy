@@ -16,16 +16,19 @@
 
 package wooga.gradle.macOS.security.internal
 
-import org.gradle.api.Project
+import com.wooga.gradle.BaseSpec
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 
-trait SecurityKeychainSpec {
-    abstract Project getProject()
+trait SecurityKeychainSpec extends BaseSpec {
+
+    private  final Property<String> password = objects.property(String)
 
     @Input
-    Property<String> password = project.objects.property(String)
+    Property<String> getPassword() {
+        password
+    }
 
     void setPassword(String value) {
         password.set(value)

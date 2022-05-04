@@ -24,11 +24,18 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.OutputFiles
 
 class SighRenew extends AbstractFastlaneTask {
 
-    final Property<String> appIdentifier
+    private final Property<String> appIdentifier
+
+    @Internal
+    Property<String> getAppIdentifier() {
+        appIdentifier
+    }
 
     void setAppIdentifier(String value) {
         appIdentifier.set(value)
@@ -48,7 +55,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> teamId
+    private final Property<String> teamId
+
+    @Internal
+    Property<String> getTeamId() {
+        teamId
+    }
 
     void setTeamId(String value) {
         teamId.set(value)
@@ -68,7 +80,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> teamName
+    private final Property<String> teamName
+
+    @Internal
+    Property<String> getTeamName() {
+        teamName
+    }
 
     void setTeamName(String value) {
         teamName.set(value)
@@ -88,7 +105,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> username
+    private final Property<String> username
+
+    @Internal
+    Property<String> getUsername() {
+        username
+    }
 
     void setUsername(String value) {
         username.set(value)
@@ -108,7 +130,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> password
+    private final Property<String> password
+
+    @Internal
+    Property<String> getPassword() {
+        password
+    }
 
     void setPassword(String value) {
         password.set(value)
@@ -128,7 +155,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> fileName
+    private final Property<String> fileName
+
+    @Internal
+    Property<String> getFileName() {
+        fileName
+    }
 
     void setFileName(String value) {
         fileName.set(value)
@@ -148,8 +180,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<String> provisioningName
+    private final Property<String> provisioningName
 
+    @Internal
+    Property<String> getProvisioningName() {
+        provisioningName
+    }
 
     void setProvisioningName(String value) {
         provisioningName.set(value)
@@ -169,7 +205,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<Boolean> adhoc
+    private final Property<Boolean> adhoc
+
+    @Internal
+    Property<Boolean> getAdhoc() {
+        adhoc
+    }
 
     void setAdhoc(Boolean value) {
         adhoc.set(value)
@@ -189,7 +230,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final DirectoryProperty destinationDir
+    private final DirectoryProperty destinationDir
+
+    @Internal
+    DirectoryProperty getDestinationDir() {
+        destinationDir
+    }
 
     void setDestinationDir(File value) {
         destinationDir.set(value)
@@ -209,7 +255,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<Boolean> readOnly
+    private final Property<Boolean> readOnly
+
+    @Internal
+    Property<Boolean> getReadOnly() {
+        readOnly
+    }
 
     void setReadOnly(Boolean value) {
         readOnly.set(value)
@@ -229,7 +280,12 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
-    final Property<Boolean> ignoreProfilesWithDifferentName
+    private final Property<Boolean> ignoreProfilesWithDifferentName
+
+    @Internal
+    Property<Boolean> getIgnoreProfilesWithDifferentName() {
+        ignoreProfilesWithDifferentName
+    }
 
     void setIgnoreProfilesWithDifferentName(Boolean value) {
         ignoreProfilesWithDifferentName.set(value)
@@ -249,14 +305,28 @@ class SighRenew extends AbstractFastlaneTask {
         this
     }
 
+    private final Provider<RegularFile> mobileProvisioningProfile
+
     @OutputFile
-    final Provider<RegularFile> mobileProvisioningProfile
+    Provider<RegularFile> getMobileProvisioningProfile() {
+        mobileProvisioningProfile
+    }
+
+    private final Provider<List<String>> arguments
 
     @Input
-    final Provider<List<String>> arguments
+    @Override
+    Provider<List<String>> getArguments() {
+        arguments
+    }
+
+    private final Provider<Map<String, String>> environment
 
     @Input
-    final Provider<Map<String, String>> environment
+    @Override
+    Provider<Map<String, String>> getEnvironment() {
+        environment
+    }
 
     SighRenew() {
         super()
@@ -280,7 +350,7 @@ class SighRenew extends AbstractFastlaneTask {
                 environment['FASTLANE_PASSWORD'] = password.get()
             }
 
-            environment
+            environment as Map<String, String>
         })
 
         outputs.upToDateWhen(new Spec<Task>() {

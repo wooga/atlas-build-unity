@@ -6,18 +6,25 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 
 abstract class AbstractSecurityKeychainSearchListTask<T extends AbstractSecurityKeychainSearchListTask> extends DefaultTask {
-    final Provider<MacOsKeychainSearchList> searchListProvider
 
+    private final Provider<MacOsKeychainSearchList> searchListProvider
+
+    @Internal
     MacOsKeychainSearchList getSearchList() {
         searchListProvider.get()
     }
 
+    private final Property<Domain> domain
+
     @Optional
     @Input
-    final Property<Domain> domain
+    Property<Domain> getDomain() {
+        domain
+    }
 
     void setDomain(Domain value) {
         domain.set(value)

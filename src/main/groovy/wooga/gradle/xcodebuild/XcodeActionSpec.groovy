@@ -24,11 +24,17 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Console
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import wooga.gradle.xcodebuild.config.BuildSettings
 
 interface XcodeActionSpec<T extends XcodeActionSpec> extends XcodeAction {
+    @Input
     Provider<List<String>> getBuildArguments()
 
+    @Console
     Property<ConsoleSettings> getConsoleSettings()
 
     void setConsoleSettings(ConsoleSettings value)
@@ -40,6 +46,7 @@ interface XcodeActionSpec<T extends XcodeActionSpec> extends XcodeAction {
     T consoleSettings(Closure configuration)
     T consoleSettings(Action<ConsoleSettings> action)
 
+    @Internal
     RegularFileProperty getLogFile()
 
     void setLogFile(File value)
@@ -55,6 +62,8 @@ interface XcodeActionSpec<T extends XcodeActionSpec> extends XcodeAction {
     T buildArguments(String... arguments)
     T buildArguments(Iterable<String> arguments)
 
+    @Input
+    @Optional
     Property<BuildSettings> getBuildSettings()
 
     void setBuildSettings(BuildSettings value)

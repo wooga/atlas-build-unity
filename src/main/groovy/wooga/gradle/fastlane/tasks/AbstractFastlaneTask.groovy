@@ -30,8 +30,12 @@ import wooga.gradle.fastlane.internal.FastlaneAction
 
 abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec {
 
+    private final RegularFileProperty logFile
+
     @Internal
-    final RegularFileProperty logFile
+    RegularFileProperty getLogFile() {
+        logFile
+    }
 
     @Override
     void setLogFile(File value) {
@@ -55,7 +59,12 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActio
         this
     }
 
-    final ListProperty<String> additionalArguments
+    private final ListProperty<String> additionalArguments
+
+    @Internal
+    ListProperty<String> getAdditionalArguments() {
+        additionalArguments
+    }
 
     @Override
     void setAdditionalArguments(Iterable<String> value) {
@@ -85,9 +94,13 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActio
         return this
     }
 
+    private final RegularFileProperty apiKeyPath
+
     @Optional
     @InputFile
-    final RegularFileProperty apiKeyPath
+    RegularFileProperty getApiKeyPath() {
+        apiKeyPath
+    }
 
     @Override
     void setApiKeyPath(File value) {
