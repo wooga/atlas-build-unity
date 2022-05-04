@@ -19,38 +19,12 @@ package wooga.gradle.fastlane.tasks
 import com.wooga.gradle.ArgumentsSpec
 import com.wooga.gradle.io.LogFileSpec
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.fastlane.FastlaneActionSpec
 import wooga.gradle.fastlane.internal.FastlaneAction
 
 abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec, ArgumentsSpec, LogFileSpec
 {
-//    AbstractFastlaneTask logFile(File value) {
-//        setLogFile(value)
-//        this
-//    }
-//
-//    AbstractFastlaneTask logFile(Provider<RegularFile> value) {
-//        setLogFile(value)
-//        this
-//    }
-//
-//    AbstractFastlaneTask apiKeyPath(File value) {
-//        setApiKeyPath(value)
-//        this
-//    }
-//
-//    AbstractFastlaneTask apiKeyPath(Provider<RegularFile> value) {
-//        setApiKeyPath(value)
-//        this
-//    }
 
     AbstractFastlaneTask() {
         additionalArguments = project.objects.listProperty(String)
