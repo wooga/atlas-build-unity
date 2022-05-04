@@ -21,6 +21,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 
+// TODO: Use the spec
 interface FastlanePluginExtension<T extends FastlanePluginExtension> {
     Property<String> getUsername()
 

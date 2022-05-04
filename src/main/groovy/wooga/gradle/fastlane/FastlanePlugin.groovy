@@ -79,6 +79,4 @@ class FastlanePlugin implements Plugin<Project> {
             }
         })
     }
-
-
 }

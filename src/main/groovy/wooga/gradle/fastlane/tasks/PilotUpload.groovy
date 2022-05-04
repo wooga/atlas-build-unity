@@ -35,23 +35,7 @@ class PilotUpload extends AbstractFastlaneTask implements PilotUploadSpec {
     }
 
     PilotUpload() {
-
-        outputs.upToDateWhen(new Spec<Task>() {
-            @Override
-            boolean isSatisfiedBy(Task task) {
-                false
-            }
-        })
-
-         environment.set(project.provider({
-            Map<String, String> environment = [:]
-
-            if (password.isPresent()) {
-                environment['FASTLANE_PASSWORD'] = password.get()
-            }
-
-            environment as Map<String, String>
-        }))
+        super()
 
         internalArguments = project.provider({
 

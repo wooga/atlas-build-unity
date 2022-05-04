@@ -1,6 +1,8 @@
 package wooga.gradle.fastlane.models
 
 import com.wooga.gradle.BaseSpec
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -8,7 +10,9 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SkipWhenEmpty
+
 
 trait PilotUploadSpec extends BaseSpec {
 
@@ -25,81 +29,6 @@ trait PilotUploadSpec extends BaseSpec {
 
     void setIpa(Provider<RegularFile> value) {
         ipa.set(value)
-    }
-
-    private final Property<String> appIdentifier = objects.property(String)
-
-    @Internal
-    Property<String> getAppIdentifier() {
-        appIdentifier
-    }
-
-    void setAppIdentifier(String value) {
-        appIdentifier.set(value)
-    }
-
-    void setAppIdentifier(Provider<String> value) {
-        appIdentifier.set(value)
-    }
-
-    private final Property<String> teamId = objects.property(String)
-
-    @Internal
-    Property<String> getTeamId() {
-        teamId
-    }
-
-    void setTeamId(String value) {
-        teamId.set(value)
-    }
-
-    void setTeamId(Provider<String> value) {
-        teamId.set(value)
-    }
-
-    private final Property<String> teamName = objects.property(String)
-
-    @Internal
-    Property<String> getTeamName() {
-        teamName
-    }
-
-    void setTeamName(String value) {
-        teamName.set(value)
-    }
-
-    void setTeamName(Provider<String> value) {
-        teamName.set(value)
-    }
-
-    private final Property<String> username = objects.property(String)
-
-    @Internal
-    Property<String> getUsername() {
-        username
-    }
-
-    void setUsername(String value) {
-        username.set(value)
-    }
-
-    void setUsername(Provider<String> value) {
-        username.set(value)
-    }
-
-    private final Property<String> password = objects.property(String)
-
-    @Internal
-    Property<String> getPassword() {
-        password
-    }
-
-    void setPassword(String value) {
-        password.set(value)
-    }
-
-    void setPassword(Provider<String> value) {
-        password.set(value)
     }
 
     private final Property<String> devPortalTeamId = objects.property(String)

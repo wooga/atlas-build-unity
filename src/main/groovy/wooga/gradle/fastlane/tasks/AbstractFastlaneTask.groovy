@@ -19,17 +19,36 @@ package wooga.gradle.fastlane.tasks
 import com.wooga.gradle.ArgumentsSpec
 import com.wooga.gradle.io.LogFileSpec
 import org.gradle.api.DefaultTask
+import org.gradle.api.Task
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskAction
-import wooga.gradle.fastlane.FastlaneActionSpec
-import wooga.gradle.fastlane.internal.FastlaneAction
 
-abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec, ArgumentsSpec, LogFileSpec
-{
+import wooga.gradle.fastlane.internal.FastlaneAction
+import wooga.gradle.fastlane.models.FastLaneSpec
+
+abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneSpec, ArgumentsSpec, LogFileSpec{
 
     AbstractFastlaneTask() {
         additionalArguments = project.objects.listProperty(String)
         logFile = project.objects.fileProperty()
         apiKeyPath = project.objects.fileProperty()
+
+        environment.set(project.provider({
+            Map<String, String> environment = [:]
+
+            if (password.isPresent()) {
+                environment['FASTLANE_PASSWORD'] = password.get()
+            }
+
+            environment as Map<String, String>
+        }))
+
+        outputs.upToDateWhen(new Spec<Task>() {
+            @Override
+            boolean isSatisfiedBy(Task task) {
+                false
+            }
+        })
     }
 
     @TaskAction
