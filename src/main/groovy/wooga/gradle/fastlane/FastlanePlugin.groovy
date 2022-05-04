@@ -50,10 +50,12 @@ class FastlanePlugin implements Plugin<Project> {
     }
 
     private static void configureTasks(Project project, extension) {
+
         project.tasks.withType(AbstractFastlaneTask, new Action<AbstractFastlaneTask>() {
             @Override
             void execute(AbstractFastlaneTask task) {
                 task.apiKeyPath.set(extension.apiKeyPath)
+                task.logToStdout.convention(true)
             }
         })
 

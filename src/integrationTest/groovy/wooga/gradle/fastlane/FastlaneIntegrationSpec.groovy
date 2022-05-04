@@ -16,11 +16,73 @@
 
 package wooga.gradle.fastlane
 
-abstract class FastlaneIntegrationSpec extends FastlaneSpec {
+import com.wooga.gradle.PlatformUtils
+
+import java.nio.file.Paths
+
+abstract class FastlaneIntegrationSpec extends IntegrationSpec {
+
+    File fastlaneMock
+    File fastlaneMockPath
+
+    def setupFastlaneMock() {
+        fastlaneMockPath = File.createTempDir("fastlane", "mock")
+
+        def path = System.getenv("PATH")
+        environmentVariables.clear("PATH")
+        String newPath = "${fastlaneMockPath}${File.pathSeparator}${path}"
+        environmentVariables.set("PATH", newPath)
+        assert System.getenv("PATH") == newPath
+
+
+        fastlaneMock = createFile("fastlane", fastlaneMockPath)
+        fastlaneMock.executable = true
+        fastlaneMock << """
+            #!/usr/bin/env bash
+            echo \$@
+            env
+        """.stripIndent()
+    }
+
     def setup() {
+        setupFastlaneMock()
         buildFile << """
-          group = 'test'
-          ${applyPlugin(FastlanePlugin)}
-       """.stripIndent()
+              group = 'test'
+              ${applyPlugin(FastlanePlugin)}
+           """.stripIndent()
+    }
+
+
+
+    // TODO: Replace with newer test API
+    // Should not use project dir if on not windows
+    Object substitutePath(Object str, Object subStr, String typeName) {
+
+        if (typeName != "File" && typeName != "Provider<RegularFile>") {
+            return str
+        }
+
+        def path = (String) subStr
+        if (path == null) {
+            return str
+        }
+
+        // If it's an absolute path starting from the current volume
+        if (Paths.get(path).isAbsolute()){
+            return str
+        }
+//        if (!PlatformUtils.windows && path.startsWith("/")){
+//            return str
+//        }
+//        else if (PlatformUtils.windows && path.startsWith("c:")) {
+//            return str
+//        }
+
+
+        def modifiedPath = typeName == "Provider<RegularFile>"
+            ? "/build${path}"
+            : path
+
+        str.replace(path, new File(projectDir, modifiedPath).path)
     }
 }
