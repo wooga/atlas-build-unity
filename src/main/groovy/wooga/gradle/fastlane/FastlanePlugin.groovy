@@ -39,10 +39,17 @@ class FastlanePlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(FastlanePluginExtension, EXTENSION_NAME, DefaultFastlanePluginExtension, project)
 
+        configureExtension(extension, project)
+        configureTasks(project, extension)
+    }
+
+    private static void configureExtension(FastlanePluginExtension extension, Project project) {
         extension.username.set(USERNAME_LOOKUP.getStringValueProvider(project))
         extension.password.set(PASSWORD_LOOKUP.getStringValueProvider(project))
         extension.apiKeyPath.set(API_KEY_PATH_LOOKUP.getFileValueProvider(project))
+    }
 
+    private static void configureTasks(Project project, extension) {
         project.tasks.withType(AbstractFastlaneTask, new Action<AbstractFastlaneTask>() {
             @Override
             void execute(AbstractFastlaneTask task) {
@@ -72,4 +79,6 @@ class FastlanePlugin implements Plugin<Project> {
             }
         })
     }
+
+
 }

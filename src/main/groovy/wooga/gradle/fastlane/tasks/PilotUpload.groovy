@@ -289,20 +289,6 @@ class PilotUpload extends AbstractFastlaneTask {
         this
     }
 
-    private final Provider<List<String>> arguments
-
-    @Input
-    Provider<List<String>> getArguments() {
-        arguments
-    }
-
-    private final Provider<Map<String, String>> environment
-
-    @Input
-    Provider<Map<String, String>> getEnvironment() {
-        environment
-    }
-
     PilotUpload() {
         ipa = project.objects.fileProperty()
         appIdentifier = project.objects.property(String)
@@ -322,7 +308,7 @@ class PilotUpload extends AbstractFastlaneTask {
             }
         })
 
-        environment = project.provider({
+         environment.set(project.provider({
             Map<String, String> environment = [:]
 
             if (password.isPresent()) {
@@ -330,9 +316,10 @@ class PilotUpload extends AbstractFastlaneTask {
             }
 
             environment as Map<String, String>
-        })
+        }))
 
-        arguments = project.provider({
+        internalArguments = project.provider({
+
             List<String> arguments = new ArrayList<String>()
 
             arguments << "pilot" << "upload"
@@ -368,12 +355,6 @@ class PilotUpload extends AbstractFastlaneTask {
             arguments << "--skip_submission" << (skipSubmission.present && skipSubmission.get()).toString()
             arguments << "--skip_waiting_for_build_processing" << (skipWaitingForBuildProcessing.present && skipWaitingForBuildProcessing.get()).toString()
             arguments << "--ipa" << ipa.get().asFile.path
-
-            if (additionalArguments.present) {
-                additionalArguments.get().each {
-                    arguments << it
-                }
-            }
 
             arguments
         })

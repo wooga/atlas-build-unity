@@ -16,6 +16,8 @@
 
 package wooga.gradle.fastlane.tasks
 
+import com.wooga.gradle.ArgumentsSpec
+import com.wooga.gradle.io.LogFileSpec
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -28,101 +30,27 @@ import org.gradle.api.tasks.TaskAction
 import wooga.gradle.fastlane.FastlaneActionSpec
 import wooga.gradle.fastlane.internal.FastlaneAction
 
-abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec {
-
-    private final RegularFileProperty logFile
-
-    @Internal
-    RegularFileProperty getLogFile() {
-        logFile
-    }
-
-    @Override
-    void setLogFile(File value) {
-        logFile.set(value)
-    }
-
-    @Override
-    void setLogFile(Provider<RegularFile> value) {
-        logFile.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask logFile(File value) {
-        setLogFile(value)
-        this
-    }
-
-    @Override
-    AbstractFastlaneTask logFile(Provider<RegularFile> value) {
-        setLogFile(value)
-        this
-    }
-
-    private final ListProperty<String> additionalArguments
-
-    @Internal
-    ListProperty<String> getAdditionalArguments() {
-        additionalArguments
-    }
-
-    @Override
-    void setAdditionalArguments(Iterable<String> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    void setAdditionalArguments(Provider<? extends Iterable<String>> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask argument(String argument) {
-        additionalArguments.add(argument)
-        return this
-    }
-
-    @Override
-    AbstractFastlaneTask arguments(String[] arguments) {
-        additionalArguments.addAll(project.provider({ arguments.toList() }))
-        return this
-    }
-
-    @Override
-    AbstractFastlaneTask arguments(Iterable arguments) {
-        additionalArguments.addAll(project.provider({ arguments }))
-        return this
-    }
-
-    private final RegularFileProperty apiKeyPath
-
-    @Optional
-    @InputFile
-    RegularFileProperty getApiKeyPath() {
-        apiKeyPath
-    }
-
-    @Override
-    void setApiKeyPath(File value) {
-        apiKeyPath.set(value)
-    }
-
-    @Override
-    void setApiKeyPath(Provider<RegularFile> value) {
-        apiKeyPath.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask apiKeyPath(File value) {
-        setApiKeyPath(value)
-        this
-    }
-
-    @Override
-    AbstractFastlaneTask apiKeyPath(Provider<RegularFile> value) {
-        setApiKeyPath(value)
-        this
-    }
+abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec, ArgumentsSpec, LogFileSpec
+{
+//    AbstractFastlaneTask logFile(File value) {
+//        setLogFile(value)
+//        this
+//    }
+//
+//    AbstractFastlaneTask logFile(Provider<RegularFile> value) {
+//        setLogFile(value)
+//        this
+//    }
+//
+//    AbstractFastlaneTask apiKeyPath(File value) {
+//        setApiKeyPath(value)
+//        this
+//    }
+//
+//    AbstractFastlaneTask apiKeyPath(Provider<RegularFile> value) {
+//        setApiKeyPath(value)
+//        this
+//    }
 
     AbstractFastlaneTask() {
         additionalArguments = project.objects.listProperty(String)

@@ -312,22 +312,6 @@ class SighRenew extends AbstractFastlaneTask {
         mobileProvisioningProfile
     }
 
-    private final Provider<List<String>> arguments
-
-    @Input
-    @Override
-    Provider<List<String>> getArguments() {
-        arguments
-    }
-
-    private final Provider<Map<String, String>> environment
-
-    @Input
-    @Override
-    Provider<Map<String, String>> getEnvironment() {
-        environment
-    }
-
     SighRenew() {
         super()
         appIdentifier = project.objects.property(String)
@@ -343,7 +327,7 @@ class SighRenew extends AbstractFastlaneTask {
         destinationDir = project.objects.directoryProperty()
         mobileProvisioningProfile = destinationDir.file(fileName)
 
-        environment = project.provider({
+        environment.set(project.provider({
             Map<String, String> environment = [:]
 
             if (password.isPresent()) {
@@ -351,7 +335,7 @@ class SighRenew extends AbstractFastlaneTask {
             }
 
             environment as Map<String, String>
-        })
+        }))
 
         outputs.upToDateWhen(new Spec<Task>() {
             @Override
@@ -360,7 +344,7 @@ class SighRenew extends AbstractFastlaneTask {
             }
         })
 
-        arguments = project.provider({
+        internalArguments = project.provider({
             List<String> arguments = new ArrayList<String>()
 
             arguments << "sigh" << "renew"
@@ -392,12 +376,6 @@ class SighRenew extends AbstractFastlaneTask {
             arguments << "--ignore_profiles_with_different_name" << (ignoreProfilesWithDifferentName.present && ignoreProfilesWithDifferentName.get()).toString()
             arguments << "--filename" << fileName.get()
             arguments << "--output_path" << destinationDir.get().asFile.path
-
-            if (additionalArguments.present) {
-                additionalArguments.get().each {
-                    arguments << it
-                }
-            }
 
             arguments
         })

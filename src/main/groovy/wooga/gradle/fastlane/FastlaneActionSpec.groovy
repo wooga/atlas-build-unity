@@ -16,39 +16,30 @@
 
 package wooga.gradle.fastlane
 
+import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 
-interface FastlaneActionSpec<T extends FastlaneActionSpec> {
-    @Input
-    Provider<List<String>> getArguments()
+trait FastlaneActionSpec extends BaseSpec {
 
-    @Internal
-    Provider<Map<String, String>> getEnvironment()
+    private final RegularFileProperty apiKeyPath = objects.fileProperty()
 
-    RegularFileProperty getLogFile()
+    @Optional
+    @InputFile
+    RegularFileProperty getApiKeyPath() {
+        apiKeyPath
+    }
 
-    void setLogFile(File value)
-    void setLogFile(Provider<RegularFile> value)
+    void setApiKeyPath(File value) {
+        apiKeyPath.set(value)
+    }
 
-    T logFile(File value)
-    T logFile(Provider<RegularFile> value)
-
-    void setAdditionalArguments(Iterable<String> value)
-    void setAdditionalArguments(Provider<? extends Iterable<String>> value)
-
-    T argument(String argument)
-    T arguments(String... arguments)
-    T arguments(Iterable<String> arguments)
-
-    RegularFileProperty getApiKeyPath()
-
-    void setApiKeyPath(File value)
-    void setApiKeyPath(Provider<RegularFile> value)
-
-    T apiKeyPath(File value)
-    T apiKeyPath(Provider<RegularFile> value)
+    void setApiKeyPath(Provider<RegularFile> value) {
+        apiKeyPath.set(value)
+    }
 }
