@@ -29,9 +29,6 @@ import wooga.gradle.fastlane.models.FastLaneSpec
 abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneSpec, ArgumentsSpec, LogFileSpec{
 
     AbstractFastlaneTask() {
-        additionalArguments = project.objects.listProperty(String)
-        logFile = project.objects.fileProperty()
-        apiKeyPath = project.objects.fileProperty()
 
         environment.set(project.provider({
             Map<String, String> environment = [:]
@@ -55,5 +52,27 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneSpec,
     protected void exec() {
         def action = new FastlaneAction(project, arguments.get(), environment.get(), logFile.getAsFile().getOrNull())
         action.exec()
+    }
+
+    void addDefaultArguments(List<String> arguments) {
+        if (username.present) {
+            arguments << "--username" << username.get()
+        }
+
+        if (teamId.present) {
+            arguments << "--team_id" << teamId.get()
+        }
+
+        if (teamName.present) {
+            arguments << "--team_name" << teamName.get()
+        }
+
+        if (appIdentifier.present) {
+            arguments << "--app_identifier" << appIdentifier.get()
+        }
+
+        if (apiKeyPath.present) {
+            arguments << "--api-key-path" << apiKeyPath.get().asFile.path
+        }
     }
 }

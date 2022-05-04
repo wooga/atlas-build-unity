@@ -40,26 +40,10 @@ class SighRenew extends AbstractFastlaneTask implements SighRenewSpec {
 
             arguments << "sigh" << "renew"
 
-            if (username.present) {
-                arguments << "--username" << username.get()
-            }
-
-            if (teamId.present) {
-                arguments << "--team_id" << teamId.get()
-            }
-
-            if (teamName.present) {
-                arguments << "--team_name" << teamName.get()
-            }
-
-            arguments << "--app_identifier" << appIdentifier.get()
+            addDefaultArguments(arguments)
 
             if (provisioningName.present) {
                 arguments << "--provisioning_name" << provisioningName.get()
-            }
-
-            if (apiKeyPath.present) {
-                arguments << "--api-key-path" << apiKeyPath.get().asFile.path
             }
 
             arguments << "--adhoc" << (adhoc.present && adhoc.get()).toString()
@@ -78,4 +62,6 @@ class SighRenew extends AbstractFastlaneTask implements SighRenewSpec {
             }
         })
     }
+
+
 }

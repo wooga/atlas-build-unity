@@ -16,9 +16,8 @@
 
 package wooga.gradle.fastlane.tasks
 
-import org.gradle.api.Task
+
 import org.gradle.api.file.FileCollection
-import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
 import wooga.gradle.fastlane.models.PilotUploadSpec
@@ -43,32 +42,13 @@ class PilotUpload extends AbstractFastlaneTask implements PilotUploadSpec {
 
             arguments << "pilot" << "upload"
 
-            if (username.present) {
-                arguments << "--username" << username.get()
-            }
-
-            if (teamId.present) {
-                arguments << "--team_id" << teamId.get()
-            }
-
-            if (teamName.present) {
-                arguments << "--team_name" << teamName.get()
-            }
+            addDefaultArguments(arguments)
 
             if (devPortalTeamId.present) {
                 arguments << "--dev_portal_team_id" << devPortalTeamId.get()
             }
-
-            if (appIdentifier.present) {
-                arguments << "--app_identifier" << appIdentifier.get()
-            }
-
             if (itcProvider.present) {
                 arguments << "--itc_provider" << itcProvider.get()
-            }
-
-            if (apiKeyPath.present) {
-                arguments << "--api-key-path" << apiKeyPath.get().asFile.path
             }
 
             arguments << "--skip_submission" << (skipSubmission.present && skipSubmission.get()).toString()
@@ -78,4 +58,6 @@ class PilotUpload extends AbstractFastlaneTask implements PilotUploadSpec {
             arguments
         })
     }
+
+
 }
