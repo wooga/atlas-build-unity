@@ -19,6 +19,9 @@
 
 package wooga.gradle.xcodebuild.internal
 
+import com.wooga.gradle.io.ForkTextStream
+import com.wooga.gradle.io.LineBufferingOutputStream
+import com.wooga.gradle.io.TextStream
 import com.wooga.xcodebuild.xcpretty.Printer
 import com.wooga.xcodebuild.xcpretty.formatters.Simple
 import org.gradle.api.Action
@@ -45,8 +48,8 @@ class XcodeBuildAction implements XcodeAction {
     ExecResult exec() {
         TextStream handler = new ForkTextStream()
 
-        def outStream = new LineBufferingOutputStream(handler)
-        def errStream = new LineBufferingOutputStream(handler)
+        def outStream = new LineBufferingOutputStream(handler, System.lineSeparator())
+        def errStream = new LineBufferingOutputStream(handler, System.lineSeparator())
         def logWriter = System.out.newPrintWriter()
         if (logFile) {
             logFile.parentFile.mkdirs()

@@ -39,14 +39,23 @@ class FastlanePlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(FastlanePluginExtension, EXTENSION_NAME, DefaultFastlanePluginExtension, project)
 
-        extension.username.set(USERNAME_LOOKUP.getStringValueProvider(project))
-        extension.password.set(PASSWORD_LOOKUP.getStringValueProvider(project))
-        extension.apiKeyPath.set(API_KEY_PATH_LOOKUP.getFileValueProvider(project))
+        configureExtension(extension, project)
+        configureTasks(project, extension)
+    }
+
+    private static void configureExtension(FastlanePluginExtension extension, Project project) {
+        extension.username.convention(USERNAME_LOOKUP.getStringValueProvider(project))
+        extension.password.convention(PASSWORD_LOOKUP.getStringValueProvider(project))
+        extension.apiKeyPath.convention(API_KEY_PATH_LOOKUP.getFileValueProvider(project))
+    }
+
+    private static void configureTasks(Project project, extension) {
 
         project.tasks.withType(AbstractFastlaneTask, new Action<AbstractFastlaneTask>() {
             @Override
             void execute(AbstractFastlaneTask task) {
-                task.apiKeyPath.set(extension.apiKeyPath)
+                task.apiKeyPath.convention(extension.apiKeyPath)
+                task.logToStdout.convention(true)
             }
         })
 
@@ -56,8 +65,8 @@ class FastlanePlugin implements Plugin<Project> {
                 task.group = FASTLANE_GROUP
                 task.description = "runs fastlane sigh renew"
 
-                task.username.set(extension.username)
-                task.password.set(extension.password)
+                task.username.convention(extension.username)
+                task.password.convention(extension.password)
             }
         })
 
@@ -67,8 +76,8 @@ class FastlanePlugin implements Plugin<Project> {
                 task.group = BasePlugin.UPLOAD_GROUP
                 task.description = "runs fastlane pilot upload"
 
-                task.username.set(extension.username)
-                task.password.set(extension.password)
+                task.username.convention(extension.username)
+                task.password.convention(extension.password)
             }
         })
     }
