@@ -11,67 +11,6 @@ import org.gradle.api.tasks.Optional
 
 trait FastLaneSpec extends BaseSpec {
 
-    private final RegularFileProperty apiKeyPath = objects.fileProperty()
-
-    @Optional
-    @InputFile
-    RegularFileProperty getApiKeyPath() {
-        apiKeyPath
-    }
-
-    void setApiKeyPath(File value) {
-        apiKeyPath.set(value)
-    }
-
-    void setApiKeyPath(Provider<RegularFile> value) {
-        apiKeyPath.set(value)
-    }
-
-    private final Property<String> appIdentifier = objects.property(String)
-
-    @Internal
-    Property<String> getAppIdentifier() {
-        appIdentifier
-    }
-
-    void setAppIdentifier(String value) {
-        appIdentifier.set(value)
-    }
-
-    void setAppIdentifier(Provider<String> value) {
-        appIdentifier.set(value)
-    }
-
-    private final Property<String> teamId = objects.property(String)
-
-    @Internal
-    Property<String> getTeamId() {
-        teamId
-    }
-
-    void setTeamId(String value) {
-        teamId.set(value)
-    }
-
-    void setTeamId(Provider<String> value) {
-        teamId.set(value)
-    }
-
-    private final Property<String> teamName = objects.property(String)
-
-    @Internal
-    Property<String> getTeamName() {
-        teamName
-    }
-
-    void setTeamName(String value) {
-        teamName.set(value)
-    }
-
-    void setTeamName(Provider<String> value) {
-        teamName.set(value)
-    }
-
     private final Property<String> username = objects.property(String)
 
     @Internal
@@ -100,5 +39,21 @@ trait FastLaneSpec extends BaseSpec {
 
     void setPassword(Provider<String> value) {
         password.set(value)
+    }
+
+    private final RegularFileProperty apiKeyPath = objects.fileProperty()
+
+    @Optional
+    @InputFile
+    RegularFileProperty getApiKeyPath() {
+        apiKeyPath
+    }
+
+    void setApiKeyPath(File value) {
+        apiKeyPath.set(value)
+    }
+
+    void setApiKeyPath(Provider<RegularFile> value) {
+        apiKeyPath.set(value)
     }
 }

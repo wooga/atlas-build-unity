@@ -24,9 +24,9 @@ import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskAction
 
 import wooga.gradle.fastlane.internal.FastlaneAction
-import wooga.gradle.fastlane.models.FastLaneSpec
+import wooga.gradle.fastlane.models.FastLaneTaskSpec
 
-abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneSpec, ArgumentsSpec, LogFileSpec{
+abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskSpec, ArgumentsSpec, LogFileSpec{
 
     AbstractFastlaneTask() {
 
