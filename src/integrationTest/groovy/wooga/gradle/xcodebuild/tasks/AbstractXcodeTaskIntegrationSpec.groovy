@@ -16,98 +16,72 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+
+import com.wooga.gradle.test.TaskIntegrationSpec
+import com.wooga.gradle.test.queries.TestValue
 import com.wooga.gradle.test.run.result.GradleRunResult
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
+import spock.lang.Requires
 import spock.lang.Unroll
 import wooga.gradle.xcodebuild.ConsoleSettings
 import wooga.gradle.xcodebuild.XcodeBuildIntegrationSpec
-import wooga.gradle.xcodebuild.config.BuildSettings
 
-import java.util.regex.Pattern
-
-abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpec {
-
-    abstract String getTestTaskName()
-
-    abstract Class getTaskType()
+abstract class AbstractXcodeTaskIntegrationSpec<T extends AbstractXcodeTask> extends XcodeBuildIntegrationSpec
+    implements TaskIntegrationSpec<T> {
 
     abstract String getWorkingXcodebuildTaskConfig()
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property #property with #method and type #type base"() {
-        given: "a custom xcodebuild task"
-        buildFile << """
-            task("${testTaskName}", type: ${taskType.name})
-        """.stripIndent()
 
-        and: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.${invocation}
-        """.stripIndent()
+        given:
+        addMockTask(true)
 
         when:
-        def result = runTasksSuccessfully("readValue")
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        outputContains(result, "property: " + testValue.toString())
+        query.matches(value)
 
         where:
-        property          | method                | rawValue                                                    | expectedValue                                                          | type
-        "logFile"         | "logFile"             | "/some/path/test1.log"                                      | _                                                                      | "File"
-        "logFile"         | "logFile"             | "/some/path/test2.log"                                      | _                                                                      | "Provider<RegularFile>"
-        "logFile"         | "logFile.set"         | "/some/path/test3.log"                                      | _                                                                      | "File"
-        "logFile"         | "logFile.set"         | "/some/path/test4.log"                                      | _                                                                      | "Provider<RegularFile>"
-        "logFile"         | "setLogFile"          | "/some/path/test5.log"                                      | _                                                                      | "File"
-        "logFile"         | "setLogFile"          | "/some/path/test6.log"                                      | _                                                                      | "Provider<RegularFile>"
-        "consoleSettings" | "consoleSettings.set" | "plain"                                                     | "ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}"  | "ConsoleSettings"
-        "consoleSettings" | "consoleSettings.set" | "rich"                                                      | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}"  | "Provider<ConsoleSettings>"
-        "consoleSettings" | "consoleSettings"     | "verbose"                                                   | "ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}" | "ConsoleSettings"
-        "consoleSettings" | "consoleSettings"     | "auto"                                                      | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}"    | "Provider<ConsoleSettings>"
-        "buildSettings"   | "buildSettings"       | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
-        "buildSettings"   | "buildSettings"       | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
-        "buildSettings"   | "buildSettings.set"   | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
-        "buildSettings"   | "buildSettings.set"   | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
-        "buildSettings"   | "setBuildSettings"    | '[SOME_SETTING=some/value]'                                 | _                                                                      | "BuildSettings"
-        "buildSettings"   | "setBuildSettings"    | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]' | _                                                                      | "Provider<BuildSettings>"
+        property          | method                            | value                                                                                                   | type
+        "logFile"         | PropertySetInvocation.method      | osPath("/some/path/test1.log")                                                                          | "File"
+        "logFile"         | PropertySetInvocation.method      | osPath("/some/path/test2.log")                                                                          | "Provider<RegularFile>"
+        "logFile"         | PropertySetInvocation.providerSet | osPath("/some/path/test3.log")                                                                          | "File"
+        "logFile"         | PropertySetInvocation.providerSet | osPath("/some/path/test4.log")                                                                          | "Provider<RegularFile>"
+        "logFile"         | PropertySetInvocation.setter      | osPath("/some/path/test5.log")                                                                          | "File"
+        "logFile"         | PropertySetInvocation.setter      | osPath("/some/path/test6.log")                                                                          | "Provider<RegularFile>"
+        "consoleSettings" | PropertySetInvocation.providerSet | TestValue.set("plain").expect("ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}")    | "ConsoleSettings"
+        "consoleSettings" | PropertySetInvocation.providerSet | TestValue.set("rich").expect("ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}")     | "Provider<ConsoleSettings>"
+        "consoleSettings" | PropertySetInvocation.method      | TestValue.set("verbose").expect("ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}") | "ConsoleSettings"
+        "consoleSettings" | PropertySetInvocation.method      | TestValue.set("auto").expect("ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}")       | "Provider<ConsoleSettings>"
+        "buildSettings"   | PropertySetInvocation.method      | '[SOME_SETTING=some/value]'                                                                             | "BuildSettings"
+        "buildSettings"   | PropertySetInvocation.method      | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]'                                             | "Provider<BuildSettings>"
+        "buildSettings"   | PropertySetInvocation.providerSet | '[SOME_SETTING=some/value]'                                                                             | "BuildSettings"
+        "buildSettings"   | PropertySetInvocation.providerSet | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]'                                             | "Provider<BuildSettings>"
+        "buildSettings"   | PropertySetInvocation.setter      | '[SOME_SETTING=some/value]'                                                                             | "BuildSettings"
+        "buildSettings"   | PropertySetInvocation.setter      | '[MORE_SETTINGS=some/other/value, SOME_SETTING=some/value]'                                             | "Provider<BuildSettings>"
 
-        value = wrapValueBasedOnType(rawValue, type, { type ->
-            switch (type) {
-                case ConsoleSettings.class.simpleName:
-                    return "${ConsoleSettings.class.name}.fromGradleOutput(org.gradle.api.logging.configuration.ConsoleOutput.${rawValue.toString().capitalize()})"
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(value, type)
+            .use(method)
+            .serialize(wrapValueFallback)
 
-                case BuildSettings.class.simpleName:
-                    return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
-                        List<String> parts = it.split("=")
-                        ".put('${parts[0].trim()}', '${parts[1].trim()}')"
-                    }).join("")
-                default:
-                    return rawValue
-            }
-        })
-        invocation = (method == _) ? "${property} = ${value}" : "${method}(${value})"
-        testValue = (expectedValue == _) ? rawValue : expectedValue
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll("can configure console settings with #useConfigureBlockMessage #invocation and type #type")
     def "can configure console settings"() {
         given: "a custom xcodebuild task"
-        buildFile << """
-            task("${testTaskName}", type: ${taskType.name})
-        """.stripIndent()
+        addMockTask(true)
 
         and: "a task to read back the value"
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("property: " + ${testTaskName}.consoleSettings.get().${property})
+                    println("property: " + ${subjectUnderTestName}.consoleSettings.get().${property})
                 }
             }
         """.stripIndent()
@@ -115,12 +89,12 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         and: "a set property"
         if (useConfigureBlock) {
             buildFile << """
-            ${testTaskName}.consoleSettings {
+            ${subjectUnderTestName}.consoleSettings {
                 ${invocation}
             }
             """.stripIndent()
         } else {
-            buildFile << "${testTaskName}.consoleSettings.get().${invocation}"
+            buildFile << "${subjectUnderTestName}.consoleSettings.get().${invocation}"
         }
 
         when:
@@ -166,16 +140,17 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         expectedValue = rawValue
     }
 
+    @Requires({ os.macOs })
     def "task #testTaskName writes log output"() {
         given:
         buildFile << workingXcodebuildTaskConfig
 
         and: "a future log file"
-        def logFile = new File(projectDir, "build/logs/${testTaskName}.log")
+        def logFile = new File(projectDir, "build/logs/${subjectUnderTestName}.log")
         assert !logFile.exists()
 
         when:
-        runTasks(testTaskName)
+        runTasks(subjectUnderTestName)
 
         then:
         logFile.exists()
@@ -188,12 +163,13 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
 
     abstract String getExpectedPrettyColoredUnicodeLogOutput()
 
+    @Requires({ os.macOs })
     @Unroll("prints #logType xcodebuild log to console when #reason")
     def "prints xcodebuild log to console"() {
         given: "export task with pretty print enabled"
         buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        ${testTaskName} {
+        ${subjectUnderTestName} {
             consoleSettings {
                 prettyPrint = ${usePrettyPrint}
                 useUnicode = ${useUniCode}
@@ -203,11 +179,11 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         """.stripIndent()
 
         and: "a future log file"
-        def logFile = new File(projectDir, "build/logs/${testTaskName}.log")
+        def logFile = new File(projectDir, "build/logs/${subjectUnderTestName}.log")
         assert !logFile.exists()
 
         when:
-        def result = runTasks(testTaskName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         def expectedPrintOutput = ""
@@ -219,7 +195,7 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
             expectedPrintOutput = expectedPrettyLogOutput
         }
 
-        def log = new GradleRunResult(result).getAt(testTaskName).getTaskLog()
+        def log = new GradleRunResult(result).getAt(subjectUnderTestName).getTaskLog()
         log.contains(expectedPrintOutput)
 
         where:
@@ -231,19 +207,20 @@ abstract class AbstractXcodeTaskIntegrationSpec extends XcodeBuildIntegrationSpe
         false          | false      | ConsoleSettings.ColorOption.never  | "full ascii"            | "pretty print and unicode is disabled"
     }
 
+    @Requires({ os.macOs })
     def "can provide additional build arguments"() {
         given:
         buildFile << workingXcodebuildTaskConfig
 
         and: "some custom arguments"
         buildFile << """
-        ${testTaskName}.buildArgument("-quiet")
-        ${testTaskName}.buildArguments("-enableAddressSanitizer", "YES")
-        ${testTaskName}.buildArguments("-enableThreadSanitizer", "NO")
+        ${subjectUnderTestName}.argument("-quiet")
+        ${subjectUnderTestName}.arguments("-enableAddressSanitizer", "YES")
+        ${subjectUnderTestName}.arguments("-enableThreadSanitizer", "NO")
         """.stripIndent()
 
         when:
-        def result = runTasks(testTaskName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         outputContains(result, "-quiet")

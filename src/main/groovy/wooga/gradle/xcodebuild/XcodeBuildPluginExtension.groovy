@@ -16,57 +16,66 @@
 
 package wooga.gradle.xcodebuild
 
-import org.gradle.api.Action
+
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 
-interface XcodeBuildPluginExtension<T extends XcodeBuildPluginExtension> {
-    DirectoryProperty getLogsDir()
+trait XcodeBuildPluginExtension extends XcodeSpec {
 
-    void setLogsDir(File value)
+    private final DirectoryProperty logsDir = objects.directoryProperty()
 
-    void setLogsDir(Provider<Directory> value)
+    DirectoryProperty getLogsDir() {
+        logsDir
+    }
 
-    T logsDir(File value)
+    void setLogsDir(File value) {
+        logsDir.set(value)
+    }
 
-    T logsDir(Provider<Directory> value)
+    void setLogsDir(Provider<Directory> value) {
+        logsDir.set(value)
+    }
 
-    DirectoryProperty getDerivedDataPath()
+    final DirectoryProperty derivedDataPath = objects.directoryProperty()
 
-    void setDerivedDataPath(File value)
+    DirectoryProperty getDerivedDataPath() {
+        derivedDataPath
+    }
 
-    void setDerivedDataPath(Provider<Directory> value)
+    void setDerivedDataPath(File value) {
+        derivedDataPath.set(value)
+    }
 
-    T derivedDataPath(File value)
+    void setDerivedDataPath(Provider<Directory> value) {
+        derivedDataPath.set(value)
+    }
 
-    T derivedDataPath(Provider<Directory> value)
+    final DirectoryProperty xarchivesDir = objects.directoryProperty()
 
-    DirectoryProperty  getXarchivesDir()
+    DirectoryProperty getXarchivesDir() {
+        xarchivesDir
+    }
 
-    void setXarchivesDir(File value)
-    void setXarchivesDir(Provider<Directory> value)
+    void setXarchivesDir(File value) {
+        xarchivesDir.set(value)
+    }
 
-    T xarchivesDir(File value)
-    T xarchivesDir(Provider<Directory> value)
+    void setXarchivesDir(Provider<Directory> value) {
+        xarchivesDir.set(value)
+    }
 
-    DirectoryProperty getDebugSymbolsDir()
+    final DirectoryProperty debugSymbolsDir = objects.directoryProperty()
 
-    void setDebugSymbolsDir(File value)
-    void setDebugSymbolsDir(Provider<Directory> value)
+    DirectoryProperty getDebugSymbolsDir() {
+        debugSymbolsDir
+    }
 
-    T debugSymbolsDir(File value)
-    T debugSymbolsDir(Provider<Directory> value)
+    void setDebugSymbolsDir(File value) {
+        debugSymbolsDir.set(value)
+    }
 
-    Property<ConsoleSettings> getConsoleSettings()
-
-    void setConsoleSettings(ConsoleSettings value)
-    void setConsoleSettings(Provider<ConsoleSettings> value)
-
-    T consoleSettings(ConsoleSettings value)
-    T consoleSettings(Provider<ConsoleSettings> value)
-
-    T consoleSettings(Closure configuration)
-    T consoleSettings(Action<ConsoleSettings> action)
+    void setDebugSymbolsDir(Provider<Directory> value) {
+        debugSymbolsDir.set(value)
+    }
 }

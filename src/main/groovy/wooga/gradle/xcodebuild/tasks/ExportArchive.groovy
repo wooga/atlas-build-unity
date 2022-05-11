@@ -25,19 +25,14 @@ import org.gradle.api.file.*
 import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.internal.tasks.TaskResolver
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskDependency
-import wooga.gradle.xcodebuild.XcodeExportActionSpec
+import wooga.gradle.xcodebuild.XcodeExportSpec
 import wooga.gradle.xcodebuild.config.BuildSettings
 
-class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActionSpec {
+class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportSpec {
 
     protected final PublishArtifact internalPublishArtifact
 
@@ -46,91 +41,17 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
         internalPublishArtifact
     }
 
-    private final RegularFileProperty exportOptionsPlist
-
-    @InputFile
-    RegularFileProperty getExportOptionsPlist() {
-        exportOptionsPlist
-    }
-
-    @Override
-    void setExportOptionsPlist(Provider value) {
-        exportOptionsPlist.set(value)
-    }
-
-    @Override
-    void setExportOptionsPlist(File value) {
-        exportOptionsPlist.set(value)
-    }
-
-    @Override
-    ExportArchive exportOptionsPlist(Provider value) {
-        setExportOptionsPlist(value)
-        this
-    }
-
-    @Override
-    ExportArchive exportOptionsPlist(File value) {
-        setExportOptionsPlist(value)
-        this
-    }
-
-    private final DirectoryProperty xcArchivePath
-
-    @InputDirectory
-    DirectoryProperty getXcArchivePath() {
-        xcArchivePath
-    }
-
-    @Override
-    void setXcArchivePath(Provider value) {
-        xcArchivePath.set(value)
-    }
-
-    @Override
-    void setXcArchivePath(File value) {
-        xcArchivePath.set(value)
-    }
-
-    @Override
-    ExportArchive xcArchivePath(Provider value) {
-        setXcArchivePath(value)
-        this
-    }
-
-    @Override
-    ExportArchive xcArchivePath(File value) {
-        setXcArchivePath(value)
-        this
-    }
-
-    private final Provider<RegularFile> outputPath
-
-    @OutputFile
-    Provider<RegularFile> getOutputPath() {
-        outputPath
-    }
-
-    private final Provider<List<String>> buildArguments
-
-    @Input
-    Provider<List<String>> getBuildArguments() {
-        buildArguments
-    }
-
     @SkipWhenEmpty
     @InputFiles
     protected FileCollection getInputFiles() {
         project.files(xcArchivePath, exportOptionsPlist)
     }
 
+    Provider<RegularFile> outputPath = destinationDir.file(archiveName)
+
     ExportArchive() {
         super()
-        exportOptionsPlist = project.objects.fileProperty()
-        xcArchivePath = project.objects.directoryProperty()
-
-        outputPath = destinationDir.file(archiveName)
-        buildArguments = project.provider({
+        setInternalArguments(project.provider({
             List<String> arguments = new ArrayList<String>()
             BuildSettings buildSettings = buildSettings.getOrElse(BuildSettings.EMPTY)
             arguments << "xcodebuild"
@@ -139,15 +60,9 @@ class ExportArchive extends AbstractXcodeArchiveTask implements XcodeExportActio
             arguments << "-exportOptionsPlist" << exportOptionsPlist.get().asFile.path
             arguments << "-archivePath" << xcArchivePath.get().asFile.path
 
-            if (additionalBuildArguments.present) {
-                additionalBuildArguments.get().each {
-                    arguments << it
-                }
-            }
-
             arguments.addAll(buildSettings.toList())
             arguments
-        })
+        }))
 
         internalPublishArtifact = new IPAPublishArtifact(this)
     }

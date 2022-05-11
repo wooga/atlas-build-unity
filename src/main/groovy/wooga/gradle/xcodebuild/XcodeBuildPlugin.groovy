@@ -44,20 +44,27 @@ class XcodeBuildPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         this.project = project
-        def extension = project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
-        def tasks = project.tasks
 
+        def extension = project.extensions.create(XcodeBuildPluginExtension, EXTENSION_NAME, DefaultXcodeBuildPluginExtension, project)
         project.pluginManager.apply(BasePlugin.class)
 
+        configureExtension(extension, project)
+        def archives = project.configurations.maybeCreate('archives')
+        project.configurations['default'].extendsFrom(archives)
+        configureTasks(project, extension)
+    }
+
+    private static void configureExtension(XcodeBuildPluginExtension extension, Project project) {
         extension.logsDir.set(LOGS_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.derivedDataPath.set(DERIVED_DATA_PATH_LOOKUP.getDirectoryValueProvider(project))
         extension.xarchivesDir.set(XARCHIVES_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.debugSymbolsDir.set(DEBUG_SYMBOLS_DIR_LOOKUP.getDirectoryValueProvider(project))
         extension.consoleSettings.set(ConsoleSettings.fromGradleOutput(project.gradle.startParameter.consoleOutput))
+    }
 
-        def archives = project.configurations.maybeCreate('archives')
-        project.configurations['default'].extendsFrom(archives)
+    private static void configureTasks(Project project, XcodeBuildPluginExtension extension) {
 
+        def tasks = project.tasks
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
             @Override
             void execute(XcodeArchive task) {
@@ -83,7 +90,7 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 //each XcodeArchive task creates an exportArchive task
                 def exportArchive = tasks.create(task.name + EXPORT_ARCHIVE_TASK_POSTFIX, ExportArchive) {
                     it.dependsOn(task)
-                    it.xcArchivePath(task.xcArchivePath)
+                    it.xcArchivePath.convention(task.xcArchivePath)
                 }
 
                 //add artifacts as publish artifacts
@@ -113,14 +120,14 @@ class XcodeBuildPlugin implements Plugin<Project> {
             void execute(ExportArchive task) {
                 task.group = BasePlugin.BUILD_GROUP
                 task.description = "export ipa file from given .xcarchive"
-
-                task.extension.set("ipa")
+                task.extension.convention("ipa")
             }
         })
 
         project.tasks.withType(AbstractXcodeArchiveTask.class, new Action<AbstractXcodeArchiveTask>() {
             @Override
             void execute(AbstractXcodeArchiveTask task) {
+                // TODO: Think of how to use convention instead?
                 task.version.set(project.provider({ project.version.toString() }))
                 task.baseName.set(project.name)
                 task.destinationDir.set(extension.xarchivesDir)
@@ -130,8 +137,8 @@ class XcodeBuildPlugin implements Plugin<Project> {
         project.tasks.withType(AbstractXcodeTask.class, new Action<AbstractXcodeTask>() {
             @Override
             void execute(AbstractXcodeTask task) {
-                task.logFile.set(extension.logsDir.file("${task.name}.log"))
-                task.consoleSettings.set(extension.consoleSettings)
+                task.logFile.convention(extension.logsDir.file("${task.name}.log"))
+                task.consoleSettings.convention(extension.consoleSettings)
             }
         })
 
@@ -146,7 +153,7 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.archiveBaseName.convention(project.name)
                 task.archiveExtension.convention("zip")
                 task.archiveClassifier.convention("dSYM")
-                task.getDestinationDirectory().convention(extension.debugSymbolsDir)
+                task.destinationDirectory.convention(extension.debugSymbolsDir)
             }
         })
     }

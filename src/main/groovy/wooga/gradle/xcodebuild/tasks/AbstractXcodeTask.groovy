@@ -19,182 +19,53 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+import com.wooga.gradle.ArgumentsSpec
+import com.wooga.gradle.io.*
+import com.wooga.xcodebuild.xcpretty.Printer
+import com.wooga.xcodebuild.xcpretty.formatters.Simple
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Console
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
-import wooga.gradle.xcodebuild.ConsoleSettings
-import wooga.gradle.xcodebuild.XcodeActionSpec
-import wooga.gradle.xcodebuild.config.BuildSettings
-import wooga.gradle.xcodebuild.internal.XcodeBuildAction
+import org.gradle.process.ExecSpec
+import wooga.gradle.xcodebuild.XcodeTaskSpec
 
-import static org.gradle.util.ConfigureUtil.configureUsing
-
-abstract class AbstractXcodeTask extends DefaultTask implements XcodeActionSpec {
-
-    @Console
-    final Property<ConsoleSettings> consoleSettings
-
-    @Override
-    void setConsoleSettings(ConsoleSettings value) {
-        consoleSettings.set(value)
-    }
-
-    @Override
-    void setConsoleSettings(Provider<ConsoleSettings> value) {
-        consoleSettings.set(value)
-    }
-
-    @Override
-    AbstractXcodeTask consoleSettings(ConsoleSettings value) {
-        setConsoleSettings(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask consoleSettings(Provider<ConsoleSettings> value) {
-        setConsoleSettings(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask consoleSettings(Closure configuration) {
-        consoleSettings(configureUsing(configuration))
-        this
-    }
-
-    @Override
-    AbstractXcodeTask consoleSettings(Action<ConsoleSettings> action) {
-        def settings = consoleSettings.getOrElse(new ConsoleSettings())
-        action.execute(settings)
-        consoleSettings.set(settings)
-        this
-    }
-
-    private final ListProperty<String> additionalBuildArguments
-
-    @Input
-    ListProperty<String> getAdditionalBuildArguments() {
-        additionalBuildArguments
-    }
-
-    @Override
-    void setAdditionalBuildArguments(Iterable<String> value) {
-        additionalBuildArguments.set(value)
-    }
-
-    @Override
-    void setAdditionalBuildArguments(Provider<? extends Iterable<String>> value) {
-        additionalBuildArguments.set(value)
-    }
-
-    @Override
-    AbstractXcodeTask buildArgument(String argument) {
-        additionalBuildArguments.add(argument)
-        return this
-    }
-
-    @Override
-    AbstractXcodeTask buildArguments(String[] arguments) {
-        additionalBuildArguments.addAll(project.provider({ arguments.toList() }))
-        return this
-    }
-
-    @Override
-    AbstractXcodeTask buildArguments(Iterable arguments) {
-        additionalBuildArguments.addAll(project.provider({ arguments }))
-        return this
-    }
-
-    private final Property<BuildSettings> buildSettings
-
-    @Internal
-    Property<BuildSettings> getBuildSettings() {
-        buildSettings
-    }
-
-    @Override
-    void setBuildSettings(BuildSettings value) {
-        buildSettings.set(value)
-    }
-
-    @Override
-    void setBuildSettings(Provider<BuildSettings> value) {
-        buildSettings.set(value)
-    }
-
-    @Override
-    AbstractXcodeTask buildSettings(BuildSettings value) {
-        setBuildSettings(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask buildSettings(Provider<BuildSettings> value) {
-        setBuildSettings(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask buildSettings(Closure configuration) {
-        buildSettings(configureUsing(configuration))
-        this
-    }
-
-    private final RegularFileProperty logFile
-
-    @Internal
-    RegularFileProperty getLogFile() {
-        logFile
-    }
-
-    @Override
-    void setLogFile(File value) {
-        logFile.set(value)
-    }
-
-    @Override
-    void setLogFile(Provider<RegularFile> value) {
-        logFile.set(value)
-    }
-
-    @Override
-    AbstractXcodeTask logFile(File value) {
-        setLogFile(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask logFile(Provider<RegularFile> value) {
-        setLogFile(value)
-        this
-    }
-
-    @Override
-    AbstractXcodeTask buildSettings(Action<BuildSettings> action) {
-        def settings = buildSettings.getOrElse(BuildSettings.EMPTY).clone() as BuildSettings
-        action.execute(settings)
-        buildSettings.set(settings)
-        this
-    }
+abstract class AbstractXcodeTask extends DefaultTask implements XcodeTaskSpec, LogFileSpec, ArgumentsSpec, OutputStreamSpec {
 
     AbstractXcodeTask() {
-        additionalBuildArguments = project.objects.listProperty(String)
-        buildSettings = project.objects.property(BuildSettings)
-        consoleSettings = project.objects.property(ConsoleSettings)
-        logFile = project.objects.fileProperty()
     }
 
     @TaskAction
     protected void exec() {
-        def action = new XcodeBuildAction(project, buildArguments.get(), logFile.get().asFile, consoleSettings.get())
-        action.exec()
+        // TODO: Refactor with output stream spec -> add an overload to set a custom handler
+        TextStream handler = new ForkTextStream()
+
+        def outStream = new LineBufferingOutputStream(handler, System.lineSeparator())
+        def errStream = new LineBufferingOutputStream(handler, System.lineSeparator())
+        def logWriter = System.out.newPrintWriter()
+
+        if (logFile.present) {
+            FileUtils.ensureFile(logFile)
+            handler.addWriter(logFile.get().asFile.newPrintWriter())
+        }
+
+        def consoleSettings = consoleSettings.getOrNull()
+
+        if (consoleSettings && consoleSettings.prettyPrint) {
+            handler.addWriter(new Printer(new Simple(consoleSettings.useUnicode, consoleSettings.hasColors()), logWriter))
+        } else {
+            handler.addWriter(logWriter)
+        }
+
+        project.exec(new Action<ExecSpec>() {
+            @Override
+            void execute(ExecSpec exec) {
+                exec.with {
+                    executable "/usr/bin/xcrun"
+                    args = arguments.get()
+                    standardOutput = outStream
+                    errorOutput = errStream
+                }
+            }
+        })
     }
 }

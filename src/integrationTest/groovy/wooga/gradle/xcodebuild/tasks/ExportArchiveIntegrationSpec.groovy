@@ -16,24 +16,27 @@
 
 package wooga.gradle.xcodebuild.tasks
 
+
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import net.wooga.test.xcode.XcodeTestProject
 import org.junit.ClassRule
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
-import wooga.gradle.xcodebuild.config.BuildSettings
 
-@Requires({ os.macOs })
-class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSpec {
+class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSpec<ExportArchive> {
 
     @Shared
     @ClassRule
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
-    Class taskType = ExportArchive
     String archiveTaskName = "xcodeArchive"
-    String testTaskName = archiveTaskName + "Export"
+    //When using the plugin and creating an XcodeArchive task then
+    //a matching export archive task will be created
+    String generatedExportTaskName = archiveTaskName + "Export"
 
     String workingXcodebuildTaskConfig = """
     task ${archiveTaskName}(type: ${XcodeArchive.name}) {
@@ -47,12 +50,20 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
             ${System.getenv("TEST_TEAM_ID") ? "developmentTeam = '${System.getenv("TEST_TEAM_ID")}'" : ""}
         }
         
-        buildArgument('-allowProvisioningUpdates')
+        argument('-allowProvisioningUpdates')
         clean = true
-        projectPath = new File("${xcodeProject.xcodeProject}")
+        projectPath = ${wrapValueBasedOnType(xcodeProject.xcodeProject, File)}
     }
 
-    ${testTaskName} {
+    ${generatedExportTaskName} {
+        baseName = "custom"
+        version = "0.1.0"
+        exportOptionsPlist = file("exportOptions.plist")
+    }
+
+    task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
+        dependsOn(${archiveTaskName})
+        xcArchivePath.convention(${archiveTaskName}.xcArchivePath)
         baseName = "custom"
         version = "0.1.0"
         exportOptionsPlist = file("exportOptions.plist")
@@ -112,101 +123,64 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         """.stripIndent().trim()
     }
 
-    @Unroll("property #property sets flag #expectedCommandlineFlag")
+    @Unroll("property #property sets flag #flag")
     def "constructs build arguments"() {
-        given:
-        buildFile << """
-        task("${testTaskName}", type: ${taskType.name}) {
-            exportOptionsPlist = file("/some/path/exportOptions1.plist")
-            xcArchivePath = file("/some/path/test1.xcarchive")
-        }
-        """.stripIndent()
-
-        and: "a task to read the build arguments"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("arguments: " + ${testTaskName}.buildArguments.get().join(" "))
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("readValue")
+        // These 2 properties need to be always set since they are not optional
+        addMockTask(true, """
+            exportOptionsPlist = file("/foo/bar.plist")
+            xcArchivePath = file("/foo/bar.xcarchive")
+        """)
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        outputContains(result, expectedCommandlineFlag)
+        query.contains(flag)
+        query.contains(rawValue)
 
         where:
-        property             | method                   | rawValue                          | type   | expectedCommandlineFlag
-        "exportOptionsPlist" | "exportOptionsPlist.set" | "/some/path/exportOptions1.plist" | "File" | "-exportOptionsPlist /some/path/exportOptions1.plist"
-        "xcArchivePath"      | "xcArchivePath.set"      | "/some/path/test1.xcarchive"      | "File" | "-archivePath /some/path/test1.xcarchive"
+        property             | flag                  | method                       | rawValue                                  | type
+        "exportOptionsPlist" | "-exportOptionsPlist" | PropertySetInvocation.setter | osPath("/some/path/exportOptions1.plist") | "File"
+        "xcArchivePath"      | "-archivePath"        | PropertySetInvocation.setter | osPath("/some/path/test1.xcarchive")      | "File"
 
-        value = wrapValueBasedOnType(rawValue, type)
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .use(method)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter("${subjectUnderTestName}.arguments")
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property ExportArchive"() {
-        given: "a custom archive task"
-        buildFile << """
-            task("${testTaskName}", type: ${taskType.name})
-        """.stripIndent()
-
-        and: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        addMockTask(true)
+        runPropertyQuery(getter, setter).matches(rawValue)
 
         where:
-        property             | method                   | rawValue                          | type
-        "exportOptionsPlist" | "exportOptionsPlist"     | "/some/path/exportOptions1.plist" | "File"
-        "exportOptionsPlist" | "exportOptionsPlist"     | "/some/path/exportOptions2.plist" | "Provider<RegularFile>"
-        "exportOptionsPlist" | "exportOptionsPlist.set" | "/some/path/exportOptions3.plist" | "File"
-        "exportOptionsPlist" | "exportOptionsPlist.set" | "/some/path/exportOptions4.plist" | "Provider<RegularFile>"
-        "exportOptionsPlist" | "setExportOptionsPlist"  | "/some/path/exportOptions5.plist" | "File"
-        "exportOptionsPlist" | "setExportOptionsPlist"  | "/some/path/exportOptions8.plist" | "Provider<RegularFile>"
+        property             | method                            | rawValue                                  | type
+        "exportOptionsPlist" | PropertySetInvocation.method      | osPath("/some/path/exportOptions1.plist") | "File"
+        "exportOptionsPlist" | PropertySetInvocation.method      | osPath("/some/path/exportOptions2.plist") | "Provider<RegularFile>"
+        "exportOptionsPlist" | PropertySetInvocation.providerSet | osPath("/some/path/exportOptions3.plist") | "File"
+        "exportOptionsPlist" | PropertySetInvocation.providerSet | osPath("/some/path/exportOptions4.plist") | "Provider<RegularFile>"
+        "exportOptionsPlist" | PropertySetInvocation.setter      | osPath("/some/path/exportOptions5.plist") | "File"
+        "exportOptionsPlist" | PropertySetInvocation.setter      | osPath("/some/path/exportOptions8.plist") | "Provider<RegularFile>"
 
-        "xcArchivePath"      | "xcArchivePath"          | "/some/path/test1.xcarchive"      | "File"
-        "xcArchivePath"      | "xcArchivePath"          | "/some/path/test2.xcarchive"      | "Provider<Directory>"
-        "xcArchivePath"      | "xcArchivePath.set"      | "/some/path/test3.xcarchive"      | "File"
-        "xcArchivePath"      | "xcArchivePath.set"      | "/some/path/test4.xcarchive"      | "Provider<Directory>"
-        "xcArchivePath"      | "setXcArchivePath"       | "/some/path/test5.xcarchive"      | "File"
-        "xcArchivePath"      | "setXcArchivePath"       | "/some/path/test6.xcarchive"      | "Provider<Directory>"
+        "xcArchivePath"      | PropertySetInvocation.method      | osPath("/some/path/test1.xcarchive")      | "File"
+        "xcArchivePath"      | PropertySetInvocation.method      | osPath("/some/path/test2.xcarchive")      | "Provider<Directory>"
+        "xcArchivePath"      | PropertySetInvocation.providerSet | osPath("/some/path/test3.xcarchive")      | "File"
+        "xcArchivePath"      | PropertySetInvocation.providerSet | osPath("/some/path/test4.xcarchive")      | "Provider<Directory>"
+        "xcArchivePath"      | PropertySetInvocation.setter      | osPath("/some/path/test5.xcarchive")      | "File"
+        "xcArchivePath"      | PropertySetInvocation.setter      | osPath("/some/path/test6.xcarchive")      | "Provider<Directory>"
 
-        value = wrapValueBasedOnType(rawValue, type) { type ->
-            switch (type) {
-                case BuildSettings.class.simpleName:
-                    return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
-                        List<String> parts = it.split("=")
-                        ".put('${parts[0].trim()}', '${parts[1].trim()}')"
-                    }).join("")
-                default:
-                    return rawValue
-            }
-        }
-        expectedValue = rawValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .serialize(wrapValueFallback)
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
+    //TODO: Move this test to the main PluginIntergrationSpec
+    @Requires({ os.macOs })
     def "is registered as publish artifact"() {
         given: "a subproject with xcode build setup"
         def subProjectDir = addSubproject(subProjectName)
@@ -237,10 +211,10 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         exportPlist.text = exportOptions.text
 
         when:
-        def result = runTasks("run")
+        def result = runTasks(":${subProjectName}:${generatedExportTaskName}")
 
         then:
-        result.wasExecuted(":${subProjectName}:${testTaskName}")
+        result.wasExecuted(":${subProjectName}:${generatedExportTaskName}")
 
         where:
         subProjectName = "xcodeProject"
@@ -256,7 +230,7 @@ class ExportArchiveIntegrationSpec extends AbstractXcodeArchiveTaskIntegrationSp
         assert !archive.exists()
 
         when:
-        def result = runTasks(testTaskName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         result.success

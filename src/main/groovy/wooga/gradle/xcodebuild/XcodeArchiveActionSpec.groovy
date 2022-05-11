@@ -19,70 +19,129 @@
 
 package wooga.gradle.xcodebuild
 
+import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.SkipWhenEmpty
 
-interface XcodeArchiveActionSpec<T extends XcodeArchiveActionSpec> extends XcodeArchiveActionSpecBase<T> {
+trait XcodeArchiveActionSpec extends BaseSpec {
 
-    Provider<Directory> getXcArchivePath()
+    final Property<String> configuration = objects.property(String)
 
-    Property<String> getConfiguration()
+    @Optional
+    @Input
+    Property<String> getConfiguration() {
+        configuration
+    }
 
-    void setConfiguration(String value)
-    void setConfiguration(Provider<String> value)
+    void setConfiguration(String value) {
+        configuration.set(value)
+    }
 
-    T configuration(String value)
-    T configuration(Provider<String> value)
+    void setConfiguration(Provider<String> value) {
+        configuration.set(value)
+    }
 
-    Property<Boolean> getClean()
+    final Property<Boolean> clean = objects.property(Boolean)
 
-    void setClean(Boolean value)
-    void setClean(Provider<Boolean> value)
+    @Input
+    @Optional
+    Property<Boolean> getClean() {
+        clean
+    }
 
-    T clean(Boolean value)
-    T clean(Provider<Boolean> value)
+    void setClean(Boolean value) {
+        clean.set(value)
+    }
 
-    Property<String> getScheme()
+    void setClean(Provider<Boolean> value) {
+        clean.set(value)
+    }
 
-    void setScheme(String value)
-    void setScheme(Provider<String> value)
+    final Property<String> scheme = objects.property(String)
 
-    T scheme(String value)
-    T scheme(Provider<String> value)
+    @Input
+    Property<String> getScheme() {
+        scheme
+    }
 
-    Property<String> getTeamId()
+    void setScheme(String value) {
+        scheme.set(value)
+    }
 
-    void setTeamId(String value)
-    void setTeamId(Provider<String> value)
+    void setScheme(Provider<String> value) {
+        scheme.set(value)
+    }
 
-    T teamId(String value)
-    T teamId(Provider<String> value)
+    final Property<String> teamId = objects.property(String)
 
-    DirectoryProperty getDerivedDataPath()
+    @Optional
+    @Input
+    Property<String> getTeamId() {
+        teamId
+    }
 
-    void setDerivedDataPath(File value)
-    void setDerivedDataPath(Provider<Directory> value)
+    void setTeamId(String value) {
+        teamId.set(value)
+    }
 
-    T derivedDataPath(File value)
-    T derivedDataPath(Provider<Directory> value)
+    void setTeamId(Provider<String> value) {
+        teamId.set(value)
+    }
 
-    RegularFileProperty getBuildKeychain()
+    final DirectoryProperty derivedDataPath = objects.directoryProperty()
 
-    void setBuildKeychain(File value)
-    void setBuildKeychain(Provider<RegularFile> value)
+    @Internal
+    DirectoryProperty getDerivedDataPath() {
+        derivedDataPath
+    }
 
-    T buildKeychain(File value)
-    T buildKeychain(Provider<RegularFile> value)
+    void setDerivedDataPath(File value) {
+        derivedDataPath.set(value)
+    }
 
-    DirectoryProperty getProjectPath()
+    void setDerivedDataPath(Provider<Directory> value) {
+        derivedDataPath.set(value)
+    }
 
-    void setProjectPath(File value)
-    void setProjectPath(Provider<Directory> value)
+    final RegularFileProperty buildKeychain = objects.fileProperty()
 
-    T projectPath(File value)
-    T projectPath(Provider<Directory> value)
+    @Optional
+    @InputFile
+    RegularFileProperty getBuildKeychain() {
+        buildKeychain
+    }
+
+    void setBuildKeychain(File value) {
+        buildKeychain.set(value)
+    }
+
+    void setBuildKeychain(Provider<RegularFile> value) {
+        buildKeychain.set(value)
+    }
+
+    final DirectoryProperty projectPath = objects.directoryProperty()
+
+    @SkipWhenEmpty
+    @InputDirectory
+    DirectoryProperty getProjectPath() {
+        projectPath
+    }
+
+    void setProjectPath(File value) {
+        projectPath.set(value)
+    }
+
+    void setProjectPath(Provider<Directory> value) {
+        projectPath.set(value)
+    }
 }

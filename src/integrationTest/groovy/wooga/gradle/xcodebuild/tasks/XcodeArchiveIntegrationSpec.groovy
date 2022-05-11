@@ -19,27 +19,25 @@
 
 package wooga.gradle.xcodebuild.tasks
 
-
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import net.wooga.test.xcode.XcodeTestProject
 import org.junit.ClassRule
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.xcodebuild.config.BuildSettings
 
-@Requires({ os.macOs })
-class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
+import static com.wooga.gradle.test.PropertyUtils.toSetter
+
+class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec<XcodeArchive> {
 
     @Shared
     @ClassRule
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
-    Class taskType = XcodeArchive
-
-    String testTaskName = "customExport"
-
     String workingXcodebuildTaskConfig = """
-    task ${testTaskName}(type: ${taskType.name}) {
+    task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
         scheme = "${xcodeProject.schemeName}"
         baseName = "custom"
         version = "0.1.0"
@@ -48,7 +46,7 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
             codeSigningRequired false
             codeSigningAllowed false
         }
-        projectPath = new File("${xcodeProject.xcodeProject}")
+        projectPath = ${wrapValueBasedOnType(xcodeProject.xcodeProject, File)}
     }
     """.stripIndent()
 
@@ -64,12 +62,13 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         > Linking xcodebuildPluginTest
         """.stripIndent().trim()
 
+    @Requires({ os.macOs })
     @Unroll
     def "creates archive from #type"() {
         given:
         buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        ${testTaskName}.projectPath = new File("${path}")
+        ${subjectUnderTestName}.projectPath = new File("${path}")
         """.stripIndent()
 
         and: "a future xcarchive"
@@ -77,7 +76,7 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         assert !archive.exists()
 
         when:
-        def result = runTasks(testTaskName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         result.success
@@ -90,6 +89,7 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         "xcworkspace" | xcodeProject.xcodeWorkspace.path
     }
 
+    @Requires({ os.macOs })
     def "fails when project is not a valid .xcodeprj or .xcworkspace"() {
         given: "temp fake project"
         def prj = File.createTempDir("someProject", ".project")
@@ -99,284 +99,318 @@ class XcodeArchiveIntegrationSpec extends AbstractXcodeTaskIntegrationSpec {
         and:
         buildFile << workingXcodebuildTaskConfig
         buildFile << """
-        ${testTaskName}.projectPath = file("${prj.absolutePath}")
+        ${subjectUnderTestName}.projectPath = file("${prj.absolutePath}")
         """.stripIndent()
 
         when:
-        def result = runTasks(testTaskName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         outputContains(result, "xcode project path must be a valid .xcodeproj or .xcworkspace")
     }
 
-    @Unroll("property #property sets flag #expectedCommandlineFlag")
+    @Unroll("property #property sets flag #flag with value #rawValue")
     def "constructs build arguments"() {
         given:
-        buildFile << """
-        task("customXcodeArchive", type: ${taskType.name}) {
+        // Project path must be always set or it throws exception
+        addMockTask(true, """
+            projectPath = ${wrapValueBasedOnType(xcodeProject.xcodeProject.path, File)}
             scheme = "${xcodeProject.schemeName}"
-            projectPath = new File("${xcodeProject.xcodeProject.path}")
-        }
-        """.stripIndent()
-
-        and: "a task to read the build arguments"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("arguments: " + customXcodeArchive.buildArguments.get().join(" "))
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            customXcodeArchive.${method}($value)
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("readValue")
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        outputContains(result, expectedCommandlineFlag)
+        query.contains(flag)
+        if (type != "Boolean") {
+            query.contains(rawValue)
+        }
 
         where:
-        property          | method                | rawValue                    | type      | expectedCommandlineFlag
-        "configuration"   | "configuration.set"   | "test"                      | "String"  | "-configuration test"
-        "clean"           | "clean.set"           | true                        | "Boolean" | "clean"
-        "scheme"          | "scheme.set"          | "test"                      | "String"  | "-scheme test"
-        "teamId"          | "teamId.set"          | "x123y"                     | "String"  | "DEVELOPMENT_TEAM=x123y"
-        "buildKeychain"   | "buildKeychain.set"   | "/some/path"                | "File"    | "OTHER_CODE_SIGN_FLAGS=--keychain /some/path"
-        "derivedDataPath" | "derivedDataPath.set" | "/some/path"                | "File"    | "-derivedDataPath /some/path"
-        "projectPath"     | "projectPath.set"     | "/some/project.xcodeproj"   | "File"    | "-project /some/project.xcodeproj"
-        "projectPath"     | "projectPath.set"     | "/some/project.xcworkspace" | "File"    | "-workspace /some/project.xcworkspace"
+        property          | flag                               | method                            | rawValue                            | type
+        "configuration"   | "-configuration"                   | PropertySetInvocation.providerSet | "test"                              | "String"
+        "clean"           | "clean"                            | PropertySetInvocation.providerSet | true                                | "Boolean"
+        "scheme"          | "-scheme"                          | PropertySetInvocation.providerSet | "test"                              | "String"
+        "teamId"          | "DEVELOPMENT_TEAM"                 | PropertySetInvocation.providerSet | "x123y"                             | "String"
+        "buildKeychain"   | "OTHER_CODE_SIGN_FLAGS=--keychain" | PropertySetInvocation.providerSet | osPath("/some/path")                | "File"
+        "derivedDataPath" | "derivedDataPath"                  | PropertySetInvocation.providerSet | osPath("/some/path")                | "File"
+        "projectPath"     | "-project"                         | PropertySetInvocation.providerSet | osPath("/some/project.xcodeproj")   | "File"
+        "projectPath"     | "-workspace"                       | PropertySetInvocation.providerSet | osPath("/some/project.xcworkspace") | "File"
 
-        value = wrapValueBasedOnType(rawValue, type)
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .use(method)
+            .serialize(wrapValueFallback)
+        getter = new PropertyGetterTaskWriter(subjectUnderTestName + ".arguments")
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property XcodeArchive"() {
+
         given: "a custom archive task"
-        buildFile << """
-            task("${testTaskName}", type: ${taskType.name})
-        """.stripIndent()
-
-        and: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
+        addMockTask(true)
 
         when:
-        def result = runTasksSuccessfully("readValue")
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        outputContains(result, "property: " + expectedValue.toString())
+        query.matches(rawValue)
 
         where:
-        property          | method                | rawValue     | type
-        "configuration"   | "configuration"       | "Test1"      | "String"
-        "configuration"   | "configuration"       | "Test2"      | "Provider<String>"
-        "configuration"   | "configuration.set"   | "Test1"      | "String"
-        "configuration"   | "configuration.set"   | "Test2"      | "Provider<String>"
-        "configuration"   | "setConfiguration"    | "Test3"      | "String"
-        "configuration"   | "setConfiguration"    | "Test4"      | "Provider<String>"
+        property          | method                            | rawValue             | type
+        "configuration"   | PropertySetInvocation.method      | "Test1"              | "String"
+        "configuration"   | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "configuration"   | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "configuration"   | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "configuration"   | PropertySetInvocation.setter      | "Test3"              | "String"
+        "configuration"   | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "clean"           | "clean"               | true         | "Boolean"
-        "clean"           | "clean"               | true         | "Provider<Boolean>"
-        "clean"           | "clean.set"           | true         | "Boolean"
-        "clean"           | "clean.set"           | true         | "Provider<Boolean>"
-        "clean"           | "setClean"            | true         | "Boolean"
-        "clean"           | "setClean"            | true         | "Provider<Boolean>"
+        "clean"           | PropertySetInvocation.method      | true                 | "Boolean"
+        "clean"           | PropertySetInvocation.method      | true                 | "Provider<Boolean>"
+        "clean"           | PropertySetInvocation.providerSet | true                 | "Boolean"
+        "clean"           | PropertySetInvocation.providerSet | true                 | "Provider<Boolean>"
+        "clean"           | PropertySetInvocation.setter      | true                 | "Boolean"
+        "clean"           | PropertySetInvocation.setter      | true                 | "Provider<Boolean>"
 
-        "scheme"          | "scheme"              | "Test1"      | "String"
-        "scheme"          | "scheme"              | "Test2"      | "Provider<String>"
-        "scheme"          | "scheme.set"          | "Test1"      | "String"
-        "scheme"          | "scheme.set"          | "Test2"      | "Provider<String>"
-        "scheme"          | "setScheme"           | "Test3"      | "String"
-        "scheme"          | "setScheme"           | "Test4"      | "Provider<String>"
+        "scheme"          | PropertySetInvocation.method      | "Test1"              | "String"
+        "scheme"          | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "scheme"          | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "scheme"          | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "scheme"          | PropertySetInvocation.setter      | "Test3"              | "String"
+        "scheme"          | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "teamId"          | "teamId"              | "Test1"      | "String"
-        "teamId"          | "teamId"              | "Test2"      | "Provider<String>"
-        "teamId"          | "teamId.set"          | "Test1"      | "String"
-        "teamId"          | "teamId.set"          | "Test2"      | "Provider<String>"
-        "teamId"          | "setTeamId"           | "Test3"      | "String"
-        "teamId"          | "setTeamId"           | "Test4"      | "Provider<String>"
+        "teamId"          | PropertySetInvocation.method      | "Test1"              | "String"
+        "teamId"          | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "teamId"          | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "teamId"          | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "teamId"          | PropertySetInvocation.setter      | "Test3"              | "String"
+        "teamId"          | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "derivedDataPath" | "derivedDataPath"     | "/some/path" | "File"
-        "derivedDataPath" | "derivedDataPath"     | "/some/path" | "Provider<Directory>"
-        "derivedDataPath" | "derivedDataPath.set" | "/some/path" | "File"
-        "derivedDataPath" | "derivedDataPath.set" | "/some/path" | "Provider<Directory>"
-        "derivedDataPath" | "setDerivedDataPath"  | "/some/path" | "File"
-        "derivedDataPath" | "setDerivedDataPath"  | "/some/path" | "Provider<Directory>"
+        "derivedDataPath" | PropertySetInvocation.method      | osPath("/some/path") | "File"
+        "derivedDataPath" | PropertySetInvocation.method      | osPath("/some/path") | "Provider<Directory>"
+        "derivedDataPath" | PropertySetInvocation.providerSet | osPath("/some/path") | "File"
+        "derivedDataPath" | PropertySetInvocation.providerSet | osPath("/some/path") | "Provider<Directory>"
+        "derivedDataPath" | PropertySetInvocation.setter      | osPath("/some/path") | "File"
+        "derivedDataPath" | PropertySetInvocation.setter      | osPath("/some/path") | "Provider<Directory>"
 
-        "buildKeychain"   | "buildKeychain"       | "/some/path" | "File"
-        "buildKeychain"   | "buildKeychain"       | "/some/path" | "Provider<RegularFile>"
-        "buildKeychain"   | "buildKeychain.set"   | "/some/path" | "File"
-        "buildKeychain"   | "buildKeychain.set"   | "/some/path" | "Provider<RegularFile>"
-        "buildKeychain"   | "setBuildKeychain"    | "/some/path" | "File"
-        "buildKeychain"   | "setBuildKeychain"    | "/some/path" | "Provider<RegularFile>"
+        "buildKeychain"   | PropertySetInvocation.method      | osPath("/some/path") | "File"
+        "buildKeychain"   | PropertySetInvocation.method      | osPath("/some/path") | "Provider<RegularFile>"
+        "buildKeychain"   | PropertySetInvocation.providerSet | osPath("/some/path") | "File"
+        "buildKeychain"   | PropertySetInvocation.providerSet | osPath("/some/path") | "Provider<RegularFile>"
+        "buildKeychain"   | PropertySetInvocation.setter      | osPath("/some/path") | "File"
+        "buildKeychain"   | PropertySetInvocation.setter      | osPath("/some/path") | "Provider<RegularFile>"
 
-        "projectPath"     | "projectPath"         | "/some/path" | "File"
-        "projectPath"     | "projectPath"         | "/some/path" | "Provider<Directory>"
-        "projectPath"     | "projectPath.set"     | "/some/path" | "File"
-        "projectPath"     | "projectPath.set"     | "/some/path" | "Provider<Directory>"
-        "projectPath"     | "setProjectPath"      | "/some/path" | "File"
-        "projectPath"     | "setProjectPath"      | "/some/path" | "Provider<Directory>"
+        "projectPath"     | PropertySetInvocation.method      | osPath("/some/path") | "File"
+        "projectPath"     | PropertySetInvocation.method      | osPath("/some/path") | "Provider<Directory>"
+        "projectPath"     | PropertySetInvocation.providerSet | osPath("/some/path") | "File"
+        "projectPath"     | PropertySetInvocation.providerSet | osPath("/some/path") | "Provider<Directory>"
+        "projectPath"     | PropertySetInvocation.setter      | osPath("/some/path") | "File"
+        "projectPath"     | PropertySetInvocation.setter      | osPath("/some/path") | "Provider<Directory>"
 
-        "archiveName"     | "archiveName"         | "Test1"      | "String"
-        "archiveName"     | "archiveName"         | "Test2"      | "Provider<String>"
-        "archiveName"     | "archiveName.set"     | "Test1"      | "String"
-        "archiveName"     | "archiveName.set"     | "Test2"      | "Provider<String>"
-        "archiveName"     | "setArchiveName"      | "Test3"      | "String"
-        "archiveName"     | "setArchiveName"      | "Test4"      | "Provider<String>"
+        "archiveName"     | PropertySetInvocation.method      | "Test1"              | "String"
+        "archiveName"     | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "archiveName"     | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "archiveName"     | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "archiveName"     | PropertySetInvocation.setter      | "Test3"              | "String"
+        "archiveName"     | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "baseName"        | "baseName"            | "Test1"      | "String"
-        "baseName"        | "baseName"            | "Test2"      | "Provider<String>"
-        "baseName"        | "baseName.set"        | "Test1"      | "String"
-        "baseName"        | "baseName.set"        | "Test2"      | "Provider<String>"
-        "baseName"        | "setBaseName"         | "Test3"      | "String"
-        "baseName"        | "setBaseName"         | "Test4"      | "Provider<String>"
+        "baseName"        | PropertySetInvocation.method      | "Test1"              | "String"
+        "baseName"        | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "baseName"        | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "baseName"        | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "baseName"        | PropertySetInvocation.setter      | "Test3"              | "String"
+        "baseName"        | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "appendix"        | "appendix"            | "Test1"      | "String"
-        "appendix"        | "appendix"            | "Test2"      | "Provider<String>"
-        "appendix"        | "appendix.set"        | "Test1"      | "String"
-        "appendix"        | "appendix.set"        | "Test2"      | "Provider<String>"
-        "appendix"        | "setAppendix"         | "Test3"      | "String"
-        "appendix"        | "setAppendix"         | "Test4"      | "Provider<String>"
+        "appendix"        | PropertySetInvocation.method      | "Test1"              | "String"
+        "appendix"        | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "appendix"        | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "appendix"        | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "appendix"        | PropertySetInvocation.setter      | "Test3"              | "String"
+        "appendix"        | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        "version"         | "version"             | "Test1"      | "String"
-        "version"         | "version"             | "Test2"      | "Provider<String>"
-        "version"         | "version.set"         | "Test1"      | "String"
-        "version"         | "version.set"         | "Test2"      | "Provider<String>"
-        "version"         | "setVersion"          | "Test3"      | "String"
-        "version"         | "setVersion"          | "Test4"      | "Provider<String>"
+        "version"         | PropertySetInvocation.method      | "Test1"              | "String"
+        "version"         | PropertySetInvocation.method      | "Test2"              | "Provider<String>"
+        "version"         | PropertySetInvocation.providerSet | "Test1"              | "String"
+        "version"         | PropertySetInvocation.providerSet | "Test2"              | "Provider<String>"
+        "version"         | PropertySetInvocation.setter      | "Test3"              | "String"
+        "version"         | PropertySetInvocation.setter      | "Test4"              | "Provider<String>"
 
-        value = wrapValueBasedOnType(rawValue, type) { type ->
-            switch (type) {
-                case BuildSettings.class.simpleName:
-                    return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
-                        List<String> parts = it.split("=")
-                        ".put('${parts[0].trim()}', '${parts[1].trim()}')"
-                    }).join("")
-                default:
-                    return rawValue
-            }
-        }
-        expectedValue = rawValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .serialize(wrapValueFallback)
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll
-    def "can configure buildArguments with #method #message"() {
+    def "creates property #property from destination and archive name"() {
         given: "a custom archive task"
         buildFile << """
-            task("customXcodeArchive", type: ${XcodeArchive.name}) {
-                buildArguments(["--test", "value"])
+            task("${subjectUnderTestName}", type: ${XcodeArchive.name}) {
+                archiveName.set(${wrapValueBasedOnType(archiveName, String)})
+                destinationDir.set(${wrapValueBasedOnType(destinationDir, File)})
             }
         """.stripIndent()
 
-        and: "a task to read back the value"
+        when:
+        def query = runPropertyQuery(getter)
+
+        then:
+        query.matches(expectedXcArchivePath)
+
+        where:
+        property        | archiveName            | destinationDir       | expectedXcArchivePath
+        "xcArchivePath" | "test-0.0.0.xcarchive" | osPath("/some/path") | new File(destinationDir, archiveName).path
+        getter = new PropertyGetterTaskWriter(subjectUnderTestName + ".${property}")
+
+    }
+
+    def "multiple calls to arguments will not add build keychain path multiple times"() {
+        given:
         buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + customXcodeArchive.${property}.get())
-                }
-            }
+        task("customXcodeArchive", type: ${subjectUnderTestTypeName}) {
+            scheme = "${xcodeProject.schemeName}"
+            projectPath = ${wrapValueBasedOnType(xcodeProject.xcodeProject.path, File)}
+        }
         """.stripIndent()
 
         and: "a set property"
         buildFile << """
-            customXcodeArchive.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
-
-        where:
-        method                         | rawValue         | type                      | append | expectedValue
-        "buildArgument"                | "--foo"          | "String"                  | true   | ["--test", "value", "--foo"]
-        "buildArguments"               | ["--foo", "bar"] | "List<String>"            | true   | ["--test", "value", "--foo", "bar"]
-        "buildArguments"               | ["--foo", "bar"] | "String[]"                | true   | ["--test", "value", "--foo", "bar"]
-        "setAdditionalBuildArguments"  | ["--foo", "bar"] | "List<String>"            | false  | ["--foo", "bar"]
-        "setAdditionalBuildArguments"  | ["--foo", "bar"] | "Provider<List<String>>"  | false  | ["--foo", "bar"]
-        "additionalBuildArguments.set" | ["--foo", "bar"] | "List<String>"            | false  | ["--foo", "bar"]
-        "additionalBuildArguments.set" | ["--foo", "bar"] | "Provider<List<String>>>" | false  | ["--foo", "bar"]
-
-        property = "additionalBuildArguments"
-        value = wrapValueBasedOnType(rawValue, type)
-        message = (append) ? "which appends arguments" : "which replaces arguments"
-    }
-
-    def "creates property #property from destination and archive name"() {
-        given: "a custom archive task"
-        buildFile << """
-            task("${testTaskName}", type: ${XcodeArchive.name}) {
-                archiveName("test-0.0.0.xcarchive")
-                destinationDir(file("/some/path"))
-            }
-        """.stripIndent()
-
-        and: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("xcArchivePath: '" + ${testTaskName}.${property}.get() + "'")
-                }
-            }
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "xcArchivePath: '" + expectedXcArchivePath + "'")
-
-        where:
-        property        | archiveName            | destinationDir | expectedXcArchivePath
-        "xcArchivePath" | "test-0.0.0.xcarchive" | "/some/path"   | "/some/path/test-0.0.0.xcarchive"
-    }
-
-    def "multiple calls to buildArguments will not add build keychain path multiple times"() {
-        given:
-        buildFile << """
-        task("customXcodeArchive", type: ${taskType.name}) {
-            scheme = "${xcodeProject.schemeName}"
-            projectPath = new File("${xcodeProject.xcodeProject.path}")
-        }
+            customXcodeArchive.buildKeychain.set(${wrapValueBasedOnType(keychainPath, File)})
         """.stripIndent()
 
         and: "a task to read the build arguments"
         buildFile << """
             task("readValue") {
                 doLast {
-                    customXcodeArchive.buildArguments.get()
-                    customXcodeArchive.buildArguments.get()
-                    println("arguments: " + customXcodeArchive.buildArguments.get().join(" "))
+                    customXcodeArchive.arguments.get()
+                    customXcodeArchive.arguments.get()
+                    println("arguments: " + customXcodeArchive.arguments.get().join(" "))
                 }
             }
-        """.stripIndent()
-
-        and: "a set property"
-        buildFile << """
-            customXcodeArchive.buildKeychain.set(new File("/path/to/keychain"))
         """.stripIndent()
 
         when:
         def result = runTasksSuccessfully("readValue")
 
         then:
-        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain --keychain /path/to/keychain --keychain /path/to/keychain")
-        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain --keychain /path/to/keychain")
-        outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain /path/to/keychain")
+        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain ${keychainPath} --keychain ${keychainPath} --keychain ${keychainPath}")
+        !outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain ${keychainPath} --keychain ${keychainPath}")
+        outputContains(result, "OTHER_CODE_SIGN_FLAGS=--keychain ${keychainPath}")
+
+        where:
+        keychainPath = osPath("/path/to/keychain")
+    }
+
+    // NOTE: This task was moved from the abstract superclass since it was testing XcodeArchive only
+    @Unroll("constructs archive name #expectedValue from baseName: #baseName, appendix: #appendix version: #version classifier: #classifier extension: extension archiveName: #archiveName")
+    def "set archive name"() {
+        given: "a custom archive task"
+        addMockTask(true)
+
+        and: "a custom project name"
+        settingsFile.text = """
+        rootProject.name='${defaultBaseName}'
+        """.trim().stripIndent()
+
+        and: "a custom project version"
+        buildFile << """
+            version = '${defaultVersion}'
+        """.stripIndent()
+
+        and: "a set properties"
+        archiveNameParts.each {
+            if (it.value != _) {
+                if (it.value == null) {
+                    buildFile << """
+                    ${subjectUnderTestName}.${toSetter(it.key)}(null)
+                    """.stripIndent()
+                } else {
+                    buildFile << """
+                    ${subjectUnderTestName}.${toSetter(it.key)}(${wrapValueBasedOnType(it.value, "String")})
+                    """.stripIndent()
+                }
+            }
+        }
+
+        when:
+        def query = runPropertyQuery(getter)
+
+        then:
+        query.matches(expectedValue)
+
+        where:
+        baseName | appendix | version | classifier | extension | archiveName  | expectedArchivePattern
+        _        | null     | _       | null       | _         | _            | "#baseName-#version.#extension"
+        null     | null     | _       | null       | _         | _            | "#version.#extension"
+        'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#appendix-#version-#classifier.#extension"
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier.#extension"
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | _            | "#baseName-#appendix-#version-#classifier.#extension"
+        'test'   | 'suite'  | '0.1.0' | null       | 'xml'     | _            | "#baseName-#appendix-#version.#extension"
+        'test'   | 'suite'  | '0.1.0' | null       | null      | _            | "#baseName-#appendix-#version.#extension"
+        'test'   | 'suite'  | null    | 'case'     | 'xml'     | _            | "#baseName-#appendix-#classifier.#extension"
+        'test'   | 'suite'  | null    | null       | 'xml'     | _            | "#baseName-#appendix.#extension"
+        'test'   | 'suite'  | null    | null       | null      | _            | "#baseName-#appendix.#extension"
+        'test'   | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#baseName-#version-#classifier.#extension"
+        'test'   | null     | '0.1.0' | null       | 'xml'     | _            | "#baseName-#version.#extension"
+        'test'   | null     | '0.1.0' | null       | null      | _            | "#baseName-#version.#extension"
+        'test'   | null     | null    | 'case'     | 'xml'     | _            | "#baseName-#classifier.#extension"
+        'test'   | null     | null    | null       | 'xml'     | _            | "#baseName.#extension"
+        'test'   | null     | null    | null       | null      | _            | "#baseName.#extension"
+        null     | 'suite'  | '0.1.0' | 'case'     | 'xml'     | _            | "#appendix-#version-#classifier.#extension"
+        null     | 'suite'  | null    | 'case'     | 'xml'     | _            | "#appendix-#classifier.#extension"
+        null     | 'suite'  | null    | 'case'     | null      | _            | "#appendix-#classifier.#extension"
+        null     | 'suite'  | null    | null       | 'xml'     | _            | "#appendix.#extension"
+        null     | 'suite'  | null    | null       | null      | _            | "#appendix.#extension"
+        null     | null     | '0.1.0' | 'case'     | 'xml'     | _            | "#version-#classifier.#extension"
+        null     | null     | '0.1.0' | null       | 'xml'     | _            | "#version.#extension"
+        null     | null     | '0.1.0' | null       | null      | _            | "#version.#extension"
+        null     | null     | null    | 'case'     | 'xml'     | _            | "#classifier.#extension"
+        null     | null     | null    | 'case'     | null      | _            | "#classifier.#extension"
+        null     | null     | null    | null       | 'xml'     | _            | ".#extension"
+        null     | null     | null    | null       | null      | _            | ".#extension"
+        _        | null     | _       | null       | _         | 'customName' | 'customName'
+        null     | null     | _       | null       | _         | 'customName' | 'customName'
+        'test'   | 'suite'  | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | 'customName' | 'customName'
+        'test'   | 'suite'  | '0.1.0' | 'case'     | null      | 'customName' | 'customName'
+        'test'   | 'suite'  | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
+        'test'   | 'suite'  | '0.1.0' | null       | null      | 'customName' | 'customName'
+        'test'   | 'suite'  | null    | 'case'     | 'xml'     | 'customName' | 'customName'
+        'test'   | 'suite'  | null    | null       | 'xml'     | 'customName' | 'customName'
+        'test'   | 'suite'  | null    | null       | null      | 'customName' | 'customName'
+        'test'   | null     | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
+        'test'   | null     | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
+        'test'   | null     | '0.1.0' | null       | null      | 'customName' | 'customName'
+        'test'   | null     | null    | 'case'     | 'xml'     | 'customName' | 'customName'
+        'test'   | null     | null    | null       | 'xml'     | 'customName' | 'customName'
+        'test'   | null     | null    | null       | null      | 'customName' | 'customName'
+        null     | 'suite'  | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
+        null     | 'suite'  | null    | 'case'     | 'xml'     | 'customName' | 'customName'
+        null     | 'suite'  | null    | 'case'     | null      | 'customName' | 'customName'
+        null     | 'suite'  | null    | null       | 'xml'     | 'customName' | 'customName'
+        null     | 'suite'  | null    | null       | null      | 'customName' | 'customName'
+        null     | null     | '0.1.0' | 'case'     | 'xml'     | 'customName' | 'customName'
+        null     | null     | '0.1.0' | null       | 'xml'     | 'customName' | 'customName'
+        null     | null     | '0.1.0' | null       | null      | 'customName' | 'customName'
+        null     | null     | null    | 'case'     | 'xml'     | 'customName' | 'customName'
+        null     | null     | null    | 'case'     | null      | 'customName' | 'customName'
+        null     | null     | null    | null       | 'xml'     | 'customName' | 'customName'
+        null     | null     | null    | null       | null      | 'customName' | 'customName'
+
+        defaultVersion = '0.0.0'
+        defaultBaseName = 'atlasBuildIos'
+        defaultExtension = 'xcarchive'
+
+        expectedValue = expectedArchivePattern.replace('#baseName', (baseName == _ ? defaultBaseName : baseName ?: '').toString())
+            .replace('#version', (version == _ ? defaultVersion : version ?: '').toString())
+            .replace('#extension', (extension == _ ? defaultExtension : extension ?: defaultExtension).toString())
+            .replace('#appendix', (appendix ?: '').toString())
+            .replace('#classifier', (classifier ?: '').toString())
+
+        archiveNameParts = ['baseName': baseName, 'version': version, 'appendix': appendix, 'extension': extension, 'classifier': classifier, 'archiveName': archiveName]
+
+        getter = new PropertyGetterTaskWriter(subjectUnderTestName + ".archiveName")
+
     }
 }

@@ -21,11 +21,6 @@ package wooga.gradle.xcodebuild.tasks
 
 import org.gradle.api.Transformer
 import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileCollection
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import wooga.gradle.xcodebuild.XcodeArchiveActionSpec
@@ -35,211 +30,17 @@ import wooga.gradle.xcodebuild.config.BuildSettings
 
 class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActionSpec {
 
-    @Optional
-    @Input
-    final Property<String> configuration
-
-    @Override
-    void setConfiguration(String value) {
-        configuration.set(value)
-    }
-
-    @Override
-    void setConfiguration(Provider<String> value) {
-        configuration.set(value)
-    }
-
-    @Override
-    XcodeArchive configuration(String value) {
-        setConfiguration(value)
-        this
-    }
-
-    @Override
-    XcodeArchive configuration(Provider<String> value) {
-        setConfiguration(value)
-        this
-    }
-
-    @Input
-    @Optional
-    final Property<Boolean> clean
-
-    @Override
-    void setClean(Boolean value) {
-        clean.set(value)
-    }
-
-    @Override
-    void setClean(Provider<Boolean> value) {
-        clean.set(value)
-    }
-
-    @Override
-    XcodeArchive clean(Boolean value) {
-        setClean(value)
-        this
-    }
-
-    @Override
-    XcodeArchive clean(Provider<Boolean> value) {
-        setClean(value)
-        this
-    }
-
-    @Input
-    final Property<String> scheme
-
-    @Override
-    void setScheme(String value) {
-        scheme.set(value)
-    }
-
-    @Override
-    void setScheme(Provider<String> value) {
-        scheme.set(value)
-    }
-
-    @Override
-    XcodeArchive scheme(String value) {
-        setScheme(value)
-        this
-    }
-
-    @Override
-    XcodeArchive scheme(Provider<String> value) {
-        setScheme(value)
-        this
-    }
-
-    @Optional
-    @Input
-    final Property<String> teamId
-
-    @Override
-    void setTeamId(String value) {
-        teamId.set(value)
-    }
-
-    @Override
-    void setTeamId(Provider<String> value) {
-        teamId.set(value)
-    }
-
-    @Override
-    XcodeArchive teamId(String value) {
-        setTeamId(value)
-        this
-    }
-
-    @Override
-    XcodeArchive teamId(Provider<String> value) {
-        setTeamId(value)
-        this
-    }
-
-    @Internal
-    final DirectoryProperty derivedDataPath
-
-    @Override
-    void setDerivedDataPath(File value) {
-        derivedDataPath.set(value)
-    }
-
-    @Override
-    void setDerivedDataPath(Provider<Directory> value) {
-        derivedDataPath.set(value)
-    }
-
-    @Override
-    XcodeArchive derivedDataPath(File value) {
-        setDerivedDataPath(value)
-        this
-    }
-
-    @Override
-    XcodeArchive derivedDataPath(Provider<Directory> value) {
-        setDerivedDataPath(value)
-        this
-    }
-
-    final DirectoryProperty projectPath
-
-    @SkipWhenEmpty
-    @InputDirectory
-    DirectoryProperty getProjectPath() {
-        projectPath
-    }
-
     @InputFiles
     protected getInputFiles() {
         project.files(projectPath)
     }
 
-    @Override
-    void setProjectPath(File value) {
-        projectPath.set(value)
-    }
-
-    @Override
-    void setProjectPath(Provider<Directory> value) {
-        projectPath.set(value)
-    }
-
-    @Override
-    XcodeArchive projectPath(File value) {
-        setProjectPath(value)
-        this
-    }
-
-    @Override
-    XcodeArchive projectPath(Provider<Directory> value) {
-        setProjectPath(value)
-        this
-    }
-
-    @Optional
-    @InputFile
-    final RegularFileProperty buildKeychain
-
-    @Override
-    void setBuildKeychain(File value) {
-        buildKeychain.set(value)
-    }
-
-    @Override
-    void setBuildKeychain(Provider<RegularFile> value) {
-        buildKeychain.set(value)
-    }
-
-    @Override
-    XcodeArchive buildKeychain(File value) {
-        setBuildKeychain(value)
-        this
-    }
-
-    @Override
-    XcodeArchive buildKeychain(Provider<RegularFile> value) {
-        setBuildKeychain(value)
-        this
-    }
-
     @OutputDirectory
     final Provider<Directory> xcArchivePath
 
-    @Input
-    final Provider<List<String>> buildArguments
 
     XcodeArchive() {
         super()
-        configuration = project.objects.property(String)
-        scheme = project.objects.property(String)
-        teamId = project.objects.property(String)
-        clean = project.objects.property(Boolean)
-
-        projectPath = project.objects.directoryProperty()
-        derivedDataPath = project.objects.directoryProperty()
-        buildKeychain = project.objects.fileProperty()
 
         xcArchivePath = destinationDir.map(new Transformer<Directory, Directory>() {
             @Override
@@ -248,7 +49,7 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
             }
         })
 
-        buildArguments = project.provider({
+        setInternalArguments(project.provider({
             List<String> arguments = new ArrayList<String>()
             BuildSettings settings = buildSettings.getOrElse(BuildSettings.EMPTY).clone()
             arguments << "xcodebuild"
@@ -297,6 +98,6 @@ class XcodeArchive extends AbstractXcodeArchiveTask implements XcodeArchiveActio
 
             arguments.addAll(settings.toList())
             arguments
-        })
+        }))
     }
 }
