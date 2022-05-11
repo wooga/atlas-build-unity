@@ -54,35 +54,27 @@ abstract class FastlaneIntegrationSpec extends IntegrationSpec {
 
 
 
-    // TODO: Replace with newer test API
-    // Should not use project dir if on not windows
-    Object substitutePath(Object str, Object subStr, String typeName) {
+    // TODO: Replace with newer test API. subStr is an object since we invoke this for any types then discard
+    Object substitutePath(Object expectedValue, Object value, String typeName) {
 
         if (typeName != "File" && typeName != "Provider<RegularFile>") {
-            return str
+            return expectedValue
         }
 
-        def path = (String) subStr
+        def path = (String) value
         if (path == null) {
-            return str
+            return expectedValue
         }
 
         // If it's an absolute path starting from the current volume
         if (Paths.get(path).isAbsolute()){
-            return str
+            return expectedValue
         }
-//        if (!PlatformUtils.windows && path.startsWith("/")){
-//            return str
-//        }
-//        else if (PlatformUtils.windows && path.startsWith("c:")) {
-//            return str
-//        }
-
 
         def modifiedPath = typeName == "Provider<RegularFile>"
-            ? "/build${path}"
+            ? "/build/${path}"
             : path
 
-        str.replace(path, new File(projectDir, modifiedPath).path)
+        expectedValue.replace(path, new File(projectDir, modifiedPath).path)
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Wooga GmbH
+ * Copyright 2018-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,7 @@
 
 package wooga.gradle.fastlane
 
-import nebula.test.functional.ExecutionResult
-import org.apache.commons.text.StringEscapeUtils
-import org.junit.Rule
-import org.junit.contrib.java.lang.system.EnvironmentVariables
-import org.junit.contrib.java.lang.system.ProvideSystemProperty
-import spock.lang.Requires
-
-//@Requires({ os.macOs })
 class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
-
-//    def escapedPath(String path) {
-//        String osName = System.getProperty("os.name").toLowerCase()
-//        if (osName.contains("windows")) {
-//            return StringEscapeUtils.escapeJava(path)
-//        }
-//        path
-//    }
 
     def setup() {
         def gradleVersion = System.getenv("GRADLE_VERSION")
@@ -43,7 +27,6 @@ class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
             this.gradleVersion = gradleVersion
             fork = true
         }
-        // All are cleared now
-        //environmentVariables.clear("FASTLANE_USERNAME", "FASTLANE_PASSWORD")
+        environmentVariables.clear("FASTLANE_USERNAME", "FASTLANE_PASSWORD")
     }
 }
