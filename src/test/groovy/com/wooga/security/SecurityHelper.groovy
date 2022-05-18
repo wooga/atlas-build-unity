@@ -16,6 +16,8 @@
 
 package com.wooga.security
 
+import java.security.MessageDigest
+
 class SecurityHelper {
 
     static class CA {
@@ -256,7 +258,7 @@ class SecurityHelper {
         null
     }
 
-    static File createTestCodeSigningCertificatePkcs12(Map options = [:], String password) {
+    static TestCertificate createTestCodeSigningCertificatePkcs12(Map options = [:], String password) {
         def ca = newCA(options)
         if (!ca) {
             return null
@@ -277,6 +279,36 @@ class SecurityHelper {
         if (!cert) {
             return null
         }
-        createTestCertificatePkcs12(options, key, cert, password)
+        def p12 = createTestCertificatePkcs12(options, key, cert, password)
+
+        new TestCertificate(p12, cert, csr, key)
+    }
+
+    static class TestCertificate {
+        final File pkcs12
+        final File cert
+        final File csr
+        final File privateKey
+        final String certFingerprint
+
+        TestCertificate(File pkcs12, File cert, File csr, File privateKey) {
+            this.pkcs12 = pkcs12
+            this.cert = cert
+            this.csr = csr
+            this.privateKey = privateKey
+            this.certFingerprint = createFingerPrint(cert)
+        }
+
+        private static String createFingerPrint(File cert) {
+            File outfile = new File(cert.parentFile, cert.name + ".der")
+            def args = ['openssl', 'x509',
+                        '-outform', 'der',
+                        '-in', cert.path,
+                        '-out', outfile.path
+            ]
+            if (args.execute().waitFor() == 0) {
+                return outfile.bytes.digest("SHA-1")
+            }
+        }
     }
 }
