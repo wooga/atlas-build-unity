@@ -32,8 +32,6 @@ class ImportCodeSigningIdentitiesIntegrationSpec extends IOSBuildIntegrationSpec
     @Unroll("import #taskStatus when #reason")
     def "imports signing identity"() {
         given: "an invalid sighing certificate"
-        def passphrase = "123456"
-        def cert = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: testSigningIdentity], passphrase)
         buildFile << """
         ${subjectUnderTestName} {
             passphrase = "${passphrase}"
@@ -51,12 +49,25 @@ class ImportCodeSigningIdentitiesIntegrationSpec extends IOSBuildIntegrationSpec
         outputContains(result, expectedLogMessage)
 
         where:
-        testSigningIdentity        | signingIdentity          | ignoreInvalidSigningIdentities || taskSuccessfull | reason                                           | logMessage
-        "test signing: Wooga GmbH" | _                        | false                          || false           | "imported identity is invalid"                   | "Unable to find valid code sign identity '#expectedSigningIdentity' in keychain"
-        "test signing: Wooga GmbH" | _                        | true                           || true            | "imported identity is invalid but error ignored" | "Signing Identity '#expectedSigningIdentity' found but invalid"
-        "test signing: Wooga GmbH" | "some signing: Foo GmbH" | true                           || false           | "expected identity was not imported"             | "Unable to find code sign identity '#expectedSigningIdentity' in keychain"
+        testSigningIdentity                           | signingIdentity            | ignoreInvalidSigningIdentities || taskSuccessfull | reason                                                                       | logMessage
+        "test signing: Wooga GmbH"                    | _                          | false                          || false           | "imported identity is invalid"                                               | "Unable to find valid code sign identity '#expectedSigningIdentity' in keychain"
+        "test signing: Wooga GmbH"                    | _                          | true                           || true            | "imported identity is invalid but error ignored"                             | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "test signing: Wooga GmbH"                    | "some signing: Foo GmbH"   | true                           || false           | "expected identity was not imported"                                         | "Unable to find code sign identity '#expectedSigningIdentity' in keychain"
+        "Mac App Distribution: Wooga GmbH"            | "Mac App Distribution"     | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "iOS Developer: Markus Mustermann"            | "iOS Developer"            | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "iOS Distribution: Wooga GmbH"                | "iOS Distribution"         | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "iPhone Developer: Markus Mustermann"         | "iPhone Developer"         | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "iPhone Distribution: Wooga GmbH"             | "iPhone Distribution"      | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "Developer ID Application: Markus Mustermann" | "Developer ID Application" | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "Apple Distribution: Wooga GmbH"              | "Apple Distribution"       | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "Mac Developer: Markus Mustermann"            | "Mac Developer"            | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "Apple Development: Wooga GmbH"               | "Apple Development"        | true                           || true            | "expected identity was imported with automatic selector: ${signingIdentity}" | "Signing Identity '#expectedSigningIdentity' found but invalid"
+        "test signing: Wooga GmbH"                    | "SHA-1"                    | true                           || true            | "expected identity was imported with SHA-1 fingerprint"                      | "Signing Identity '#expectedSigningIdentity' found but invalid"
 
-        expectedSigningIdentity = signingIdentity == _ ? testSigningIdentity : signingIdentity
+        passphrase = "123456"
+        testCertificate = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: testSigningIdentity], passphrase)
+        cert = testCertificate.pkcs12
+        expectedSigningIdentity = signingIdentity == _ ? testSigningIdentity : signingIdentity.replaceAll("SHA-1", testCertificate.certFingerprint)
         expectedLogMessage = logMessage.toString().replaceAll("#expectedSigningIdentity", expectedSigningIdentity.toString())
         taskStatus = taskSuccessfull ? "succeeds" : "fails"
     }
@@ -162,7 +173,7 @@ class ImportCodeSigningIdentitiesIntegrationSpec extends IOSBuildIntegrationSpec
     def "is up-to-date when #reason"() {
         given: "an invalid sighing certificate"
         def passphrase = "123456"
-        def cert = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: signingIdentity], passphrase)
+        def cert = SecurityHelper.createTestCodeSigningCertificatePkcs12([commonName: signingIdentity], passphrase).pkcs12
         def futureKeychain = new File(projectDir, "build/keychains/test.keychain")
         assert !futureKeychain.exists()
 
