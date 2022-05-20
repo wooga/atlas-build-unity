@@ -16,6 +16,9 @@
 
 package wooga.gradle.fastlane.tasks
 
+import com.wooga.gradle.PlatformUtils
+import com.wooga.gradle.test.PropertyQueryTaskWriter
+import org.apache.commons.io.FileUtils
 import spock.lang.Requires
 import spock.lang.Unroll
 
@@ -25,7 +28,6 @@ import spock.lang.Unroll
  * We can't run the real fastlane and connect to apple because there is no easy way to setup and maintain a test app and
  * account with necessary credentials. We only test the invocation of fastlane and its parameters.
  */
-@Requires({ os.macOs })
 class PilotUploadIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
 
     String testTaskName = "pilotUpload"
@@ -36,30 +38,27 @@ class PilotUploadIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
 
     String workingFastlaneTaskConfig = """
         task("${testTaskName}", type: ${taskType.name}) {
-            ipa = file("${ipaFile.path}")
+            ipa = file("${PlatformUtils.escapedPath(ipaFile.path)}")
         }
         """.stripIndent()
 
     @Unroll("property #property #valueMessage sets flag #expectedCommandlineFlag")
     def "constructs arguments"() {
-        given: "a task to read the build arguments"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("arguments: " + ${testTaskName}.arguments.get().join(" "))
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
+        given: "a set property"
         if (method != _) {
             buildFile << """
             ${testTaskName}.${method}($value)
             """.stripIndent()
         }
 
+        // TODO: Refactor
+        and: "a substitution"
+        expectedCommandlineFlag = substitutePath(expectedCommandlineFlag, rawValue, type)
+
         when:
-        def result = runTasksSuccessfully("readValue")
+        def query = new PropertyQueryTaskWriter("${testTaskName}.arguments", ".get().join(\" \")")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
 
         then:
         outputContains(result, expectedCommandlineFlag)
@@ -117,26 +116,24 @@ class PilotUploadIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
     }
 
     @Unroll("can set property #property with #method and type #type")
-    def "can set property SighRenew"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
+    def "can set property"() {
 
-        and: "a set property"
+        given: "a set property"
         buildFile << """
             ${testTaskName}.${method}($value)
         """.stripIndent()
 
+        // TODO: Refactor
+        and: "a substitution"
+        expectedValue = substitutePath(expectedValue, rawValue, type)
+
         when:
-        def result = runTasksSuccessfully("readValue")
+        def query = new PropertyQueryTaskWriter("${testTaskName}.${property}")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
 
         then:
-        outputContains(result, "property: " + expectedValue.toString())
+        query.matches(result, expectedValue)
 
         where:
         property                        | method                              | rawValue             | type
@@ -226,6 +223,7 @@ class PilotUploadIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         expectedValue = rawValue
     }
 
+    @Requires({PlatformUtils.mac})
     def "task is never up-to-date"() {
         given: "call tasks once"
         def r = runTasks(testTaskName)

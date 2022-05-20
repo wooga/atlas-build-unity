@@ -16,27 +16,22 @@
 
 package wooga.gradle.fastlane
 
+import com.wooga.gradle.test.PropertyLocation
+import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Requires
 import spock.lang.Unroll
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
 
-@Requires({ os.macOs })
+import static com.wooga.gradle.PlatformUtils.escapedPath
+import static com.wooga.gradle.test.PropertyUtils.envNameFromProperty
+
 class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
 
-    @Unroll()
-    def "extension property #property returns '#testValue' if #reason"() {
-        given:
-        buildFile << """
-            task(custom) {
-                doLast {
-                    def value = ${extensionName}.${property}.getOrNull()
-                    println("${extensionName}.${property}: " + value)
-                }
-            }
-        """
+    @Unroll("extension property #property returns '#testValue' if #reason")
+    def "extension property returns value"() {
 
-        and: "a gradle.properties"
+        given: "a gradle.properties"
         def propertiesFile = createFile("gradle.properties")
 
         switch (location) {
@@ -46,7 +41,7 @@ class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
             case PropertyLocation.property:
                 propertiesFile << "${extensionName}.${property} = ${escapedValue}"
                 break
-            case PropertyLocation.env:
+            case PropertyLocation.environment:
                 environmentVariables.set(envNameFromProperty(extensionName, property), "${value}")
                 break
             default:
@@ -59,43 +54,48 @@ class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
         }
 
         when: ""
-        def result = runTasksSuccessfully("custom")
+        def query = new PropertyQueryTaskWriter("${extensionName}.${property}")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
 
         then:
-        result.standardOutput.contains("${extensionName}.${property}: ${testValue}")
+        if (type != _) {
+            testValue = substitutePath(testValue, testValue, type)
+        }
+        query.matches(result, testValue)
 
         where:
-        property     | method           | rawValue             | expectedValue | type                     | location                  | additionalInfo
-        "username"   | _                | "someUser1"          | _             | _                        | PropertyLocation.env      | ""
-        "username"   | _                | "someUser2"          | _             | _                        | PropertyLocation.property | ""
-        "username"   | _                | "someUser3"          | _             | "String"                 | PropertyLocation.script   | ""
-        "username"   | _                | "someUser4"          | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "username"   | "username.set"   | "someUser5"          | _             | "String"                 | PropertyLocation.script   | ""
-        "username"   | "username.set"   | "someUser6"          | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "username"   | "username"       | "someUser7"          | _             | "String"                 | PropertyLocation.script   | ""
-        "username"   | "username"       | "someUser8"          | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "username"   | _                | _                    | null          | _                        | PropertyLocation.none     | ""
+        property     | method           | rawValue                     | expectedValue | type                    | location                     | additionalInfo
+        "username"   | _                | "someUser1"                  | _             | _                       | PropertyLocation.environment | ""
+        "username"   | _                | "someUser2"                  | _             | _                       | PropertyLocation.property    | ""
+        "username"   | _                | "someUser3"                  | _             | "String"                | PropertyLocation.script      | ""
+        "username"   | _                | "someUser4"                  | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "username"   | "username.set"   | "someUser5"                  | _             | "String"                | PropertyLocation.script      | ""
+        "username"   | "username.set"   | "someUser6"                  | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "username"   | "username"       | "someUser7"                  | _             | "String"                | PropertyLocation.script      | ""
+        "username"   | "username"       | "someUser8"                  | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "username"   | _                | _                            | null          | _                       | PropertyLocation.none        | ""
 
 
-        "password"   | _                | "somePassword1"      | _             | _                        | PropertyLocation.env      | ""
-        "password"   | _                | "somePassword2"      | _             | _                        | PropertyLocation.property | ""
-        "password"   | _                | "somePassword3"      | _             | "String"                 | PropertyLocation.script   | ""
-        "password"   | _                | "somePassword4"      | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "password"   | "password.set"   | "somePassword5"      | _             | "String"                 | PropertyLocation.script   | ""
-        "password"   | "password.set"   | "somePassword6"      | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "password"   | "password"       | "somePassword7"      | _             | "String"                 | PropertyLocation.script   | ""
-        "password"   | "password"       | "somePassword8"      | _             | "Provider<String>"       | PropertyLocation.script   | ""
-        "password"   | _                | _                    | null          | _                        | PropertyLocation.none     | ""
+        "password"   | _                | "somePassword1"              | _             | _                       | PropertyLocation.environment | ""
+        "password"   | _                | "somePassword2"              | _             | _                       | PropertyLocation.property    | ""
+        "password"   | _                | "somePassword3"              | _             | "String"                | PropertyLocation.script      | ""
+        "password"   | _                | "somePassword4"              | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "password"   | "password.set"   | "somePassword5"              | _             | "String"                | PropertyLocation.script      | ""
+        "password"   | "password.set"   | "somePassword6"              | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "password"   | "password"       | "somePassword7"              | _             | "String"                | PropertyLocation.script      | ""
+        "password"   | "password"       | "somePassword8"              | _             | "Provider<String>"      | PropertyLocation.script      | ""
+        "password"   | _                | _                            | null          | _                       | PropertyLocation.none        | ""
 
-        "apiKeyPath" | _                | "/path/to/key1.json" | _             | _                        | PropertyLocation.env      | ""
-        "apiKeyPath" | _                | "/path/to/key2.json" | _             | _                        | PropertyLocation.property | ""
-        "apiKeyPath" | _                | "/path/to/key3.json" | _             | "File"                   | PropertyLocation.script   | ""
-        "apiKeyPath" | _                | "/path/to/key4.json" | _             | "Provider<RegularFile>"  | PropertyLocation.script   | ""
-        "apiKeyPath" | "apiKeyPath.set" | "/path/to/key5.json" | _             | "File"                   | PropertyLocation.script   | ""
-        "apiKeyPath" | "apiKeyPath.set" | "/path/to/key6.json" | _             | "Provider<RegularFile>"  | PropertyLocation.script   | ""
-        "apiKeyPath" | "apiKeyPath"     | "/path/to/key7.json" | _             | "File"                   | PropertyLocation.script   | ""
-        "apiKeyPath" | "apiKeyPath"     | "/path/to/key8.json" | _             | "Provider<RegularFile>" | PropertyLocation.script   | ""
-        "apiKeyPath" | _                | _                    | null          | _                        | PropertyLocation.none     | ""
+        "apiKeyPath" | _                | osPath("/path/to/key1.json") | _             | _                       | PropertyLocation.environment | ""
+        "apiKeyPath" | _                | osPath("/path/to/key2.json") | _             | _                       | PropertyLocation.property    | ""
+        "apiKeyPath" | _                | osPath("/path/to/key3.json") | _             | "File"                  | PropertyLocation.script      | ""
+        "apiKeyPath" | _                | osPath("/path/to/key4.json") | _             | "Provider<RegularFile>" | PropertyLocation.script      | ""
+        "apiKeyPath" | "apiKeyPath.set" | osPath("/path/to/key5.json") | _             | "File"                  | PropertyLocation.script      | ""
+        "apiKeyPath" | "apiKeyPath.set" | osPath("/path/to/key6.json") | _             | "Provider<RegularFile>" | PropertyLocation.script      | ""
+        "apiKeyPath" | "apiKeyPath"     | osPath("/path/to/key7.json") | _             | "File"                  | PropertyLocation.script      | ""
+        "apiKeyPath" | "apiKeyPath"     | osPath("/path/to/key8.json") | _             | "Provider<RegularFile>" | PropertyLocation.script      | ""
+        "apiKeyPath" | _                | _                            | null          | _                       | PropertyLocation.none        | ""
         extensionName = "fastlane"
         value = (type != _) ? wrapValueBasedOnType(rawValue, type) : rawValue
         providedValue = (location == PropertyLocation.script) ? type : value
@@ -109,15 +109,7 @@ class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
     def "task property is connected with extension"() {
         given:
         buildFile << """
-            task ${taskName}(type: ${tasktype.name})
-
-            task(custom) {
-                doLast {
-                    def value = ${taskName}.${property}${providerInvocation}
-                    println("${taskName}.${property}: " + value)
-                }
-            }
-            
+            task ${taskName}(type: ${tasktype.name})            
             ${extensionName}.${invocation}
         """.stripIndent()
 
@@ -128,10 +120,12 @@ class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
         }
 
         when: ""
-        def result = runTasksSuccessfully("custom")
+        def query = new PropertyQueryTaskWriter("${taskName}.${property}")
+        query.write(buildFile)
+        def result = runTasksSuccessfully(query.taskName)
 
         then:
-        result.standardOutput.contains("${taskName}.${property}: ${testValue}")
+        query.matches(result, testValue)
 
         where:
         property     | extensionProperty | tasktype    | rawValue             | expectedValue | type     | useProviderApi
@@ -141,8 +135,8 @@ class FastlanePluginIntegrationSpec extends FastlaneIntegrationSpec {
         "password"   | "password"        | SighRenew   | "password1"          | _             | "String" | true
         "password"   | "password"        | PilotUpload | "password2"          | _             | "String" | true
 
-        "apiKeyPath" | "apiKeyPath"      | SighRenew   | "/path/to/key1.json" | _             | "File"   | true
-        "apiKeyPath" | "apiKeyPath"      | PilotUpload | "/path/to/key2.json" | _             | "File"   | true
+        "apiKeyPath" | "apiKeyPath"      | SighRenew   | osPath("/path/to/key1.json") | _             | "File"   | true
+        "apiKeyPath" | "apiKeyPath"      | PilotUpload | osPath("/path/to/key2.json") | _             | "File"   | true
 
         extensionName = "fastlane"
         taskName = "fastlaneTask"

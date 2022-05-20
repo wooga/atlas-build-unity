@@ -16,11 +16,65 @@
 
 package wooga.gradle.fastlane
 
-abstract class FastlaneIntegrationSpec extends FastlaneSpec {
+import com.wooga.gradle.PlatformUtils
+
+import java.nio.file.Paths
+
+abstract class FastlaneIntegrationSpec extends IntegrationSpec {
+
+    File fastlaneMock
+    File fastlaneMockPath
+
+    def setupFastlaneMock() {
+        fastlaneMockPath = File.createTempDir("fastlane", "mock")
+
+        def path = System.getenv("PATH")
+        environmentVariables.clear("PATH")
+        String newPath = "${fastlaneMockPath}${File.pathSeparator}${path}"
+        environmentVariables.set("PATH", newPath)
+        assert System.getenv("PATH") == newPath
+
+
+        fastlaneMock = createFile("fastlane", fastlaneMockPath)
+        fastlaneMock.executable = true
+        fastlaneMock << """
+            #!/usr/bin/env bash
+            echo \$@
+            env
+        """.stripIndent()
+    }
+
     def setup() {
+        setupFastlaneMock()
         buildFile << """
-          group = 'test'
-          ${applyPlugin(FastlanePlugin)}
-       """.stripIndent()
+              group = 'test'
+              ${applyPlugin(FastlanePlugin)}
+           """.stripIndent()
+    }
+
+
+
+    // TODO: Replace with newer test API. subStr is an object since we invoke this for any types then discard
+    Object substitutePath(Object expectedValue, Object value, String typeName) {
+
+        if (typeName != "File" && typeName != "Provider<RegularFile>") {
+            return expectedValue
+        }
+
+        def path = (String) value
+        if (path == null) {
+            return expectedValue
+        }
+
+        // If it's an absolute path starting from the current volume
+        if (Paths.get(path).isAbsolute()){
+            return expectedValue
+        }
+
+        def modifiedPath = typeName == "Provider<RegularFile>"
+            ? "/build/${path}"
+            : path
+
+        expectedValue.replace(path, new File(projectDir, modifiedPath).path)
     }
 }

@@ -59,6 +59,10 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
             """.stripIndent()
         }
 
+        // TODO: Refactor
+        and: "a substitution"
+        expectedCommandlineFlag = substitutePath(expectedCommandlineFlag, rawValue, type)
+
         when:
         def result = runTasksSuccessfully("readValue")
 
@@ -135,6 +139,11 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         buildFile << """
             ${testTaskName}.${method}($value)
         """.stripIndent()
+
+        // TODO: Refactor
+        and: "a substitution"
+        expectedValue = substitutePath(expectedValue, rawValue, type)
+
 
         when:
         def result = runTasksSuccessfully("readValue")

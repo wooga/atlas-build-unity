@@ -16,33 +16,7 @@
 
 package wooga.gradle.fastlane
 
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
+import wooga.gradle.fastlane.models.FastLaneSpec
 
-interface FastlanePluginExtension<T extends FastlanePluginExtension> {
-    Property<String> getUsername()
-
-    void setUsername(String value)
-    void setUsername(Provider<String> value)
-
-    T username(String value)
-    T username(Provider<String> value)
-
-    Property<String> getPassword()
-
-    void setPassword(String value)
-    void setPassword(Provider<String> value)
-
-    T password(String value)
-    T password(Provider<String> value)
-
-    RegularFileProperty getApiKeyPath()
-
-    void setApiKeyPath(File value)
-    void setApiKeyPath(Provider<RegularFile> value)
-
-    T apiKeyPath(File value)
-    T apiKeyPath(Provider<RegularFile> value)
+trait FastlanePluginExtension extends FastLaneSpec {
 }

@@ -16,123 +16,86 @@
 
 package wooga.gradle.fastlane.tasks
 
+import com.wooga.gradle.ArgumentsSpec
+import com.wooga.gradle.io.FileUtils
+import com.wooga.gradle.io.LogFileSpec
+import com.wooga.gradle.io.OutputStreamSpec
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
+import org.gradle.api.Task
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskAction
-import wooga.gradle.fastlane.FastlaneActionSpec
-import wooga.gradle.fastlane.internal.FastlaneAction
+import org.gradle.process.ExecSpec
+import wooga.gradle.build.unity.internal.ExecUtil
+import wooga.gradle.fastlane.models.FastLaneTaskSpec
 
-abstract class AbstractFastlaneTask extends DefaultTask implements FastlaneActionSpec {
-
-    private final RegularFileProperty logFile
-
-    @Internal
-    RegularFileProperty getLogFile() {
-        logFile
-    }
-
-    @Override
-    void setLogFile(File value) {
-        logFile.set(value)
-    }
-
-    @Override
-    void setLogFile(Provider<RegularFile> value) {
-        logFile.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask logFile(File value) {
-        setLogFile(value)
-        this
-    }
-
-    @Override
-    AbstractFastlaneTask logFile(Provider<RegularFile> value) {
-        setLogFile(value)
-        this
-    }
-
-    private final ListProperty<String> additionalArguments
-
-    @Internal
-    ListProperty<String> getAdditionalArguments() {
-        additionalArguments
-    }
-
-    @Override
-    void setAdditionalArguments(Iterable<String> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    void setAdditionalArguments(Provider<? extends Iterable<String>> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask argument(String argument) {
-        additionalArguments.add(argument)
-        return this
-    }
-
-    @Override
-    AbstractFastlaneTask arguments(String[] arguments) {
-        additionalArguments.addAll(project.provider({ arguments.toList() }))
-        return this
-    }
-
-    @Override
-    AbstractFastlaneTask arguments(Iterable arguments) {
-        additionalArguments.addAll(project.provider({ arguments }))
-        return this
-    }
-
-    private final RegularFileProperty apiKeyPath
-
-    @Optional
-    @InputFile
-    RegularFileProperty getApiKeyPath() {
-        apiKeyPath
-    }
-
-    @Override
-    void setApiKeyPath(File value) {
-        apiKeyPath.set(value)
-    }
-
-    @Override
-    void setApiKeyPath(Provider<RegularFile> value) {
-        apiKeyPath.set(value)
-    }
-
-    @Override
-    AbstractFastlaneTask apiKeyPath(File value) {
-        setApiKeyPath(value)
-        this
-    }
-
-    @Override
-    AbstractFastlaneTask apiKeyPath(Provider<RegularFile> value) {
-        setApiKeyPath(value)
-        this
-    }
+abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskSpec,
+    ArgumentsSpec,
+    LogFileSpec,
+    OutputStreamSpec {
 
     AbstractFastlaneTask() {
-        additionalArguments = project.objects.listProperty(String)
-        logFile = project.objects.fileProperty()
-        apiKeyPath = project.objects.fileProperty()
+
+        environment.set(project.provider({
+            Map<String, String> environment = [:]
+
+            if (password.isPresent()) {
+                environment['FASTLANE_PASSWORD'] = password.get()
+            }
+
+            environment as Map<String, String>
+        }))
+
+        outputs.upToDateWhen(new Spec<Task>() {
+            @Override
+            boolean isSatisfiedBy(Task task) {
+                false
+            }
+        })
     }
 
     @TaskAction
     protected void exec() {
-        def action = new FastlaneAction(project, arguments.get(), environment.get(), logFile.getAsFile().getOrNull())
-        action.exec()
+
+        def executablePath = ExecUtil.getExecutable("fastlane")
+        def _environment = environment.get()
+        def _logFile = logFile.asFile.getOrNull()
+        if (_logFile != null && !_logFile.exists()){
+            FileUtils.ensureFile(_logFile)
+        }
+
+        project.exec(new Action<ExecSpec>() {
+            @Override
+            void execute(ExecSpec exec) {
+                exec.with {
+                    executable executablePath
+                    args arguments.get()
+                    environment = _environment
+                    standardOutput = getOutputStream(_logFile)
+                }
+            }
+        })
+    }
+
+    void addDefaultArguments(List<String> arguments) {
+        if (username.present) {
+            arguments << "--username" << username.get()
+        }
+
+        if (teamId.present) {
+            arguments << "--team_id" << teamId.get()
+        }
+
+        if (teamName.present) {
+            arguments << "--team_name" << teamName.get()
+        }
+
+        if (appIdentifier.present) {
+            arguments << "--app_identifier" << appIdentifier.get()
+        }
+
+        if (apiKeyPath.present) {
+            arguments << "--api-key-path" << apiKeyPath.get().asFile.path
+        }
     }
 }

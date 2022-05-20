@@ -88,7 +88,7 @@ dependencies {
     }
 
     testImplementation "org.yaml:snakeyaml:1.28"
-    testImplementation "com.wooga.gradle:gradle-commons-test:0.3.0"
+    testImplementation "com.wooga.gradle:gradle-commons-test:[1,2["
 
     implementation('com.wooga.security:macos-security:[1,2[')
 
