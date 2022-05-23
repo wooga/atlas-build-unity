@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.ios
 
+import com.wooga.security.Domain
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -97,6 +98,8 @@ class IOSBuildPlugin implements Plugin<Project> {
                 task.baseName.convention("build")
                 task.extension.convention("keychain")
                 task.password.convention(extension.keychainPassword)
+                task.lockKeychainAfterTimeout.convention(-1)
+                task.lockKeychainWhenSleep.convention(true)
                 task.destinationDir.convention(project.layout.buildDirectory.dir("sign/keychains"))
             }
         })
@@ -197,6 +200,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def addKeychain = tasks.create("addKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
+            it.domain.set(Domain.user)
             it.action = SecuritySetKeychainSearchList.Action.add
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
             dependsOn(resetKeychains)
@@ -204,6 +208,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         def removeKeychain = tasks.create("removeKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
+            it.domain.set(Domain.user)
             it.action = SecuritySetKeychainSearchList.Action.remove
             it.keychain(buildKeychain.keychain.map({ it.asFile }))
         }
