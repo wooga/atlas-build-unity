@@ -28,6 +28,7 @@ import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.ImportCodeSigningIdentities
+import wooga.gradle.fastlane.tasks.SighRenewBatch
 import wooga.gradle.build.unity.ios.tasks.PodInstallTask
 import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
@@ -238,10 +239,10 @@ class IOSBuildPlugin implements Plugin<Project> {
             Runtime.getRuntime().removeShutdownHook(shutdownHook)
         }
 
-        def importProvisioningProfiles = tasks.create("importProvisioningProfiles", SighRenew) {
+        def importProvisioningProfiles = tasks.create("importProvisioningProfiles", SighRenewBatch) {
+            it.profiles.set(extension.exportOptions.map({it.getProvisioningProfiles()}))
             it.dependsOn addKeychain, buildKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
-            it.fileName.set("${'signing'}.mobileprovision".toString())
         }
 
         PodInstallTask podInstall = tasks.create("podInstall", PodInstallTask) {

@@ -27,6 +27,6 @@ class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
             this.gradleVersion = gradleVersion
             fork = true
         }
-        environmentVariables.clear("FASTLANE_USERNAME", "FASTLANE_PASSWORD")
+        environmentVariables.clear("FASTLANE_USERNAME", "FASTLANE_PASSWORD", "FASTLANE_API_KEY_PATH", "SPACESHIP_SKIP_2FA_UPGRADE", "FASTLANE_SKIP_2FA_UPGRADE")
     }
 }

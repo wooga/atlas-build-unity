@@ -16,8 +16,12 @@
 
 package wooga.gradle.fastlane.tasks
 
-
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
 import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFiles
 import wooga.gradle.fastlane.models.SighRenewSpec
 
 class SighRenew extends AbstractFastlaneTask implements SighRenewSpec {
@@ -51,6 +55,16 @@ class SighRenew extends AbstractFastlaneTask implements SighRenewSpec {
                 (task.teamId.present || task.teamName.present) && task.appIdentifier.present
             }
         })
+    }
+
+    @Internal
+    Provider<RegularFile> getMobileProvisioningProfile() {
+        destinationDir.file(fileName)
+    }
+
+    @OutputFiles
+    protected FileCollection getOutputFiles() {
+        project.files(mobileProvisioningProfile)
     }
 
 

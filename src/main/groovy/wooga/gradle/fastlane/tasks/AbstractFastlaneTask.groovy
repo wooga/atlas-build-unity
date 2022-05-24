@@ -43,6 +43,10 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskS
                 environment['FASTLANE_PASSWORD'] = password.get()
             }
 
+            if (skip2faUpgrade.isPresent() && skip2faUpgrade.get()) {
+                environment["SPACESHIP_SKIP_2FA_UPGRADE"] = "1"
+            }
+
             environment as Map<String, String>
         }))
 

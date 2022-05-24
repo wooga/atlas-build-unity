@@ -24,4 +24,6 @@ class FastlanePluginConventions {
     static final PropertyLookup USERNAME_LOOKUP = new PropertyLookup("FASTLANE_USERNAME", "fastlane.username", null)
     static final PropertyLookup PASSWORD_LOOKUP = new PropertyLookup("FASTLANE_PASSWORD", "fastlane.password", null)
     static final PropertyLookup API_KEY_PATH_LOOKUP = new PropertyLookup("FASTLANE_API_KEY_PATH", "fastlane.apiKeyPath", null)
+    static final PropertyLookup SKIP_2FA_UPGRADE = new PropertyLookup(["SPACESHIP_SKIP_2FA_UPGRADE","FASTLANE_SKIP_2FA_UPGRADE"], "fastlane.skip2faUpgrade", null)
 }
+
