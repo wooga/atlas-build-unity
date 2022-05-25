@@ -26,6 +26,7 @@ import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
 
 import static FastlanePluginConventions.*
+import static wooga.gradle.fastlane.FastlanePluginConventions.SKIP_2FA_UPGRADE
 
 class FastlanePlugin implements Plugin<Project> {
     static final String EXTENSION_NAME = "fastlane"
@@ -47,6 +48,7 @@ class FastlanePlugin implements Plugin<Project> {
         extension.username.convention(USERNAME_LOOKUP.getStringValueProvider(project))
         extension.password.convention(PASSWORD_LOOKUP.getStringValueProvider(project))
         extension.apiKeyPath.convention(API_KEY_PATH_LOOKUP.getFileValueProvider(project))
+        extension.skip2faUpgrade.convention(SKIP_2FA_UPGRADE.getBooleanValueProvider(project))
     }
 
     private static void configureTasks(Project project, extension) {
@@ -56,6 +58,7 @@ class FastlanePlugin implements Plugin<Project> {
             void execute(AbstractFastlaneTask task) {
                 task.apiKeyPath.convention(extension.apiKeyPath)
                 task.logToStdout.convention(true)
+                task.skip2faUpgrade.convention(extension.skip2faUpgrade)
             }
         })
 

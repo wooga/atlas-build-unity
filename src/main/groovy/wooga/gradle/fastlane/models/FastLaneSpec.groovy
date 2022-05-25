@@ -56,4 +56,20 @@ trait FastLaneSpec extends BaseSpec {
     void setApiKeyPath(Provider<RegularFile> value) {
         apiKeyPath.set(value)
     }
+
+    private final Property<Boolean> skip2faUpgrade = objects.property(Boolean)
+
+    @Internal
+    Property<Boolean> getSkip2faUpgrade() {
+        skip2faUpgrade
+    }
+
+    void setSkip2faUpgrade(Provider<Boolean> value) {
+        skip2faUpgrade.set(value)
+    }
+
+    void setSkip2faUpgrade(Boolean value) {
+        skip2faUpgrade.set(value)
+    }
+
 }

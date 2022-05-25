@@ -47,7 +47,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("arguments: " + ${testTaskName}.arguments.get().join(" "))
+                    println("arguments: " + ${getTestTaskName()}.arguments.get().join(" "))
                 }
             }
         """.stripIndent()
@@ -55,7 +55,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         and: "a set property"
         if (method != _) {
             buildFile << """
-            ${testTaskName}.${method}($value)
+            ${getTestTaskName()}.${method}($value)
             """.stripIndent()
         }
 
@@ -99,7 +99,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("arguments: " + ${testTaskName}.environment.get().collect {k,v -> k + '=' + v}.join("\\n"))
+                    println("arguments: " + ${getTestTaskName()}.environment.get().collect {k,v -> k + '=' + v}.join("\\n"))
                 }
             }
         """.stripIndent()
@@ -107,7 +107,7 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         and: "a set property"
         if (method != _) {
             buildFile << """
-            ${testTaskName}.${method}($value)
+            ${getTestTaskName()}.${method}($value)
             """.stripIndent()
         }
 
@@ -118,8 +118,9 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         outputContains(result, expectedEnvironmentPair)
 
         where:
-        property   | method         | rawValue      | type     || expectedEnvironmentPair
-        "password" | "password.set" | "secretValue" | "String" || "FASTLANE_PASSWORD=secretValue"
+        property         | method               | rawValue      | type     || expectedEnvironmentPair
+        "password"       | "password.set"       | "secretValue" | "String" || "FASTLANE_PASSWORD=secretValue"
+        "skip2faUpgrade" | "skip2faUpgrade.set" | true          | "BOLEAN" || "SPACESHIP_SKIP_2FA_UPGRADE=1"
         value = wrapValueBasedOnType(rawValue, type)
         valueMessage = (rawValue != _) ? "with value ${value}" : "without value"
     }
@@ -130,14 +131,14 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
         buildFile << """
             task("readValue") {
                 doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
+                    println("property: " + ${getTestTaskName()}.${property}.get())
                 }
             }
         """.stripIndent()
 
         and: "a set property"
         buildFile << """
-            ${testTaskName}.${method}($value)
+            ${getTestTaskName()}.${method}($value)
         """.stripIndent()
 
         // TODO: Refactor
@@ -255,12 +256,12 @@ class SighRenewIntegrationSpec extends AbstractFastlaneTaskIntegrationSpec {
     @Issue("https://github.com/wooga/atlas-build-unity/issues/38")
     def "task is never up-to-date"() {
         given: "call import tasks once"
-        def r = runTasks(testTaskName)
+        def r = runTasks(getTestTaskName())
 
         when: "no parameter changes"
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(getTestTaskName())
 
         then:
-        !result.wasUpToDate(testTaskName)
+        !result.wasUpToDate(getTestTaskName())
     }
 }
