@@ -74,7 +74,7 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskS
                 exec.with {
                     executable executablePath
                     args arguments.get()
-                    environment = _environment
+                    environment(_environment)
                     standardOutput = getOutputStream(_logFile)
                 }
             }
