@@ -56,7 +56,7 @@ class SighRenewBatch extends SighRenew {
 
 
     SighRenewBatch() {
-        fileName.set("some_value")
+        fileName.set("signing.mobileprovision")
         setOnlyIf(new Spec<SighRenewBatch>() {
             @Override
             boolean isSatisfiedBy(SighRenewBatch task) {
