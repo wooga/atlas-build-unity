@@ -1,5 +1,6 @@
 package wooga.gradle.build.unity.tasks
 
+import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.*
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -12,28 +13,113 @@ import wooga.gradle.unity.UnityTask
 
 import javax.crypto.spec.SecretKeySpec
 
-abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec {
+trait UnityBuildEngineSpec extends BaseSpec {
 
-    private final Property<String> build
-    private final Property<String> config
-    private final RegularFileProperty configPath
-    private final Property<String> exportMethodName
-    private final DirectoryProperty outputDirectory
-    private final Property<String> logPath
-    private final RegularFileProperty secretsFile
-    private final ListProperty<Object> customArguments
-    private final ConfigurableFileCollection inputFiles
+    private final Property<String> build = objects.property(String)
+
+    @Input
+    Property<String> getBuild() {
+        return build
+    }
+
+    void setBuild(String build) {
+        this.build.set(build)
+    }
+
+    private final DirectoryProperty outputDirectory = objects.directoryProperty()
+
+    @OutputDirectory
+    Provider<Directory> getOutputDirectory() {
+        return outputDirectory
+    }
+
+    void setOutputDirectory(File outputPath) {
+        this.outputDirectory.set(outputPath)
+    }
+
+    private final Property<String> logPath = objects.property(String)
+
+    @Optional
+    @Input
+    Property<String> getLogPath() {
+        return logPath
+    }
+
+    void setLogPath(String logPath) {
+        this.logPath.set(logPath)
+    }
+
+    private final RegularFileProperty secretsFile = objects.fileProperty()
+
+    @Optional
+    @InputFile
+    RegularFileProperty getSecretsFile() {
+        return secretsFile
+    }
+
+    void setSecretsFile(File secretsFile) {
+        this.secretsFile.set(secretsFile)
+    }
+
+    private final ListProperty<Object> customArguments = objects.listProperty(Object)
+
+    @Optional
+    @Input
+    ListProperty<Object> getCustomArguments() {
+        return customArguments
+    }
+
+    void setCustomArguments(List<Object> customArguments) {
+        this.customArguments.set(customArguments)
+    }
+
+    private final Property<String> config = objects.property(String)
+
+    @Optional
+    @Input
+    Property<String> getConfig() {
+        return config
+    }
+
+    void setConfig(String config) {
+        this.config.set(config)
+    }
+
+    private final RegularFileProperty configPath = objects.fileProperty()
+
+    @Optional
+    @InputFile
+    RegularFileProperty getConfigPath() {
+        return configPath
+    }
+
+    void setConfigPath(File config) {
+        this.configPath.set(config)
+    }
+
+    private final Property<String> exportMethodName = objects.property(String)
+
+    @Input
+    Property<String> getExportMethodName() {
+        return exportMethodName
+    }
+
+    void setExportMethodName(String unityMethodName) {
+        this.exportMethodName.set(unityMethodName)
+    }
+
+    private final ConfigurableFileCollection inputFiles = objects.fileCollection()
+
+    @SkipWhenEmpty
+    @InputFiles
+    ConfigurableFileCollection getInputFiles() {
+        inputFiles
+    }
+}
+
+abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
 
     UnityBuildEngineTask() {
-        this.build = project.objects.property(String)
-        this.config = project.objects.property(String)
-        this.configPath = project.objects.fileProperty()
-        this.exportMethodName = project.objects.property(String)
-        this.outputDirectory = project.objects.directoryProperty()
-        this.logPath = project.objects.property(String)
-        this.secretsFile = project.objects.fileProperty()
-        this.customArguments = project.objects.listProperty(Object)
-        this.inputFiles = project.objects.fileCollection()
     }
 
     protected BuildEngineArgs defaultArgs() {
@@ -86,87 +172,5 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec {
         }
     }
 
-    @SkipWhenEmpty
-    @InputFiles
-    ConfigurableFileCollection getInputFiles() {
-        inputFiles
-    }
 
-    @Input
-    Property<String> getBuild() {
-        return build
-    }
-
-    @Input
-    Property<String> getExportMethodName() {
-        return exportMethodName
-    }
-
-    @OutputDirectory
-    Provider<Directory> getOutputDirectory() {
-        return outputDirectory
-    }
-
-    @Optional
-    @Input
-    Property<String> getLogPath() {
-        return logPath
-    }
-
-    @Optional
-    @InputFile
-    RegularFileProperty getSecretsFile() {
-        return secretsFile
-    }
-
-    @Optional
-    @Input
-    ListProperty<Object> getCustomArguments() {
-        return customArguments
-    }
-
-    @Optional
-    @Input
-    Property<String> getConfig() {
-        return config
-    }
-
-    @Optional
-    @InputFile
-    RegularFileProperty getConfigPath() {
-        return configPath
-    }
-
-
-    void setBuild(String build) {
-        this.build.set(build)
-    }
-
-    void setExportMethodName(String unityMethodName) {
-        this.exportMethodName.set(unityMethodName)
-    }
-
-    void setOutputDirectory(File outputPath) {
-        this.outputDirectory.set(outputPath)
-    }
-
-    void setLogPath(String logPath) {
-        this.logPath.set(logPath)
-    }
-
-    void setSecretsFile(File secretsFile) {
-        this.secretsFile.set(secretsFile)
-    }
-
-    void setCustomArguments(List<Object> customArguments) {
-        this.customArguments.set(customArguments)
-    }
-
-    void setConfig(String config) {
-        this.config.set(config)
-    }
-
-    void setConfigPath(File config) {
-        this.configPath.set(config)
-    }
 }
