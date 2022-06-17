@@ -32,36 +32,6 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     protected final Project project
 
-    final DirectoryProperty appConfigsDirectory
-    final DirectoryProperty outputDirectoryBase
-    final Property<String> toolsVersion
-    final Property<UBSVersion> ubsCompatibilityVersion
-    final Property<String> version
-    final Property<String> versionCode
-    final Property<String> commitHash
-    final Property<String> exportMethodName
-    final Property<String> defaultAppConfigName
-    final MapProperty<String, ?> customArguments
-    final DirectoryProperty assetsDir
-    DirectoryProperty getAssetsDir(){
-        assetsDir
-    }
-
-    final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck
-    final RegularFileProperty exportInitScript
-    final Property<File> exportBuildDirBase
-    final Property<Boolean> cleanBuildDirBeforeBuild
-    final Property<Boolean> skipExport
-
-    private final Property<String> appConfigSecretsKey
-    Property<String> getAppConfigSecretsKey() {
-        return appConfigSecretsKey
-    }
-    @Override
-    void setAppConfigSecretsKey(String key) {
-        appConfigSecretsKey.set(key)
-    }
-
     @Override
     DefaultUnityBuildPluginExtension appConfigSecretsKey(String key) {
         setAppConfigSecretsKey(key)
@@ -70,24 +40,6 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
-
-        appConfigsDirectory = project.objects.directoryProperty()
-        outputDirectoryBase = project.objects.directoryProperty()
-        toolsVersion = project.objects.property(String)
-        ubsCompatibilityVersion = project.objects.property(UBSVersion)
-        version = project.objects.property(String)
-        versionCode = project.objects.property(String)
-        commitHash = project.objects.property(String)
-        exportMethodName = project.objects.property(String)
-        defaultAppConfigName = project.objects.property(String)
-        customArguments = project.objects.mapProperty(String, Object)
-        assetsDir = project.objects.directoryProperty()
-        ignoreFilesForExportUpToDateCheck = project.objects.fileCollection()
-        exportInitScript = project.objects.fileProperty()
-        exportBuildDirBase = project.objects.property(File)
-        cleanBuildDirBeforeBuild = project.objects.property(Boolean)
-        skipExport = project.objects.property(Boolean)
-        appConfigSecretsKey = project.objects.property(String)
     }
 
     @Override
