@@ -29,6 +29,8 @@ import wooga.gradle.unity.models.UnityCommandLineOption
 
 import javax.crypto.spec.SecretKeySpec
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
     def setup() {

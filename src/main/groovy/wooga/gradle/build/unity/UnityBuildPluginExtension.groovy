@@ -26,8 +26,7 @@ import org.gradle.api.provider.Property
 import wooga.gradle.build.unity.models.UnityBuildSpec
 import wooga.gradle.build.unity.models.VersionSpec
 
-
-trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec, VersionSpec {
+trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec {
 
     private final DirectoryProperty appConfigsDirectory = objects.directoryProperty()
 

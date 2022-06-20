@@ -5,6 +5,8 @@ import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
 
     @Unroll("#containerTypeName of type #containerType.name can set secrets key with #method(#type)")
