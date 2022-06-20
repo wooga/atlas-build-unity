@@ -6,7 +6,6 @@ import org.gradle.api.provider.ProviderFactory
 
 class BuildEngineArgs {
 
-
     private final ProviderFactory providers;
     final Provider<String> method;
     private Map<String, BuildEngineArg> args

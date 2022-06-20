@@ -32,12 +32,6 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
 
     protected final Project project
 
-//    @Override
-//    DefaultUnityBuildPluginExtension appConfigSecretsKey(String key) {
-//        setAppConfigSecretsKey(key)
-//        return this
-//    }
-
     DefaultUnityBuildPluginExtension(final Project project) {
         this.project = project
     }

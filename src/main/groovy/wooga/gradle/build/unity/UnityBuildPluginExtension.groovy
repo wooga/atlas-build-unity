@@ -17,18 +17,17 @@
 
 package wooga.gradle.build.unity
 
-import com.wooga.gradle.BaseSpec
+
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Optional
+import wooga.gradle.build.unity.models.UnityBuildSpec
+import wooga.gradle.build.unity.models.VersionSpec
 
 
-trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec {
+trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec, VersionSpec {
 
     private final DirectoryProperty appConfigsDirectory = objects.directoryProperty()
 
