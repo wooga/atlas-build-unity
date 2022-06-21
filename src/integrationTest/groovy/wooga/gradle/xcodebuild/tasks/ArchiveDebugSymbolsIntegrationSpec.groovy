@@ -23,7 +23,7 @@ import spock.lang.Shared
 import wooga.gradle.xcodebuild.XcodeBuildIntegrationSpec
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 
-@Requires({ os.macOs })
+//@Requires({ os.macOs })
 class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
 
     @Shared
@@ -67,7 +67,7 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
             ${System.getenv("TEST_TEAM_ID") ? "developmentTeam = '${System.getenv("TEST_TEAM_ID")}'" : ""}
         }
 
-        buildArgument('-allowProvisioningUpdates')
+        argument('-allowProvisioningUpdates')
         clean = true
         projectPath = new File("${xcodeProject.xcodeProject}")
     }
@@ -84,6 +84,7 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
     }
     """.stripIndent()
 
+    @Requires({ os.macOs })
     def "creates zip archive with dsym files from xcarchive file"() {
         given: "a XcodeArchive task"
         buildFile << workingXcodebuildTaskConfig
@@ -102,6 +103,7 @@ class ArchiveDebugSymbolsIntegrationSpec extends XcodeBuildIntegrationSpec {
         dsymArchive.exists()
     }
 
+    @Requires({ os.macOs })
     def "is registered as publish artifact"() {
         given: "a subproject with xcode build setup"
         def subProjectDir = addSubproject(subProjectName)

@@ -16,6 +16,13 @@
 
 package wooga.gradle.xcodebuild
 
+import com.wooga.gradle.PlatformUtils
+import com.wooga.gradle.PropertyUtils
+import com.wooga.gradle.test.PropertyLocation
+import com.wooga.gradle.test.queries.TestValue
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import net.wooga.test.xcode.XcodeTestProject
 import org.junit.ClassRule
 import spock.lang.Requires
@@ -25,7 +32,8 @@ import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
 import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
-@Requires({ os.macOs })
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 class XcodeBuildPluginIntegrationSpec extends XcodeBuildIntegrationSpec {
 
     @Shared
@@ -33,279 +41,166 @@ class XcodeBuildPluginIntegrationSpec extends XcodeBuildIntegrationSpec {
     XcodeTestProject xcodeProject = new XcodeTestProject()
 
     @Unroll()
-    def "extension property #property returns '#testValue' if #reason"() {
-        given:
-        buildFile << """
-            task(custom) {
-                doLast {
-                    def value = ${extensionName}.${property}.getOrNull()
-                    println("${extensionName}.${property}: " + value)
-                }
-            }
-        """
-
-        and: "a gradle.properties"
-        def propertiesFile = createFile("gradle.properties")
-
-        switch (location) {
-            case PropertyLocation.script:
-                buildFile << "${extensionName}.${invocation}"
-                break
-            case PropertyLocation.property:
-                propertiesFile << "${extensionName}.${property} = ${escapedValue}"
-                break
-            case PropertyLocation.env:
-                environmentVariables.set(envNameFromProperty(extensionName, property), "${value}")
-                break
-            default:
-                break
-        }
-
-        and: "the test value with replace placeholders"
-        if (testValue instanceof String) {
-            testValue = testValue.replaceAll("#projectDir#", escapedPath(projectDir.path))
-        }
-
-        when: ""
-        def result = runTasksSuccessfully("custom")
-
-        then:
-        result.standardOutput.contains("${extensionName}.${property}: ${testValue}")
+    def "extension property #property of type #type sets #rawValue when #location"() {
+        expect:
+        runPropertyQuery(getter, setter).matches(rawValue)
 
         where:
-        property          | method                | rawValue                   | expectedValue                                                          | type                        | location                  | additionalInfo
-        "logsDir"         | _                     | "custom/logs"              | "#projectDir#/build/custom/logs"                                       | _                           | PropertyLocation.env      | " as relative path"
-        "logsDir"         | _                     | "custom/logs"              | "#projectDir#/build/custom/logs"                                       | _                           | PropertyLocation.property | " as relative path"
-        "logsDir"         | _                     | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "File"                      | PropertyLocation.script   | " as relative path"
-        "logsDir"         | _                     | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "logsDir"         | "logsDir.set"         | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "File"                      | PropertyLocation.script   | " as relative path"
-        "logsDir"         | "logsDir.set"         | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "logsDir"         | "logsDir"             | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "File"                      | PropertyLocation.script   | " as relative path"
-        "logsDir"         | "logsDir"             | "build/custom/logs"        | "#projectDir#/build/custom/logs"                                       | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "logsDir"         | _                     | _                          | "#projectDir#/build/logs"                                              | _                           | PropertyLocation.none     | ""
+        property          | method                            | rawValue                                                                                                | type                        | location
+        "logsDir"         | _                                 | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | _                           | PropertyLocation.environment
+        "logsDir"         | _                                 | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | _                           | PropertyLocation.property
+        "logsDir"         | PropertySetInvocation.assignment  | TestValue.projectFile("build/custom/logs")                                                              | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.assignment  | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | "Provider<Directory>"       | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.providerSet | TestValue.projectFile("build/custom/logs")                                                              | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.providerSet | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | "Provider<Directory>"       | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.setter      | TestValue.projectFile("build/custom/logs")                                                              | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.setter      | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | "Provider<Directory>"       | PropertyLocation.script
+        "logsDir"         | _                                 | TestValue.set(null).expectProjectFile("build/logs")                                                     | _                           | PropertyLocation.none
 
-        "logsDir"         | _                     | "/custom/logs"             | _                                                                      | _                           | PropertyLocation.env      | " as absolute path"
-        "logsDir"         | _                     | "/custom/logs"             | _                                                                      | _                           | PropertyLocation.property | " as absolute path"
-        "logsDir"         | _                     | "/custom/logs"             | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "logsDir"         | _                     | "/custom/logs"             | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "logsDir"         | "logsDir.set"         | "/custom/logs"             | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "logsDir"         | "logsDir.set"         | "/custom/logs"             | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "logsDir"         | "logsDir"             | "/custom/logs"             | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "logsDir"         | "logsDir"             | "/custom/logs"             | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
+        "logsDir"         | _                                 | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | _                           | PropertyLocation.environment
+        "logsDir"         | _                                 | TestValue.set("custom/logs").expectProjectFile("build/custom/logs")                                     | _                           | PropertyLocation.property
+        "logsDir"         | PropertySetInvocation.assignment  | osPath("/custom/logs")                                                                                  | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.assignment  | osPath("/custom/logs")                                                                                  | "Provider<Directory>"       | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.providerSet | osPath("/custom/logs")                                                                                  | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.providerSet | osPath("/custom/logs")                                                                                  | "Provider<Directory>"       | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.setter      | osPath("/custom/logs")                                                                                  | "File"                      | PropertyLocation.script
+        "logsDir"         | PropertySetInvocation.setter      | osPath("/custom/logs")                                                                                  | "Provider<Directory>"       | PropertyLocation.script
 
-        "derivedDataPath" | _                     | "custom/derivedData"       | "#projectDir#/build/custom/derivedData"                                | _                           | PropertyLocation.env      | " as relative path"
-        "derivedDataPath" | _                     | "custom/derivedData"       | "#projectDir#/build/custom/derivedData"                                | _                           | PropertyLocation.property | " as relative path"
-        "derivedDataPath" | _                     | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "File"                      | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | _                     | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | "derivedDataPath.set" | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "File"                      | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | "derivedDataPath.set" | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | "derivedDataPath"     | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "File"                      | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | "derivedDataPath"     | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData"                                | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "derivedDataPath" | _                     | _                          | "#projectDir#/build/derivedData"                                       | _                           | PropertyLocation.none     | ""
+        "derivedDataPath" | _                                 | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | _                           | PropertyLocation.environment
+        "derivedDataPath" | _                                 | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | _                           | PropertyLocation.property
+        "derivedDataPath" | PropertySetInvocation.assignment  | TestValue.projectFile("build/custom/derivedData")                                                       | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.assignment  | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | "Provider<Directory>"       | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.providerSet | TestValue.projectFile("build/custom/derivedData")                                                       | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.providerSet | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | "Provider<Directory>"       | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.setter      | TestValue.projectFile("build/custom/derivedData")                                                       | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.setter      | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | "Provider<Directory>"       | PropertyLocation.script
+        "derivedDataPath" | _                                 | TestValue.set(null).expectProjectFile("build/derivedData")                                              | _                           | PropertyLocation.none
 
-        "derivedDataPath" | _                     | "/custom/derivedData"      | _                                                                      | _                           | PropertyLocation.env      | " as absolute path"
-        "derivedDataPath" | _                     | "/custom/derivedData"      | _                                                                      | _                           | PropertyLocation.property | " as absolute path"
-        "derivedDataPath" | _                     | "/custom/derivedData"      | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "derivedDataPath" | _                     | "/custom/derivedData"      | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "derivedDataPath" | "derivedDataPath.set" | "/custom/derivedData"      | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "derivedDataPath" | "derivedDataPath.set" | "/custom/derivedData"      | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "derivedDataPath" | "derivedDataPath"     | "/custom/derivedData"      | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "derivedDataPath" | "derivedDataPath"     | "/custom/derivedData"      | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
+        "derivedDataPath" | _                                 | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | _                           | PropertyLocation.environment
+        "derivedDataPath" | _                                 | TestValue.set("custom/derivedData").expectProjectFile("build/custom/derivedData")                       | _                           | PropertyLocation.property
+        "derivedDataPath" | PropertySetInvocation.assignment  | osPath("/custom/derivedData")                                                                           | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.assignment  | osPath("/custom/derivedData")                                                                           | "Provider<Directory>"       | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.providerSet | osPath("/custom/derivedData")                                                                           | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.providerSet | osPath("/custom/derivedData")                                                                           | "Provider<Directory>"       | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.setter      | osPath("/custom/derivedData")                                                                           | "File"                      | PropertyLocation.script
+        "derivedDataPath" | PropertySetInvocation.setter      | osPath("/custom/derivedData")                                                                           | "Provider<Directory>"       | PropertyLocation.script
 
-        "xarchivesDir"    | _                     | "custom/archives"          | "#projectDir#/build/custom/archives"                                   | _                           | PropertyLocation.env      | " as relative path"
-        "xarchivesDir"    | _                     | "custom/archives"          | "#projectDir#/build/custom/archives"                                   | _                           | PropertyLocation.property | " as relative path"
-        "xarchivesDir"    | _                     | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "File"                      | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | _                     | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | "xarchivesDir.set"    | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "File"                      | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | "xarchivesDir.set"    | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | "xarchivesDir"        | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "File"                      | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | "xarchivesDir"        | "build/custom/archives"    | "#projectDir#/build/custom/archives"                                   | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "xarchivesDir"    | _                     | _                          | "#projectDir#/build/archives"                                          | _                           | PropertyLocation.none     | ""
+        "xarchivesDir"    | _                                 | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | _                           | PropertyLocation.environment
+        "xarchivesDir"    | _                                 | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | _                           | PropertyLocation.property
+        "xarchivesDir"    | PropertySetInvocation.assignment  | TestValue.projectFile("build/custom/archives")                                                          | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.assignment  | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | "Provider<Directory>"       | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.providerSet | TestValue.projectFile("build/custom/archives")                                                          | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.providerSet | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | "Provider<Directory>"       | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.setter      | TestValue.projectFile("build/custom/archives")                                                          | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.setter      | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | "Provider<Directory>"       | PropertyLocation.script
+        "xarchivesDir"    | _                                 | TestValue.set(null).expectProjectFile("build/archives")                                                 | _                           | PropertyLocation.none
 
-        "xarchivesDir"    | _                     | "/custom/archives"         | _                                                                      | _                           | PropertyLocation.env      | " as absolute path"
-        "xarchivesDir"    | _                     | "/custom/archives"         | _                                                                      | _                           | PropertyLocation.property | " as absolute path"
-        "xarchivesDir"    | _                     | "/custom/archives"         | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "xarchivesDir"    | _                     | "/custom/archives"         | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "xarchivesDir"    | "xarchivesDir.set"    | "/custom/archives"         | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "xarchivesDir"    | "xarchivesDir.set"    | "/custom/archives"         | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "xarchivesDir"    | "xarchivesDir"        | "/custom/archives"         | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "xarchivesDir"    | "xarchivesDir"        | "/custom/archives"         | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
+        "xarchivesDir"    | _                                 | osPath("/custom/archives")                                                                              | _                           | PropertyLocation.environment
+        "xarchivesDir"    | _                                 | TestValue.set("custom/archives").expectProjectFile("build/custom/archives")                             | _                           | PropertyLocation.property
+        "xarchivesDir"    | PropertySetInvocation.assignment  | osPath("/custom/archives")                                                                              | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.assignment  | osPath("/custom/archives")                                                                              | "Provider<Directory>"       | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.providerSet | osPath("/custom/archives")                                                                              | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.providerSet | osPath("/custom/archives")                                                                              | "Provider<Directory>"       | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.setter      | osPath("/custom/archives")                                                                              | "File"                      | PropertyLocation.script
+        "xarchivesDir"    | PropertySetInvocation.setter      | osPath("/custom/archives")                                                                              | "Provider<Directory>"       | PropertyLocation.script
 
-        "debugSymbolsDir" | _                     | "custom/symbols"           | "#projectDir#/build/custom/symbols"                                    | _                           | PropertyLocation.env      | " as relative path"
-        "debugSymbolsDir" | _                     | "custom/symbols"           | "#projectDir#/build/custom/symbols"                                    | _                           | PropertyLocation.property | " as relative path"
-        "debugSymbolsDir" | _                     | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "File"                      | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | _                     | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | "debugSymbolsDir.set" | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "File"                      | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | "debugSymbolsDir.set" | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | "debugSymbolsDir"     | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "File"                      | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | "debugSymbolsDir"     | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                                    | "Provider<Directory>"       | PropertyLocation.script   | " as relative path"
-        "debugSymbolsDir" | _                     | _                          | "#projectDir#/build/symbols"                                           | _                           | PropertyLocation.none     | ""
+        "debugSymbolsDir" | _                                 | TestValue.set("custom/symbols").expectProjectFile("build/custom/symbols")                               | _                           | PropertyLocation.environment
+        "debugSymbolsDir" | _                                 | TestValue.set("custom/symbols").expectProjectFile("build/custom/symbols")                               | _                           | PropertyLocation.property
+        "debugSymbolsDir" | PropertySetInvocation.assignment  | TestValue.projectFile("build/custom/symbols")                                                           | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.assignment  | TestValue.set("custom/symbols").expectProjectFile("build/custom/symbols")                               | "Provider<Directory>"       | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.providerSet | TestValue.projectFile("build/custom/symbols")                                                           | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.providerSet | TestValue.set("custom/symbols").expectProjectFile("build/custom/symbols")                               | "Provider<Directory>"       | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.setter      | TestValue.projectFile("build/custom/symbols")                                                           | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.setter      | TestValue.set("custom/symbols").expectProjectFile("build/custom/symbols")                               | "Provider<Directory>"       | PropertyLocation.script
+        "debugSymbolsDir" | _                                 | TestValue.none().expectProjectFile("build/symbols")                                                     | _                           | PropertyLocation.none
 
-        "debugSymbolsDir" | _                     | "/custom/symbols"          | _                                                                      | _                           | PropertyLocation.env      | " as absolute path"
-        "debugSymbolsDir" | _                     | "/custom/symbols"          | _                                                                      | _                           | PropertyLocation.property | " as absolute path"
-        "debugSymbolsDir" | _                     | "/custom/symbols"          | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "debugSymbolsDir" | _                     | "/custom/symbols"          | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "debugSymbolsDir" | "debugSymbolsDir.set" | "/custom/symbols"          | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "debugSymbolsDir" | "debugSymbolsDir.set" | "/custom/symbols"          | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
-        "debugSymbolsDir" | "debugSymbolsDir"     | "/custom/symbols"          | _                                                                      | "File"                      | PropertyLocation.script   | " as absolute path"
-        "debugSymbolsDir" | "debugSymbolsDir"     | "/custom/symbols"          | _                                                                      | "Provider<Directory>"       | PropertyLocation.script   | " as absolute path"
+        "debugSymbolsDir" | _                                 | osPath("/custom/symbols")                                                                               | _                           | PropertyLocation.environment
+        "debugSymbolsDir" | _                                 | TestValue.set(escapedPath(osPath("/custom/symbols"))).expect(osPath("/custom/symbols"))                 | _                           | PropertyLocation.property
+        "debugSymbolsDir" | PropertySetInvocation.assignment  | osPath("/custom/symbols")                                                                               | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.assignment  | osPath("/custom/symbols")                                                                               | "Provider<Directory>"       | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.providerSet | osPath("/custom/symbols")                                                                               | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.providerSet | osPath("/custom/symbols")                                                                               | "Provider<Directory>"       | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.setter      | osPath("/custom/symbols")                                                                               | "File"                      | PropertyLocation.script
+        "debugSymbolsDir" | PropertySetInvocation.setter      | osPath("/custom/symbols")                                                                               | "Provider<Directory>"       | PropertyLocation.script
 
-        "consoleSettings" | "consoleSettings.set" | "plain"                    | "ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}"  | "ConsoleSettings"           | PropertyLocation.script   | ""
-        "consoleSettings" | "consoleSettings.set" | "rich"                     | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}"  | "Provider<ConsoleSettings>" | PropertyLocation.script   | ""
-        "consoleSettings" | "consoleSettings"     | "verbose"                  | "ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}" | "ConsoleSettings"           | PropertyLocation.script   | ""
-        "consoleSettings" | "consoleSettings"     | "auto"                     | "ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}"    | "Provider<ConsoleSettings>" | PropertyLocation.script   | ""
+        "consoleSettings" | PropertySetInvocation.providerSet | TestValue.set("plain").expect("ConsoleSettings{prettyPrint=true, useUnicode=false, colorize=never}")    | "ConsoleSettings"           | PropertyLocation.script
+        "consoleSettings" | PropertySetInvocation.providerSet | TestValue.set("rich").expect("ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=always}")     | "Provider<ConsoleSettings>" | PropertyLocation.script
+        "consoleSettings" | PropertySetInvocation.setter      | TestValue.set("verbose").expect("ConsoleSettings{prettyPrint=false, useUnicode=false, colorize=never}") | "ConsoleSettings"           | PropertyLocation.script
+        "consoleSettings" | PropertySetInvocation.setter      | TestValue.set("auto").expect("ConsoleSettings{prettyPrint=true, useUnicode=true, colorize=auto}")       | "Provider<ConsoleSettings>" | PropertyLocation.script
 
         extensionName = "xcodebuild"
-        value = (type != _) ? wrapValueBasedOnType(rawValue, type, { type ->
-            switch (type) {
-                case ConsoleSettings.class.simpleName:
-                    return "${ConsoleSettings.class.name}.fromGradleOutput(org.gradle.api.logging.configuration.ConsoleOutput.${rawValue.toString().capitalize()})"
-                default:
-                    return rawValue
-            }
-        }) : rawValue
-        providedValue = (location == PropertyLocation.script) ? type : value
-        testValue = (expectedValue == _) ? rawValue : expectedValue
-        reason = location.reason() + ((location == PropertyLocation.none) ? "" : "  with '$providedValue' ") + additionalInfo
-        escapedValue = (value instanceof String) ? escapedPath(value) : value
-        invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
+        setter = new PropertySetterWriter(extensionName, property)
+            .serialize(wrapValueFallback)
+            .set(rawValue, type)
+            .to(location)
+            .use(method)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
-    @Unroll("can configure console settings with #useConfigureBlockMessage #invocation and type #type")
+    @Unroll("can configure console settings property #property with #method, value #rawValue and type #type")
     def "can configure console settings"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${extensionName}.consoleSettings.get().${property})
-                }
-            }
-        """.stripIndent()
-
-        and: "a set property"
-        and: "a set property"
-        if (useConfigureBlock) {
-            buildFile << """
-            ${extensionName}.consoleSettings {
-                ${invocation}
-            }
-            """.stripIndent()
-        } else {
-            buildFile << "${extensionName}.consoleSettings.get().${invocation}"
-        }
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(getter, setter).matches(rawValue)
 
         where:
-        property      | method           | rawValue                           | type          | useConfigureBlock
-        "prettyPrint" | "setPrettyPrint" | true                               | "Boolean"     | false
-        "prettyPrint" | "setPrettyPrint" | false                              | "Boolean"     | false
-        "useUnicode"  | "setUseUnicode"  | true                               | "Boolean"     | false
-        "useUnicode"  | "setUseUnicode"  | false                              | "Boolean"     | false
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.always | "ColorOption" | false
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.never  | "ColorOption" | false
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.auto   | "ColorOption" | false
-        "colorize"    | _                | "always"                           | "String"      | false
-        "colorize"    | _                | "never"                            | "String"      | false
-        "colorize"    | _                | "auto"                             | "String"      | false
+        property      | method                           | rawValue                           | type          | useConfigureBlock
+        "prettyPrint" | PropertySetInvocation.setter     | true                               | "Boolean"     | false
+        "prettyPrint" | PropertySetInvocation.setter     | false                              | "Boolean"     | false
+        "useUnicode"  | PropertySetInvocation.setter     | true                               | "Boolean"     | false
+        "useUnicode"  | PropertySetInvocation.setter     | false                              | "Boolean"     | false
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.always | "ColorOption" | false
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.never  | "ColorOption" | false
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.auto   | "ColorOption" | false
+        "colorize"    | PropertySetInvocation.assignment | "always"                           | "String"      | false
+        "colorize"    | PropertySetInvocation.assignment | "never"                            | "String"      | false
+        "colorize"    | PropertySetInvocation.assignment | "auto"                             | "String"      | false
 
-        "prettyPrint" | "setPrettyPrint" | true                               | "Boolean"     | true
-        "prettyPrint" | "setPrettyPrint" | false                              | "Boolean"     | true
-        "useUnicode"  | "setUseUnicode"  | true                               | "Boolean"     | true
-        "useUnicode"  | "setUseUnicode"  | false                              | "Boolean"     | true
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.always | "ColorOption" | true
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.never  | "ColorOption" | true
-        "colorize"    | "setColorize"    | ConsoleSettings.ColorOption.auto   | "ColorOption" | true
-        "colorize"    | _                | "always"                           | "String"      | true
-        "colorize"    | _                | "never"                            | "String"      | true
-        "colorize"    | _                | "auto"                             | "String"      | true
+        "prettyPrint" | PropertySetInvocation.setter     | true                               | "Boolean"     | true
+        "prettyPrint" | PropertySetInvocation.setter     | false                              | "Boolean"     | true
+        "useUnicode"  | PropertySetInvocation.setter     | true                               | "Boolean"     | true
+        "useUnicode"  | PropertySetInvocation.setter     | false                              | "Boolean"     | true
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.always | "ColorOption" | true
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.never  | "ColorOption" | true
+        "colorize"    | PropertySetInvocation.setter     | ConsoleSettings.ColorOption.auto   | "ColorOption" | true
+        "colorize"    | PropertySetInvocation.assignment | "always"                           | "String"      | true
+        "colorize"    | PropertySetInvocation.assignment | "never"                            | "String"      | true
+        "colorize"    | PropertySetInvocation.assignment | "auto"                             | "String"      | true
 
-        value = wrapValueBasedOnType(rawValue, type) { type ->
-            switch (type) {
-                case ConsoleSettings.ColorOption.simpleName:
-                    return ConsoleSettings.ColorOption.name + ".${rawValue.toString()}"
-                default:
-                    return rawValue
-            }
-        }
         extensionName = "xcodebuild"
-        useConfigureBlockMessage = useConfigureBlock ? "configuration closure and" : ""
-        invocation = (method == _) ? "${property} = ${value}" : "${method}(${value})"
-        expectedValue = rawValue
+        setter = new PropertySetterWriter("${extensionName}.consoleSettings.get()", property)
+            .serialize(wrapValueFallback)
+            .set(rawValue, type)
+            .use(method)
+
+        getter = new PropertyGetterTaskWriter(setter, "")
     }
 
     @Unroll("property #property of type #tasktype.simpleName is bound to property #extensionProperty of extension #extensionName")
     def "task property is connected with extension"() {
-        given:
-        buildFile << """
-            task ${taskName}(type: ${tasktype.name})
-
-            task(custom) {
-                doLast {
-                    def value = ${taskName}.${property}${providerInvocation}
-                    println("${taskName}.${property}: " + value)
-                }
-            }
-            
-            ${extensionName}.${invocation}
-        """.stripIndent()
-
-        and: "the test value with replace placeholders"
-        if (testValue instanceof String) {
-            testValue = testValue.replaceAll("#projectDir#", escapedPath(projectDir.path))
-            testValue = testValue.replaceAll("#taskName#", taskName)
-        }
-
-        when: ""
-        def result = runTasksSuccessfully("custom")
-
-        then:
-        result.standardOutput.contains("${taskName}.${property}: ${testValue}")
+        expect:
+        addTask(taskName, tasktype.name, true)
+        runPropertyQuery(getter, setter).matches(value)
 
         where:
-        property          | extensionProperty | tasktype            | rawValue                   | expectedValue                                      | type   | useProviderApi
-        "logFile"         | "logsDir"         | XcodeArchive        | "build/custom/logs"        | "#projectDir#/build/custom/logs/#taskName#.log"    | "File" | true
-        "logFile"         | "logsDir"         | ExportArchive       | "build/custom/logs"        | "#projectDir#/build/custom/logs/#taskName#.log"    | "File" | true
-        "derivedDataPath" | "derivedDataPath" | XcodeArchive        | "build/custom/derivedData" | "#projectDir#/build/custom/derivedData/#taskName#" | "File" | true
-        "destinationDir"  | "xarchivesDir"    | XcodeArchive        | "build/custom/archives"    | "#projectDir#/build/custom/archives"               | "File" | true
-        "destinationDir"  | "xarchivesDir"    | ExportArchive       | "build/custom/archives"    | "#projectDir#/build/custom/archives"               | "File" | true
-        "destinationDir"  | "debugSymbolsDir" | ArchiveDebugSymbols | "build/custom/symbols"     | "#projectDir#/build/custom/symbols"                | "File" | false
-
+        property          | extensionProperty | taskName         | tasktype            | value                                                                                               | type   | useProviderApi
+        "logFile"         | "logsDir"         | "xcodeBuildTask" | XcodeArchive        | TestValue.set("build/custom/logs").expectProjectFile("build/custom/logs/" + taskName + ".log")      | "File" | true
+        "logFile"         | "logsDir"         | "xcodeBuildTask" | ExportArchive       | TestValue.set("build/custom/logs").expectProjectFile("build/custom/logs/" + taskName + ".log")      | "File" | true
+        "derivedDataPath" | "derivedDataPath" | "xcodeBuildTask" | XcodeArchive        | TestValue.set("build/custom/derivedData").expectProjectFile("build/custom/derivedData/" + taskName) | "File" | true
+        "destinationDir"  | "xarchivesDir"    | "xcodeBuildTask" | XcodeArchive        | TestValue.set("build/custom/archives").expectProjectFile("build/custom/archives")                   | "File" | true
+        "destinationDir"  | "xarchivesDir"    | "xcodeBuildTask" | ExportArchive       | TestValue.set("build/custom/archives").expectProjectFile("build/custom/archives")                   | "File" | true
+        "destinationDir"  | "debugSymbolsDir" | "xcodeBuildTask" | ArchiveDebugSymbols | TestValue.set("build/custom/symbols").expectProjectFile("build/custom/symbols")                     | "File" | false
 
         extensionName = "xcodebuild"
-        taskName = "xcodebuildTask"
-        value = (type != _) ? wrapValueBasedOnType(rawValue, type) : rawValue
-        testValue = (expectedValue == _) ? rawValue : expectedValue
-        escapedValue = (value instanceof String) ? escapedPath(value) : value
-        invocation = "${extensionProperty}.set(${escapedValue})"
-        providerInvocation = (useProviderApi) ? ".getOrNull()" : ""
+        setter = new PropertySetterWriter(extensionName, extensionProperty)
+            .set(value, type)
+        getter = new PropertyGetterTaskWriter("${taskName}.${property}", useProviderApi ? ".getOrNull()" : "")
     }
 
     @Unroll("gradle console #console sets default value for consoleSettings.#consoleSettingProperty: #expectedValue")
     def "consoleSettings fallback to gradle console settings"() {
-        given: "a properties file with console selected"
-        def propertiesFile = createFile("gradle.properties")
-        propertiesFile << "org.gradle.console=${console}"
-
-        and: "a task to read out the value"
-        buildFile << """
-            task(readValue) {
-                doLast {
-                    def consoleSettings = ${extensionName}.consoleSettings.get()
-                    println("${extensionName}.consoleSettings.${consoleSettingProperty}: " + consoleSettings.${consoleSettingProperty})
-                }
-            }
-        """
-
-        when:
-        def result = runTasksSuccessfully('readValue')
-
-        then:
-        outputContains(result, "${extensionName}.consoleSettings.${consoleSettingProperty}: ${expectedValue}")
+        expect:
+        runPropertyQuery(getter, setter).matches(expectedValue)
 
         where:
         console   | consoleSettingProperty | expectedValue
@@ -326,5 +221,11 @@ class XcodeBuildPluginIntegrationSpec extends XcodeBuildIntegrationSpec {
         "auto"    | "colorize"             | ConsoleSettings.ColorOption.auto
 
         extensionName = "xcodebuild"
+        setter = new PropertySetterWriter("org.gradle", "console")
+            .set(console, String)
+            .to(PropertyLocation.property)
+        getter = new PropertyGetterTaskWriter("${extensionName}.consoleSettings.get().${consoleSettingProperty}", "")
+
+
     }
 }

@@ -22,7 +22,7 @@ package wooga.gradle.xcodebuild.config
 import org.gradle.api.internal.changedetection.state.BuildSessionScopeFileTimeStampInspector
 import sun.invoke.empty.Empty
 
-class BuildSettings implements GroovyInterceptable, Cloneable {
+class BuildSettings implements GroovyInterceptable, Cloneable, Serializable {
 
     private final Map<String, List<String>> rawSettings
 

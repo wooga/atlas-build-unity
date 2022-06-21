@@ -16,247 +16,36 @@
 
 package wooga.gradle.xcodebuild.tasks
 
-import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputDirectory
+
 import org.gradle.util.GUtil
-import wooga.gradle.xcodebuild.XcodeArchiveActionSpecBase
+import wooga.gradle.xcodebuild.XcodeArchiveSpecBase
 
-abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements XcodeArchiveActionSpecBase {
-    private final Property<String> archiveName
-
-    @Input
-    Property<String> getArchiveName(){
-        archiveName
-    }
-
-    @Override
-    void setArchiveName(String value) {
-        archiveName.set(value)
-    }
-
-    @Override
-    void setArchiveName(Provider<String> value) {
-        archiveName.set(value)
-    }
-
-    @Override
-    XcodeArchive archiveName(String value) {
-        setArchiveName(value)
-        this
-    }
-
-    @Override
-    XcodeArchive archiveName(Provider<String> value) {
-        setArchiveName(value)
-        this
-    }
-
-    private final Property<String> baseName
-
-    @Internal
-    Property<String> getBaseName() {
-        baseName
-    }
-
-    @Override
-    void setBaseName(String value) {
-        baseName.set(value)
-    }
-
-    @Override
-    void setBaseName(Provider<String> value) {
-        baseName.set(value)
-    }
-
-    @Override
-    XcodeArchive baseName(String value) {
-        setBaseName(value)
-        this
-    }
-
-    @Override
-    XcodeArchive baseName(Provider<String> value) {
-        setBaseName(value)
-        this
-    }
-
-    private final Property<String> appendix
-
-    @Internal
-    Property<String> getAppendix() {
-        appendix
-    }
-
-    @Override
-    void setAppendix(String value) {
-        appendix.set(value)
-    }
-
-    @Override
-    void setAppendix(Provider<String> value) {
-        appendix.set(value)
-    }
-
-    @Override
-    XcodeArchive appendix(String value) {
-        setAppendix(value)
-        this
-    }
-
-    @Override
-    XcodeArchive appendix(Provider<String> value) {
-        setAppendix(value)
-        this
-    }
-
-    private final Property<String> version
-
-    @Internal
-    Property<String> getVersion() {
-        version
-    }
-
-    @Override
-    void setVersion(String value) {
-        version.set(value)
-    }
-
-    @Override
-    void setVersion(Provider<String> value) {
-        version.set(value)
-    }
-
-    @Override
-    XcodeArchive version(String value) {
-        setVersion(value)
-        this
-    }
-
-    @Override
-    XcodeArchive version(Provider<String> value) {
-        setVersion(value)
-        this
-    }
-
-    private final Property<String> extension
-
-    @Internal
-    Property<String> getExtension() {
-        extension
-    }
-
-    @Override
-    void setExtension(String value) {
-        extension.set(value)
-    }
-
-    @Override
-    void setExtension(Provider<String> value) {
-        extension.set(value)
-    }
-
-    @Override
-    XcodeArchive extension(String value) {
-        setExtension(value)
-        this
-    }
-
-    @Override
-    XcodeArchive extension(Provider<String> value) {
-        setExtension(value)
-        this
-    }
-
-    private final Property<String> classifier
-
-    @Internal
-    Property<String> getClassifier() {
-        classifier
-    }
-
-    @Override
-    void setClassifier(String value) {
-        classifier.set(value)
-    }
-
-    @Override
-    void setClassifier(Provider<String> value) {
-        classifier.set(value)
-    }
-
-    @Override
-    XcodeArchive classifier(String value) {
-        setClassifier(value)
-        this
-    }
-
-    @Override
-    XcodeArchive classifier(Provider<String> value) {
-        setClassifier(value)
-        this
-    }
-
-    private final DirectoryProperty destinationDir
-
-    @OutputDirectory
-    DirectoryProperty getDestinationDir(){
-        destinationDir
-    }
-
-    @Override
-    void setDestinationDir(File value) {
-        destinationDir.set(value)
-    }
-
-    @Override
-    void setDestinationDir(Provider<Directory> value) {
-        destinationDir.set(value)
-    }
-
-    @Override
-    XcodeArchive destinationDir(File value) {
-        setDestinationDir(value)
-        this
-    }
-
-    @Override
-    XcodeArchive destinationDir(Provider<Directory> value) {
-        setDestinationDir(value)
-        this
-    }
+abstract class AbstractXcodeArchiveTask extends AbstractXcodeTask implements XcodeArchiveSpecBase {
 
     AbstractXcodeArchiveTask() {
-        baseName = project.objects.property(String)
-        appendix = project.objects.property(String)
-        version = project.objects.property(String)
-        extension = project.objects.property(String)
-        classifier = project.objects.property(String)
+        // Sourced from the gradle abstract archive task:
+        // https://github.com/gradle/gradle/blob/master/subprojects/core/src/main/java/org/gradle/api/tasks/bundling/AbstractArchiveTask.java
+        archiveName.convention(project.provider({
+            // [baseName]-[appendix]-[version]-[classifier].[extension]
+            String name = GUtil.elvis(baseName.getOrNull(), "");
+            name += maybe(name, appendix.getOrNull());
+            name += maybe(name, version.getOrNull());
+            name += maybe(name, classifier.getOrNull());
 
-        archiveName = project.objects.property(String)
-        archiveName.set(project.provider({
-            String name = baseName.getOrElse("") + maybe(baseName.getOrElse(""), appendix)
-            name += maybe(name, version)
-            name += maybe(name, classifier)
-            name += extension.isPresent() && extension.get() != "" ? "." + extension.get() : ""
-            name
+            String extension = extension.getOrNull();
+            name += GUtil.isTrue(extension) ? "." + extension : "";
+            return name;
         }))
-
-        destinationDir = project.objects.directoryProperty()
     }
 
-    protected static String maybe(String prefix, Provider<String> value) {
-        if (value.isPresent() && value.get().size() > 0) {
+    private static String maybe(String prefix, String value) {
+        if (GUtil.isTrue(value)) {
             if (GUtil.isTrue(prefix)) {
-                return "-".concat(value.get())
+                return "-".concat(value);
             } else {
-                return value.get()
+                return value;
             }
         }
-        return ""
+        return "";
     }
 }

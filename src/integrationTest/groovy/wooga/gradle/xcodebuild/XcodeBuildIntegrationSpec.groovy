@@ -19,13 +19,32 @@
 
 package wooga.gradle.xcodebuild
 
+import wooga.gradle.xcodebuild.config.BuildSettings
+
 abstract class XcodeBuildIntegrationSpec extends IntegrationSpec {
-   def setup() {
-       buildFile << """
+
+    def setup() {
+        buildFile << """
           group = 'test'
           ${applyPlugin(XcodeBuildPlugin)}
        """.stripIndent()
-   }
+    }
+
+    static wrapValueFallback = { Object rawValue, String type, Closure<String> fallback ->
+        switch (type) {
+            case ConsoleSettings.class.simpleName:
+                return "${ConsoleSettings.class.name}.fromGradleOutput(org.gradle.api.logging.configuration.ConsoleOutput.${rawValue.toString().capitalize()})"
+            case ConsoleSettings.ColorOption.simpleName:
+                return ConsoleSettings.ColorOption.name + ".${rawValue.toString()}"
+            case BuildSettings.class.simpleName:
+                return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
+                    List<String> parts = it.split("=")
+                    ".put('${parts[0].trim()}', '${parts[1].trim()}')"
+                }).join("")
+            default:
+                return rawValue.toString()
+        }
+    }
 
 
 }
