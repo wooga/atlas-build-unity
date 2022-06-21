@@ -345,10 +345,10 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "default version is converted to String from #type"() {
+    def "default version #rawValue is converted to String from #type"() {
         given: "A custom project.version property"
         buildFile << """
-            version = $value
+            version = ${value}
         """.stripIndent()
 
         when:

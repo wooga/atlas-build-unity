@@ -1,6 +1,11 @@
 package wooga.gradle.macOS.security.tasks
 
-
+import com.wooga.gradle.test.PropertyLocation
+import com.wooga.gradle.test.queries.TestValue
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
+import org.apache.tools.ant.types.PropertySet
 import spock.lang.Requires
 import spock.lang.Unroll
 
@@ -160,41 +165,40 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
         expectedValue = rawValue
     }
 
-    @Unroll("method :#method with type #type #message")
+    @Unroll("sets value #rawValue with #method, type #type #message")
     def "method alters keychains property"() {
-        given: "a task to read back the value"
+        given: "a set property"
         buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.keychains.files)
-                }
-            }
+            ${testTaskName}.keychains.setFrom(${wrapValueBasedOnType([baseValue], "List<File>")})
         """.stripIndent()
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.keychains.setFrom($baseValueWrapped)
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
+
+        and:
+        if (appends) {
+            rawValue.expectPrepend(baseValue)
+        }
 
         when:
-        def result = runTasksSuccessfully("readValue")
+        def setter = new PropertySetterWriter(testTaskName, property)
+            .set(rawValue, type)
+            .toScript(method)
+
+        def getter = new PropertyGetterTaskWriter(testTaskName + ".keychains.files", "")
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        outputContains(result, "property: " + expectedValue.toString())
+        query.matches(rawValue)
 
         where:
-        method         | rawValue                          | type                       | appends
-        "keychain"     | "/some/path/1"                    | "File"                     | true
-        "keychain"     | "/some/path/2"                    | "Provider<File>"           | true
-        "keychains"    | ["/some/path/3", "/some/path/4"]  | "Iterable<File>"           | true
-        "keychains"    | ["/some/path/5", "/some/path/6"]  | "Provider<Iterable<File>>" | true
-        "setKeychains" | ["/some/path/7", "/some/path/8"]  | "Iterable<File>"           | false
-        "setKeychains" | ["/some/path/9", "/some/path/10"] | "Provider<Iterable<File>>" | false
+        method                                         | rawValue                                               | type                       | appends
+        PropertySetInvocation.customSetter("keychain") | TestValue.filePath("/some/path/1")                     | "File"                     | true
+        PropertySetInvocation.customSetter("keychain") | TestValue.filePath("/some/path/2")                     | "Provider<File>"           | true
+        PropertySetInvocation.method                   | TestValue.filePaths(["/some/path/3", "/some/path/4"])  | "Iterable<File>"           | true
+        PropertySetInvocation.method                   | TestValue.filePaths(["/some/path/5", "/some/path/6"])  | "Provider<Iterable<File>>" | true
+        PropertySetInvocation.setter                   | TestValue.filePaths(["/some/path/7", "/some/path/8"])  | "Iterable<File>"           | false
+        PropertySetInvocation.setter                   | TestValue.filePaths(["/some/path/9", "/some/path/10"]) | "Provider<Iterable<File>>" | false
 
-        baseValue = ["/some/path/0"]
-        value = wrapValueBasedOnType(rawValue, type)
-        baseValueWrapped = wrapValueBasedOnType(baseValue, "List<File>")
-        expectedValue = appends ? [baseValue, [rawValue]].flatten() : [rawValue].flatten()
+        property = "keychains"
+        baseValue = osPath("/some/path/0")
         message = appends ? "appends to keychains collection" : "set keychains collection"
     }
 }
