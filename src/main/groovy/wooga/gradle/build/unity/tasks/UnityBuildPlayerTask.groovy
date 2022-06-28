@@ -24,10 +24,10 @@ import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.MapProperty
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
+import wooga.gradle.build.unity.models.UnityBuildSpec
+import wooga.gradle.build.unity.models.VersionSpec
 import wooga.gradle.secrets.internal.Secrets
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.unity.UnityTask
@@ -39,7 +39,7 @@ import javax.crypto.spec.SecretKeySpec
  * Deprecated in favor of UnityBuildEnginePlayerTask from UBS 1.2 onwards.
  */
 @Deprecated
-class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
+class UnityBuildPlayerTask extends UnityTask implements SecretSpec, UnityBuildSpec, VersionSpec {
 
     static String BUILD_TARGET_KEY = "batchModeBuildTarget"
 
@@ -77,52 +77,6 @@ class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
     @Internal
     Provider<String> getAppConfigName() {
         appConfigName
-    }
-
-    private final Property<String> exportMethodName
-
-    @Input
-    Property<String> getExportMethodName() {
-        exportMethodName
-    }
-
-    private final Property<String> toolsVersion
-
-    @Optional
-    @Input
-    Property<String> getToolsVersion() {
-        toolsVersion
-    }
-
-    private final Property<String> commitHash
-
-    @Optional
-    @Input
-    Property<String> getCommitHash() {
-        commitHash
-    }
-
-    private final Property<String> version
-
-    @Input
-    Property<String> getVersion() {
-        version
-    }
-
-    private final Property<String> versionCode
-
-    @Optional
-    @Input
-    Property<String> getVersionCode() {
-        versionCode
-    }
-
-    private final MapProperty<String, ?> customArguments
-
-    @Optional
-    @Input
-    MapProperty<String, ?> getCustomArguments() {
-        customArguments
     }
 
     private final RegularFileProperty secretsFile
@@ -175,13 +129,6 @@ class UnityBuildPlayerTask extends UnityTask implements SecretSpec {
 
         outputDirectory = project.objects.directoryProperty()
         outputDirectory.set(outputDirectoryBase.dir(outputPath))
-
-        exportMethodName = project.objects.property(String.class)
-        toolsVersion = project.objects.property(String.class)
-        commitHash = project.objects.property(String.class)
-        version = project.objects.property(String.class)
-        versionCode = project.objects.property(String.class)
-        customArguments = project.objects.mapProperty(String, Object)
         secretsKey = project.objects.property(SecretKeySpec.class)
         secretsFile = project.objects.fileProperty()
         secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {

@@ -26,6 +26,8 @@ import wooga.gradle.secrets.Secret
 import wooga.gradle.secrets.SecretResolver
 import wooga.gradle.secrets.internal.SecretFile
 import wooga.gradle.secrets.internal.SecretText
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 import static wooga.gradle.build.unity.TestUnityAsset.unityAsset
 
 class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec {

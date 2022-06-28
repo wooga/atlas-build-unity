@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils
 import org.yaml.snakeyaml.Yaml
 import wooga.gradle.build.unity.UnityBuildPlugin
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 abstract class UnityIntegrationSpec extends IntegrationSpec {
 
     File unityTestLocation

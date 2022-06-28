@@ -27,6 +27,8 @@ import wooga.gradle.secrets.internal.DefaultSecret
 import wooga.gradle.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.Resolver
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 class FetchSecretsTaskIntegrationSpec extends IntegrationSpec {
     def setup() {
         buildFile << """

@@ -17,37 +17,93 @@
 
 package wooga.gradle.build.unity
 
+
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import wooga.gradle.build.unity.models.UnityBuildSpec
+import wooga.gradle.build.unity.models.VersionSpec
 
-interface UnityBuildPluginExtension<T extends UnityBuildPluginExtension> {
+trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec {
 
-    DirectoryProperty getAppConfigsDirectory()
-    DirectoryProperty getOutputDirectoryBase()
-    Property<String> getToolsVersion()
-    Property<String> getVersion()
-    Property<UBSVersion> getUbsCompatibilityVersion()
-    Property<String> getVersionCode()
-    Property<String> getCommitHash()
-    Property<String> getExportMethodName()
-    Property<String> getDefaultAppConfigName()
-    MapProperty<String, String> getCustomArguments()
-    RegularFileProperty getExportInitScript()
-    Property<File> getExportBuildDirBase()
-    Property<Boolean> getCleanBuildDirBeforeBuild()
-    Property<Boolean> getSkipExport()
-    FileCollection getAppConfigs()
-    DirectoryProperty getAssetsDir()
+    private final DirectoryProperty appConfigsDirectory = objects.directoryProperty()
 
+    DirectoryProperty getAppConfigsDirectory() {
+        appConfigsDirectory
+    }
 
-    ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck()
+    private final DirectoryProperty outputDirectoryBase = objects.directoryProperty()
 
-    Property<String> getAppConfigSecretsKey()
-    void setAppConfigSecretsKey(String key)
-    T appConfigSecretsKey(String key)
+    DirectoryProperty getOutputDirectoryBase() {
+        outputDirectoryBase
+    }
 
+    private final Property<UBSVersion> ubsCompatibilityVersion = objects.property(UBSVersion)
+
+    Property<UBSVersion> getUbsCompatibilityVersion() {
+        ubsCompatibilityVersion
+    }
+
+    private final Property<String> defaultAppConfigName = objects.property(String)
+
+    Property<String> getDefaultAppConfigName() {
+        defaultAppConfigName
+    }
+
+    private final RegularFileProperty exportInitScript = objects.fileProperty()
+
+    RegularFileProperty getExportInitScript() {
+        exportInitScript
+    }
+
+    private final Property<File> exportBuildDirBase = objects.property(File)
+
+    Property<File> getExportBuildDirBase() {
+        exportBuildDirBase
+    }
+
+    private final Property<Boolean> cleanBuildDirBeforeBuild = objects.property(Boolean)
+
+    Property<Boolean> getCleanBuildDirBeforeBuild() {
+        cleanBuildDirBeforeBuild
+    }
+
+    private final Property<Boolean> skipExport = objects.property(Boolean)
+
+    Property<Boolean> getSkipExport() {
+        skipExport
+    }
+
+    private final DirectoryProperty assetsDir = objects.directoryProperty()
+
+    DirectoryProperty getAssetsDir() {
+        assetsDir
+    }
+
+    private final ConfigurableFileCollection ignoreFilesForExportUpToDateCheck = objects.fileCollection()
+
+    ConfigurableFileCollection getIgnoreFilesForExportUpToDateCheck() {
+        ignoreFilesForExportUpToDateCheck
+    }
+
+    private final Property<String> appConfigSecretsKey = objects.property(String)
+
+    Property<String> getAppConfigSecretsKey() {
+        return appConfigSecretsKey
+    }
+
+    void setAppConfigSecretsKey(String key) {
+        appConfigSecretsKey.set(key)
+    }
+
+    T appConfigSecretsKey(String key) {
+        appConfigSecretsKey.set(key)
+        this
+    }
+
+    FileCollection getAppConfigs() {
+        null
+    }
 }

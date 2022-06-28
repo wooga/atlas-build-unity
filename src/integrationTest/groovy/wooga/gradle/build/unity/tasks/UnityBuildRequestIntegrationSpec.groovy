@@ -27,6 +27,8 @@ import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
+
 class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     @Shared

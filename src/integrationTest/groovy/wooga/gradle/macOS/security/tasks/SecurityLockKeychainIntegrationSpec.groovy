@@ -76,9 +76,9 @@ class SecurityLockKeychainIntegrationSpec extends IntegrationSpec {
         where:
         property    | method          | rawValue         | type
         "all"       | "all"           | false            | "Provider<Boolean>"
-        "all"       | "all.set"       | false            | "String"
+        "all"       | "all.set"       | false            | "Boolean"
         "all"       | "all.set"       | false            | "Provider<Boolean>"
-        "all"       | "setAll"        | false            | "String"
+        "all"       | "setAll"        | false            | "Boolean"
         "all"       | "setAll"        | false            | "Provider<Boolean>"
         value = wrapValueBasedOnType(rawValue, type)
         expectedValue = rawValue

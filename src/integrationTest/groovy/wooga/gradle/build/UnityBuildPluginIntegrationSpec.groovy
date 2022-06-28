@@ -17,6 +17,7 @@
 
 package wooga.gradle.build
 
+import com.wooga.gradle.PlatformUtils
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import org.yaml.snakeyaml.Yaml
@@ -28,6 +29,8 @@ import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.models.UnityCommandLineOption
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 
 class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
@@ -124,7 +127,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         } else if (location == "properties") {
             createFile("gradle.properties") << "${propertiesKey}=${value}"
         } else if (location == "extension") {
-            buildFile << "${extensionKey} = ${escapedPath(value)}"
+            buildFile << "${extensionKey} = ${PlatformUtils.escapedPath(value)}"
         }
 
         when:
@@ -342,10 +345,10 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "default version is converted to String from #type"() {
+    def "default version #rawValue is converted to String from #type"() {
         given: "A custom project.version property"
         buildFile << """
-            version = $value
+            version = ${value}
         """.stripIndent()
 
         when:
