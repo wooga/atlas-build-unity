@@ -27,10 +27,11 @@ import org.gradle.api.artifacts.ConfigurablePublishArtifact
 import org.gradle.api.artifacts.dsl.ArtifactHandler
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
-import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.xcodebuild.internal.DefaultXcodeBuildPluginExtension
 
 import wooga.gradle.xcodebuild.tasks.*
+
+import java.util.concurrent.Callable
 
 import static XcodeBuildPluginConventions.*
 
@@ -156,5 +157,19 @@ class XcodeBuildPlugin implements Plugin<Project> {
                 task.destinationDirectory.convention(extension.debugSymbolsDir)
             }
         })
+    }
+
+    private static class PropertyUtils {
+        static String convertToString(Object value) {
+            if (!value) {
+                return null
+            }
+
+            if (value instanceof Callable) {
+                value = ((Callable) value).call()
+            }
+
+            value.toString()
+        }
     }
 }

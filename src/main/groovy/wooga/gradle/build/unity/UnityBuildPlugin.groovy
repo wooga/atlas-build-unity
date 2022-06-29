@@ -29,7 +29,6 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
-import wooga.gradle.build.unity.ios.internal.utils.PropertyUtils
 import wooga.gradle.build.unity.tasks.*
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -38,6 +37,8 @@ import wooga.gradle.unity.UnityPlugin
 import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.UnityTask
 import wooga.gradle.unity.utils.GenericUnityAssetFile
+
+import java.util.concurrent.Callable
 
 class UnityBuildPlugin implements Plugin<Project> {
 
@@ -303,5 +304,20 @@ class UnityBuildPlugin implements Plugin<Project> {
             buildTaskName = "sonarBuildUnity"
             return it
         }.configure(unityExt, sonarExt)
+    }
+
+    private static class PropertyUtils {
+        static String convertToString(Object value) {
+            if (!value) {
+                return null
+            }
+
+            if (value instanceof Callable) {
+                value = ((Callable) value).call()
+            }
+
+            value.toString()
+        }
+
     }
 }
