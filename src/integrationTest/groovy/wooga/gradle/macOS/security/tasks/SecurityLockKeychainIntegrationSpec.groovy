@@ -23,12 +23,6 @@ import com.wooga.spock.extensios.security.Keychain
 import spock.lang.Requires
 import spock.lang.Unroll
 
-import static com.wooga.gradle.test.queries.TestValue.filePath
-import static com.wooga.gradle.test.queries.TestValue.filePath
-import static com.wooga.gradle.test.queries.TestValue.filePaths
-import static com.wooga.gradle.test.queries.TestValue.filePaths
-import static com.wooga.gradle.test.queries.TestValue.filePaths
-import static com.wooga.gradle.test.queries.TestValue.filePaths
 import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 
 @Requires({ os.macOs })
@@ -53,7 +47,6 @@ class SecurityLockKeychainIntegrationSpec extends InteractiveSecurityTaskIntegra
 
         where:
         property | invocation  | rawValue | type
-        "all"    | method      | false    | "Provider<Boolean>"
         "all"    | providerSet | false    | "Boolean"
         "all"    | providerSet | false    | "Provider<Boolean>"
         "all"    | setter      | false    | "Boolean"
@@ -65,37 +58,6 @@ class SecurityLockKeychainIntegrationSpec extends InteractiveSecurityTaskIntegra
                 .serialize(wrapValueFallback)
 
         get = new PropertyGetterTaskWriter(set)
-    }
-
-    @Unroll("method #invocation #message")
-    def "method alters keychains property"() {
-        given: "a set property"
-        appendToSubjectTask("keychains = ${wrapValueBasedOnType(baseValue, "List<File>")}")
-
-        and:
-        if (appends) {
-            rawValue.expectPrepend(baseValue)
-        }
-
-        expect:
-        runPropertyQuery(get, set).matches(rawValue)
-
-        where:
-        invocation               | rawValue                                     | type                       | appends
-        customSetter("keychain") | filePath("/some/path/1")                     | "File"                     | true
-        customSetter("keychain") | filePath("/some/path/2")                     | "Provider<File>"           | true
-        method                   | filePaths(["/some/path/3", "/some/path/4"])  | "Iterable<File>"           | true
-        method                   | filePaths(["/some/path/5", "/some/path/6"])  | "Provider<Iterable<File>>" | true
-        setter                   | filePaths(["/some/path/7", "/some/path/8"])  | "Iterable<File>"           | false
-        setter                   | filePaths(["/some/path/9", "/some/path/10"]) | "Provider<Iterable<File>>" | false
-
-        property = "keychains"
-        baseValue = osPath("/some/path/0")
-        message = appends ? "appends to keychains collection" : "set keychains collection"
-        set = new PropertySetterWriter(subjectUnderTestName, property)
-                .set(rawValue, type)
-                .toScript(invocation)
-        get = new PropertyGetterTaskWriter(subjectUnderTestName + ".keychains.files", "")
     }
 
     def "task is never Up-to-date"() {
@@ -112,3 +74,8 @@ class SecurityLockKeychainIntegrationSpec extends InteractiveSecurityTaskIntegra
         !result.wasUpToDate(subjectUnderTestName)
     }
 }
+
+@Requires({ os.macOs })
+class SecurityLockKeychainIntegrationSpec2 extends MultiKeychainOperationIntegrationSpec<SecurityLockKeychain> {
+}
+

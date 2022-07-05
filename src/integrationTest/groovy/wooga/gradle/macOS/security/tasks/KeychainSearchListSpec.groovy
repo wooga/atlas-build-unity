@@ -28,10 +28,6 @@ abstract class KeychainSearchListSpec<T extends AbstractSecurityKeychainSearchLi
 
     def setup() {
         keychainSearchList.reset()
-        buildFile << """
-        task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
-        }
-        """.stripIndent()
     }
 
     def cleanup() {
@@ -46,9 +42,6 @@ abstract class KeychainSearchListSpec<T extends AbstractSecurityKeychainSearchLi
 
         where:
         property | invocation  | rawValue  | type
-        "domain" | method      | "user"    | "String"
-        "domain" | method      | "system"  | "Domain"
-        "domain" | method      | "common"  | "Provider<Domain>"
         "domain" | providerSet | "dynamic" | "Domain"
         "domain" | providerSet | "user"    | "Provider<Domain>"
         "domain" | setter      | "system"  | "String"

@@ -23,7 +23,7 @@ import org.gradle.api.tasks.Input
 
 trait SecurityKeychainSpec extends BaseSpec {
 
-    private  final Property<String> password = objects.property(String)
+    private final Property<String> password = objects.property(String)
 
     @Input
     Property<String> getPassword() {
@@ -36,15 +36,5 @@ trait SecurityKeychainSpec extends BaseSpec {
 
     void setPassword(Provider<String> value) {
         password.set(value)
-    }
-
-    SecurityKeychainSpec password(String value) {
-        setPassword(value)
-        this
-    }
-
-    SecurityKeychainSpec password(Provider<String> value) {
-        setPassword(value)
-        this
     }
 }

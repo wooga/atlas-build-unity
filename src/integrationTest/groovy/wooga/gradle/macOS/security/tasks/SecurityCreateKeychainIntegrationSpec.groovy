@@ -128,48 +128,36 @@ class SecurityCreateKeychainIntegrationSpec extends InteractiveSecurityTaskInteg
 
         where:
         property                   | invocation  | rawValue        | type
-        "fileName"                 | method      | "testName1"     | "String"
-        "fileName"                 | method      | "testName2"     | "Provider<String>"
         "fileName"                 | providerSet | "testName1"     | "String"
         "fileName"                 | providerSet | "testName2"     | "Provider<String>"
         "fileName"                 | setter      | "testName3"     | "String"
         "fileName"                 | setter      | "testName4"     | "Provider<String>"
 
-        "baseName"                 | method      | "testBaseName1" | "String"
-        "baseName"                 | method      | "testBaseName2" | "Provider<String>"
         "baseName"                 | providerSet | "testBaseName1" | "String"
         "baseName"                 | providerSet | "testBaseName2" | "Provider<String>"
         "baseName"                 | setter      | "testBaseName3" | "String"
         "baseName"                 | setter      | "testBaseName4" | "Provider<String>"
 
-        "extension"                | method      | "ext2"          | "Provider<String>"
         "extension"                | providerSet | "ext1"          | "String"
         "extension"                | providerSet | "ext2"          | "Provider<String>"
         "extension"                | setter      | "ext3"          | "String"
         "extension"                | setter      | "ext4"          | "Provider<String>"
 
-        "password"                 | method      | "password2"     | "Provider<String>"
         "password"                 | providerSet | "password1"     | "String"
         "password"                 | providerSet | "password2"     | "Provider<String>"
         "password"                 | setter      | "password3"     | "String"
         "password"                 | setter      | "password4"     | "Provider<String>"
 
-        "destinationDir"           | method      | "/some/path/1"  | "File"
-        "destinationDir"           | method      | "/some/path/2"  | "Provider<Directory>"
         "destinationDir"           | providerSet | "/some/path/3"  | "File"
         "destinationDir"           | providerSet | "/some/path/4"  | "Provider<Directory>"
         "destinationDir"           | setter      | "/some/path/5"  | "File"
         "destinationDir"           | setter      | "/some/path/6"  | "Provider<Directory>"
 
-        "lockKeychainWhenSleep"    | method      | true            | "Boolean"
-        "lockKeychainWhenSleep"    | method      | true            | "Provider<Boolean>"
         "lockKeychainWhenSleep"    | providerSet | true            | "Boolean"
         "lockKeychainWhenSleep"    | providerSet | true            | "Provider<Boolean>"
         "lockKeychainWhenSleep"    | setter      | true            | "Boolean"
         "lockKeychainWhenSleep"    | setter      | true            | "Provider<Boolean>"
 
-        "lockKeychainAfterTimeout" | method      | 1               | "Integer"
-        "lockKeychainAfterTimeout" | method      | 2               | "Provider<Integer>"
         "lockKeychainAfterTimeout" | providerSet | 3               | "Integer"
         "lockKeychainAfterTimeout" | providerSet | 4               | "Provider<Integer>"
         "lockKeychainAfterTimeout" | setter      | 5               | "Provider<Integer>"
