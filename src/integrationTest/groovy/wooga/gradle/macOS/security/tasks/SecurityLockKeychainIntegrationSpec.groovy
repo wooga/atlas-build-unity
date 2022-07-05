@@ -16,127 +16,99 @@
 
 package wooga.gradle.macOS.security.tasks
 
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import com.wooga.security.MacOsKeychain
 import com.wooga.spock.extensios.security.Keychain
 import spock.lang.Requires
 import spock.lang.Unroll
-import wooga.gradle.build.IntegrationSpec
+
+import static com.wooga.gradle.test.queries.TestValue.filePath
+import static com.wooga.gradle.test.queries.TestValue.filePath
+import static com.wooga.gradle.test.queries.TestValue.filePaths
+import static com.wooga.gradle.test.queries.TestValue.filePaths
+import static com.wooga.gradle.test.queries.TestValue.filePaths
+import static com.wooga.gradle.test.queries.TestValue.filePaths
+import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 
 @Requires({ os.macOs })
-class SecurityLockKeychainIntegrationSpec extends IntegrationSpec {
-    String testTaskName = "lockKeychain"
-
-    Class taskType = SecurityLockKeychain
+class SecurityLockKeychainIntegrationSpec extends InteractiveSecurityTaskIntegrationSpec<SecurityLockKeychain> {
 
     @Keychain(password = "123456")
     MacOsKeychain buildKeychain
 
-    def setup() {
-        buildFile << """
-        task ${testTaskName}(type: ${taskType.name}) {
-        }
-        """.stripIndent()
-    }
-
     def "task locks configured keychain"() {
         given: "an unlocked keychain"
-        buildFile << """
-        ${testTaskName} {
-            keychain(file('${buildKeychain.location.path}'))
-        }
-        """.stripIndent()
+        appendToSubjectTask "keychain(file('${buildKeychain.location.path}'))"
         buildKeychain.unlock()
 
         expect:
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
     }
 
-    @Unroll("can set property #property with #method and type #type")
+    @Unroll("can set property #property with #invocation and type #type")
     def "can set property"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-        and: "a set property"
-
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        property    | method          | rawValue         | type
-        "all"       | "all"           | false            | "Provider<Boolean>"
-        "all"       | "all.set"       | false            | "Boolean"
-        "all"       | "all.set"       | false            | "Provider<Boolean>"
-        "all"       | "setAll"        | false            | "Boolean"
-        "all"       | "setAll"        | false            | "Provider<Boolean>"
-        value = wrapValueBasedOnType(rawValue, type)
-        expectedValue = rawValue
+        property | invocation  | rawValue | type
+        "all"    | method      | false    | "Provider<Boolean>"
+        "all"    | providerSet | false    | "Boolean"
+        "all"    | providerSet | false    | "Provider<Boolean>"
+        "all"    | setter      | false    | "Boolean"
+        "all"    | setter      | false    | "Provider<Boolean>"
+
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+                .serialize(wrapValueFallback)
+
+        get = new PropertyGetterTaskWriter(set)
     }
 
-    @Unroll("method #method #message")
+    @Unroll("method #invocation #message")
     def "method alters keychains property"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.keychains.files)
-                }
-            }
-        """.stripIndent()
-        and: "a set property"
-        buildFile << """
-            ${testTaskName}.keychains.setFrom($baseValueWrapped)
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
+        given: "a set property"
+        appendToSubjectTask("keychains = ${wrapValueBasedOnType(baseValue, "List<File>")}")
 
-        when:
-        def result = runTasksSuccessfully("readValue")
+        and:
+        if (appends) {
+            rawValue.expectPrepend(baseValue)
+        }
 
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        method         | rawValue                          | type                   | appends
-        "keychain"     | "/some/path/1"                    | "File"                 | true
-        "keychain"     | "/some/path/2"                    | "Provider<File>"       | true
-        "keychains"    | ["/some/path/3", "/some/path/4"]  | "List<File>"           | true
-        "keychains"    | ["/some/path/5", "/some/path/6"]  | "Provider<List<File>>" | true
-        "setKeychains" | ["/some/path/7", "/some/path/8"]  | "List<File>"           | false
-        "setKeychains" | ["/some/path/9", "/some/path/10"] | "Provider<List<File>>" | false
+        invocation               | rawValue                                     | type                       | appends
+        customSetter("keychain") | filePath("/some/path/1")                     | "File"                     | true
+        customSetter("keychain") | filePath("/some/path/2")                     | "Provider<File>"           | true
+        method                   | filePaths(["/some/path/3", "/some/path/4"])  | "Iterable<File>"           | true
+        method                   | filePaths(["/some/path/5", "/some/path/6"])  | "Provider<Iterable<File>>" | true
+        setter                   | filePaths(["/some/path/7", "/some/path/8"])  | "Iterable<File>"           | false
+        setter                   | filePaths(["/some/path/9", "/some/path/10"]) | "Provider<Iterable<File>>" | false
 
-        baseValue = ["/some/path/0"]
-        value = wrapValueBasedOnType(rawValue, type)
-        baseValueWrapped = wrapValueBasedOnType(baseValue, "List<File>")
-        expectedValue = appends ? [baseValue, [rawValue]].flatten() : [rawValue].flatten()
+        property = "keychains"
+        baseValue = osPath("/some/path/0")
         message = appends ? "appends to keychains collection" : "set keychains collection"
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+        get = new PropertyGetterTaskWriter(subjectUnderTestName + ".keychains.files", "")
     }
 
     def "task is never Up-to-date"() {
         given: "a keychain"
-        buildFile << """
-        ${testTaskName} {
-            keychain(file('${buildKeychain.location.path}'))
-        }
-        """.stripIndent()
+        appendToSubjectTask("keychain(file('${buildKeychain.location.path}'))")
 
         and: "a run of the task"
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        !result.wasUpToDate(testTaskName)
+        !result.wasUpToDate(subjectUnderTestName)
     }
 }

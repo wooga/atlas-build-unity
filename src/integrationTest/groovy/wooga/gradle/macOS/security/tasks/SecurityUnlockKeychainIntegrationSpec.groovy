@@ -16,27 +16,25 @@
 
 package wooga.gradle.macOS.security.tasks
 
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import com.wooga.security.MacOsKeychain
 import com.wooga.spock.extensios.security.Keychain
 import spock.lang.Requires
 import spock.lang.Unroll
-import wooga.gradle.build.IntegrationSpec
+
+import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 
 @Requires({ os.macOs })
-class SecurityUnlockKeychainIntegrationSpec extends IntegrationSpec {
-    String testTaskName = "unlockKeychain"
-
-    Class taskType = SecurityUnlockKeychain
+class SecurityUnlockKeychainIntegrationSpec extends InteractiveSecurityTaskIntegrationSpec<SecurityUnlockKeychain> {
 
     @Keychain(password = "123456")
     MacOsKeychain buildKeychain
 
     def setup() {
-        buildFile << """
-        task ${testTaskName}(type: ${taskType.name}) {
+        appendToSubjectTask """
             keychain = file('${buildKeychain.location.path}')
             password = "${buildKeychain.password}"
-        }
         """.stripIndent()
     }
 
@@ -45,64 +43,47 @@ class SecurityUnlockKeychainIntegrationSpec extends IntegrationSpec {
         buildKeychain.lock()
 
         expect:
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-        and: "a set property"
-
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        property   | method         | rawValue       | type
-        "password" | "password"     | "password2"    | "Provider<String>"
-        "password" | "password.set" | "password1"    | "String"
-        "password" | "password.set" | "password2"    | "Provider<String>"
-        "password" | "setPassword"  | "password3"    | "String"
-        "password" | "setPassword"  | "password4"    | "Provider<String>"
+        property   | invocation  | rawValue       | type
+        "password" | method      | "password2"    | "Provider<String>"
+        "password" | providerSet | "password1"    | "String"
+        "password" | providerSet | "password2"    | "Provider<String>"
+        "password" | setter      | "password3"    | "String"
+        "password" | setter      | "password4"    | "Provider<String>"
 
-        "keychain" | "keychain"     | "/some/path/1" | "File"
-        "keychain" | "keychain"     | "/some/path/2" | "Provider<RegularFile>"
-        "keychain" | "keychain.set" | "/some/path/3" | "File"
-        "keychain" | "keychain.set" | "/some/path/4" | "Provider<RegularFile>"
-        "keychain" | "setKeychain"  | "/some/path/5" | "File"
-        "keychain" | "setKeychain"  | "/some/path/6" | "Provider<RegularFile>"
-        value = wrapValueBasedOnType(rawValue, type)
-        expectedValue = rawValue
+        "keychain" | method      | "/some/path/1" | "File"
+        "keychain" | method      | "/some/path/2" | "Provider<RegularFile>"
+        "keychain" | providerSet | "/some/path/3" | "File"
+        "keychain" | providerSet | "/some/path/4" | "Provider<RegularFile>"
+        "keychain" | setter      | "/some/path/5" | "File"
+        "keychain" | setter      | "/some/path/6" | "Provider<RegularFile>"
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+                .serialize(wrapValueFallback)
+
+        get = new PropertyGetterTaskWriter(set)
     }
 
     def "task is never Up-to-date"() {
         given: "a keychain"
-        buildFile << """
-        ${testTaskName} {
-            keychain(file('${buildKeychain.location.path}'))
-        }
-        """.stripIndent()
+        appendToSubjectTask("keychain(file('${buildKeychain.location.path}'))")
 
         and: "a run of the task"
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        !result.wasUpToDate(testTaskName)
+        !result.wasUpToDate(subjectUnderTestName)
     }
 }

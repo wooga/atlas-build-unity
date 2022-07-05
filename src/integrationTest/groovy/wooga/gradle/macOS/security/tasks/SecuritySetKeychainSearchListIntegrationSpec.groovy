@@ -1,19 +1,17 @@
 package wooga.gradle.macOS.security.tasks
 
-import com.wooga.gradle.test.PropertyLocation
-import com.wooga.gradle.test.queries.TestValue
+
 import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
-import com.wooga.gradle.test.writers.PropertySetInvocation
 import com.wooga.gradle.test.writers.PropertySetterWriter
-import org.apache.tools.ant.types.PropertySet
 import spock.lang.Requires
 import spock.lang.Unroll
 
-@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
-class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpec {
-    String testTaskName = "keychainLookup"
-    Class taskType = SecuritySetKeychainSearchList
+import static com.wooga.gradle.test.queries.TestValue.filePath
+import static com.wooga.gradle.test.queries.TestValue.filePaths
+import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 
+@Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
+class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpec<SecuritySetKeychainSearchList> {
     @Unroll
     def "can add #message to the lookup list"() {
         given: "a lookup list without the keychain added"
@@ -22,15 +20,13 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
         }
 
         and: "the keychain configured"
-        buildFile << """
-        ${testTaskName} {
+        appendToSubjectTask """
             action = "add"
             keychains(files('${keychains.collect { it.location.path }.join('\', \'')}'))
-        }
         """.stripIndent()
 
         when:
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         keychains.every {
@@ -52,15 +48,13 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
         }
 
         and: "the keychain configured"
-        buildFile << """
-        ${testTaskName} {
+        appendToSubjectTask("""
             action = "remove"
             keychains(files('${keychains.collect { it.location.path }.join('\', \'')}'))
-        }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        runTasksSuccessfully(testTaskName)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         !keychains.every {
@@ -76,17 +70,15 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
     @Unroll
     def "skips with no source when action is #action and no keychains are configured"() {
         given:
-        buildFile << """
-        ${testTaskName} {
+        appendToSubjectTask("""
             action = "${action}"
-        }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.standardOutput.contains("Task :${testTaskName} NO-SOURCE")
+        result.standardOutput.contains("Task :${subjectUnderTestName} NO-SOURCE")
 
         where:
         action << ["add", "remove"]
@@ -101,18 +93,16 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
         }
 
         and: "test task configured with action and keychains"
-        buildFile << """
-        ${testTaskName} {
+        appendToSubjectTask("""
             action = "${action}"
             keychains(files('${keychains.collect { it.location.path }.join('\', \'')}'))
-        }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.wasSkipped(testTaskName)
+        result.wasSkipped(subjectUnderTestName)
 
         where:
         action   | keychains                       | keychainsInSearchList                           | message
@@ -120,85 +110,61 @@ class SecuritySetKeychainSearchListIntegrationSpec extends KeychainSearchListSpe
         "remove" | [buildKeychain3]                | [buildKeychain, buildKeychain2]                 | "keychain to remove not in search list"
     }
 
-    @Unroll("can set property #property with #method and type #type")
+    @Unroll("can set property #property with #methodName and type #type")
     def "can set property"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-        and: "a set property"
-
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        property | method       | rawValue | type
-        "action" | "action"     | "add"    | "String"
-        "action" | "action"     | "remove" | "Action"
-        "action" | "action"     | "add"    | "Provider<Action>"
-        "action" | "action.set" | "remove" | "Action"
-        "action" | "action.set" | "add"    | "Provider<Action>"
-        "action" | "setAction"  | "remove" | "String"
-        "action" | "setAction"  | "add"    | "Action"
-        "action" | "setAction"  | "remove" | "Provider<Action>"
+        property | invocation  | rawValue | type
+        "action" | method      | "add"    | "String"
+        "action" | method      | "remove" | "Action"
+        "action" | method      | "add"    | "Provider<Action>"
+        "action" | providerSet | "remove" | "Action"
+        "action" | providerSet | "add"    | "Provider<Action>"
+        "action" | setter      | "remove" | "String"
+        "action" | setter      | "add"    | "Action"
+        "action" | setter      | "remove" | "Provider<Action>"
 
-        value = wrapValueBasedOnType(rawValue, type) { type ->
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+                .serialize(wrapValueFallback)
 
-            switch (type) {
-                case SecuritySetKeychainSearchList.Action.simpleName:
-                    return "${SecuritySetKeychainSearchList.Action.class.name}.valueOf('${rawValue.toString()}')"
-                default:
-                    return rawValue
-            }
-        }
+        get = new PropertyGetterTaskWriter(set)
+
+        value = wrapValueBasedOnType(rawValue, type)
         expectedValue = rawValue
     }
 
-    @Unroll("sets value #rawValue with #method, type #type #message")
+    @Unroll("sets value #rawValue with #invocation, type #type #message")
     def "method alters keychains property"() {
         given: "a set property"
-        buildFile << """
-            ${testTaskName}.keychains.setFrom(${wrapValueBasedOnType([baseValue], "List<File>")})
-        """.stripIndent()
+        appendToSubjectTask("keychains = ${wrapValueBasedOnType(baseValue, "List<File>")}")
 
         and:
         if (appends) {
             rawValue.expectPrepend(baseValue)
         }
 
-        when:
-        def setter = new PropertySetterWriter(testTaskName, property)
-            .set(rawValue, type)
-            .toScript(method)
-
-        def getter = new PropertyGetterTaskWriter(testTaskName + ".keychains.files", "")
-        def query = runPropertyQuery(getter, setter)
-
-        then:
-        query.matches(rawValue)
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        method                                         | rawValue                                               | type                       | appends
-        PropertySetInvocation.customSetter("keychain") | TestValue.filePath("/some/path/1")                     | "File"                     | true
-        PropertySetInvocation.customSetter("keychain") | TestValue.filePath("/some/path/2")                     | "Provider<File>"           | true
-        PropertySetInvocation.method                   | TestValue.filePaths(["/some/path/3", "/some/path/4"])  | "Iterable<File>"           | true
-        PropertySetInvocation.method                   | TestValue.filePaths(["/some/path/5", "/some/path/6"])  | "Provider<Iterable<File>>" | true
-        PropertySetInvocation.setter                   | TestValue.filePaths(["/some/path/7", "/some/path/8"])  | "Iterable<File>"           | false
-        PropertySetInvocation.setter                   | TestValue.filePaths(["/some/path/9", "/some/path/10"]) | "Provider<Iterable<File>>" | false
+        invocation               | rawValue                                     | type                       | appends
+        customSetter("keychain") | filePath("/some/path/1")                     | "File"                     | true
+        customSetter("keychain") | filePath("/some/path/2")                     | "Provider<File>"           | true
+        method                   | filePaths(["/some/path/3", "/some/path/4"])  | "Iterable<File>"           | true
+        method                   | filePaths(["/some/path/5", "/some/path/6"])  | "Provider<Iterable<File>>" | true
+        setter                   | filePaths(["/some/path/7", "/some/path/8"])  | "Iterable<File>"           | false
+        setter                   | filePaths(["/some/path/9", "/some/path/10"]) | "Provider<Iterable<File>>" | false
 
         property = "keychains"
         baseValue = osPath("/some/path/0")
         message = appends ? "appends to keychains collection" : "set keychains collection"
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+        get = new PropertyGetterTaskWriter(subjectUnderTestName + ".keychains.files", "")
     }
 }
