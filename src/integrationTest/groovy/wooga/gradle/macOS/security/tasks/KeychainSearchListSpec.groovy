@@ -1,19 +1,17 @@
 package wooga.gradle.macOS.security.tasks
 
-import com.wooga.security.Domain
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import com.wooga.security.MacOsKeychain
 import com.wooga.security.MacOsKeychainSearchList
 import com.wooga.spock.extensios.security.Keychain
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.IntegrationSpec
+import wooga.gradle.macOS.security.SecurityTaskIntegrationSpec
 
-abstract class KeychainSearchListSpec extends IntegrationSpec {
+import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 
-    abstract String getTestTaskName()
-
-    abstract Class getTaskType()
-
+abstract class KeychainSearchListSpec<T extends AbstractSecurityKeychainSearchListTask> extends SecurityTaskIntegrationSpec<T> {
     MacOsKeychainSearchList keychainSearchList = new MacOsKeychainSearchList()
 
     @Shared
@@ -31,7 +29,7 @@ abstract class KeychainSearchListSpec extends IntegrationSpec {
     def setup() {
         keychainSearchList.reset()
         buildFile << """
-        task ${testTaskName}(type: ${taskType.name}) {
+        task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
         }
         """.stripIndent()
     }
@@ -41,48 +39,27 @@ abstract class KeychainSearchListSpec extends IntegrationSpec {
     }
 
 
-    @Unroll("can set property #property with #method and type #type")
+    @Unroll("can set property #property with #invocation and type #type")
     def "can set property keychainSearchListSpec"() {
-        given: "a task to read back the value"
-        buildFile << """
-            task("readValue") {
-                doLast {
-                    println("property: " + ${testTaskName}.${property}.get())
-                }
-            }
-        """.stripIndent()
-        and: "a set property"
-
-        buildFile << """
-            ${testTaskName}.${method}($value)
-        """.stripIndent()
-
-        when:
-        def result = runTasksSuccessfully("readValue")
-
-        then:
-        outputContains(result, "property: " + expectedValue.toString())
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        property | method       | rawValue  | type
-        "domain" | "domain"     | "user"    | "String"
-        "domain" | "domain"     | "system"  | "Domain"
-        "domain" | "domain"     | "common"  | "Provider<Domain>"
-        "domain" | "domain.set" | "dynamic" | "Domain"
-        "domain" | "domain.set" | "user"    | "Provider<Domain>"
-        "domain" | "setDomain"  | "system"  | "String"
-        "domain" | "setDomain"  | "common"  | "Domain"
-        "domain" | "setDomain"  | "dynamic" | "Provider<Domain>"
+        property | invocation  | rawValue  | type
+        "domain" | method      | "user"    | "String"
+        "domain" | method      | "system"  | "Domain"
+        "domain" | method      | "common"  | "Provider<Domain>"
+        "domain" | providerSet | "dynamic" | "Domain"
+        "domain" | providerSet | "user"    | "Provider<Domain>"
+        "domain" | setter      | "system"  | "String"
+        "domain" | setter      | "common"  | "Domain"
+        "domain" | setter      | "dynamic" | "Provider<Domain>"
 
-        value = wrapValueBasedOnType(rawValue, type) { type ->
+        set = new PropertySetterWriter(subjectUnderTestName, property)
+                .set(rawValue, type)
+                .toScript(invocation)
+                .serialize(wrapValueFallback)
 
-            switch (type) {
-                case Domain.simpleName:
-                    return "${Domain.class.name}.valueOf('${rawValue.toString()}')"
-                default:
-                    return rawValue
-            }
-        }
-        expectedValue = rawValue
+        get = new PropertyGetterTaskWriter(set)
     }
 }

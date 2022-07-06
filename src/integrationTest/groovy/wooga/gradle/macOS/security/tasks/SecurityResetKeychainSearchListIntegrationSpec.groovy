@@ -4,9 +4,7 @@ import jdk.nashorn.internal.ir.annotations.Ignore
 import spock.lang.Requires
 
 @Requires({ os.macOs && env['ATLAS_BUILD_UNITY_IOS_EXECUTE_KEYCHAIN_SPEC'] == 'YES' })
-class SecurityResetKeychainSearchListIntegrationSpec extends KeychainSearchListSpec {
-    String testTaskName = "resetKeychainSearchList"
-    Class taskType = SecurityResetKeychainSearchList
+class SecurityResetKeychainSearchListIntegrationSpec extends KeychainSearchListSpec<SecurityResetKeychainSearchList> {
 
     @Ignore
     def "can reset keychain lookup list"() {
@@ -20,10 +18,10 @@ class SecurityResetKeychainSearchListIntegrationSpec extends KeychainSearchListS
         keychainSearchList.addAll(keychains.collect { it.location })
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        !result.wasSkipped(testTaskName)
+        !result.wasSkipped(subjectUnderTestName)
         keychainSearchList.collect() == defaultLookupList
 
         where:
@@ -37,9 +35,9 @@ class SecurityResetKeychainSearchListIntegrationSpec extends KeychainSearchListS
         fork = true
 
         when:
-        def result = runTasksSuccessfully(testTaskName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.wasSkipped(testTaskName)
+        result.wasSkipped(subjectUnderTestName)
     }
 }
