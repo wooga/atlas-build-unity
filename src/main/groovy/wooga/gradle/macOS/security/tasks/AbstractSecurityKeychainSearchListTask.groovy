@@ -38,20 +38,6 @@ abstract class AbstractSecurityKeychainSearchListTask<T extends AbstractSecurity
         domain.set(value)
     }
 
-    T domain(Domain value) {
-        setDomain(value)
-        this as T
-    }
-
-    T domain(String value) {
-        setDomain(Domain.valueOf(value))
-    }
-
-    T domain(Provider<Domain> value) {
-        setDomain(value)
-        this as T
-    }
-
     AbstractSecurityKeychainSearchListTask() {
         this.domain = project.objects.property(Domain)
         this.searchListProvider = project.provider({

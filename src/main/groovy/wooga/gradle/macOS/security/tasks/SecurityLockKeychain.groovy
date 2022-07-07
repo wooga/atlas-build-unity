@@ -16,10 +16,10 @@
 
 package wooga.gradle.macOS.security.tasks
 
+
 import com.wooga.security.command.LockKeychain
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.specs.Spec
@@ -27,62 +27,34 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.macOS.security.SecurityMultikeychainOperationSpec
 
-class SecurityLockKeychain extends AbstractInteractiveSecurityTask {
+class SecurityLockKeychain extends AbstractInteractiveSecurityTask implements SecurityMultikeychainOperationSpec {
+
     @Optional
     @InputFiles
-    final ConfigurableFileCollection keychains
-
-    void setKeychains(List<File> value) {
-        keychains.setFrom(value)
+    @Override
+    ConfigurableFileCollection getKeychains() {
+        wooga_gradle_macOS_security_SecurityMultikeychainOperationSpec__keychains
     }
 
-    void setKeychains(Provider<List<RegularFile>> value) {
-        keychains.setFrom(value)
-    }
-
-    SecurityLockKeychain keychains(List<File> value) {
-        keychains.from(project.provider({ value }))
-        this
-    }
-
-    SecurityLockKeychain keychains(Provider<List<RegularFile>> value) {
-        keychains.from(value)
-        this
-    }
-
-    void keychain(Provider<File> keychain) {
-        keychains.from(keychain)
-    }
-
-    void keychain(File keychain) {
-        keychains.from(keychain)
-    }
+    private final Property<Boolean> all = objects.property(Boolean)
 
     @Optional
     @Input
-    final Property<Boolean> all
-
-    void setAll(Boolean value) {
-        all.set(value)
+    Property<Boolean> getAll() {
+        all
     }
 
     void setAll(Provider<Boolean> value) {
         all.set(value)
     }
 
-    SecurityLockKeychain all(Boolean value) {
-        setAll(value)
-        this
-    }
-
-    SecurityLockKeychain all(Provider<Boolean> value) {
-        setAll(value)
-        this
+    void setAll(Boolean value) {
+        all.set(value)
     }
 
     SecurityLockKeychain() {
-        keychains = project.objects.fileCollection()
         all = project.objects.property(Boolean)
         all.set(null)
 

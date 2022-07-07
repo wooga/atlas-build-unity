@@ -26,16 +26,21 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.macOS.security.SecurityMultikeychainOperationSpec
 
-class SecuritySetKeychainSearchList extends AbstractSecurityKeychainSearchListTask {
+class SecuritySetKeychainSearchList extends AbstractSecurityKeychainSearchListTask implements SecurityMultikeychainOperationSpec {
 
     enum Action {
         add,
         remove
     }
 
+    private final Property<Action> action
+
     @Input
-    final Property<Action> action
+    Property<Action> getAction() {
+        action
+    }
 
     void setAction(String value) {
         action.set(Action.valueOf(value))
@@ -49,54 +54,14 @@ class SecuritySetKeychainSearchList extends AbstractSecurityKeychainSearchListTa
         action.set(value)
     }
 
-    SecuritySetKeychainSearchList action(String value) {
-        setAction(Action.valueOf(value))
-        this
-    }
-
-    SecuritySetKeychainSearchList action(Action value) {
-        setAction(value)
-        this
-    }
-
-    SecuritySetKeychainSearchList action(Provider<Action> value) {
-        setAction(value)
-        this
-    }
-
     @SkipWhenEmpty
     @InputFiles
-    final ConfigurableFileCollection keychains
-
-    void setKeychains(Iterable<File> value) {
-        keychains.setFrom(value)
+    @Override
+    ConfigurableFileCollection getKeychains() {
+        wooga_gradle_macOS_security_SecurityMultikeychainOperationSpec__keychains
     }
-
-    void setKeychains(Provider<Iterable<File>> value) {
-        keychains.setFrom(value)
-    }
-
-    SecuritySetKeychainSearchList keychains(Iterable<File> value) {
-        keychains.from(project.provider({ value }))
-        this
-    }
-
-    SecuritySetKeychainSearchList keychains(Provider<Iterable<File>> value) {
-        keychains.from(value)
-        this
-    }
-
-    void keychain(Provider<File> keychain) {
-        keychains.from(keychain)
-    }
-
-    void keychain(File keychain) {
-        keychains.from(keychain)
-    }
-
 
     SecuritySetKeychainSearchList() {
-        keychains = project.objects.fileCollection()
         action = project.objects.property(Action)
 
         onlyIf(new Spec<Task>() {

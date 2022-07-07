@@ -37,17 +37,7 @@ trait SecurityKeychainSettingsSpec extends SecurityKeychainSpec {
     void setLockKeychainWhenSleep(Provider<Boolean> value) {
         lockKeychainWhenSleep.set(value)
     }
-    
-    SecurityKeychainSettingsSpec lockKeychainWhenSleep(Boolean value) {
-        setLockKeychainWhenSleep(value)
-        this
-    }
-    
-    SecurityKeychainSettingsSpec lockKeychainWhenSleep(Provider<Boolean> value) {
-        setLockKeychainWhenSleep(value)
-        this
-    }
-    
+
     private final Property<Integer> lockKeychainAfterTimeout = objects.property(Integer)
 
     @Internal
@@ -61,16 +51,6 @@ trait SecurityKeychainSettingsSpec extends SecurityKeychainSpec {
     
     void setLockKeychainAfterTimeout(Provider<Integer> value) {
         lockKeychainAfterTimeout.set(value)
-    }
-    
-    SecurityKeychainSettingsSpec lockKeychainAfterTimeout(Integer value) {
-        setLockKeychainAfterTimeout(value)
-        this
-    }
-    
-    SecurityKeychainSettingsSpec lockKeychainAfterTimeout(Provider<Integer> value) {
-        setLockKeychainAfterTimeout(value)
-        this
     }
 
     @Input

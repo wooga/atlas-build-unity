@@ -4,7 +4,7 @@ import org.gradle.api.Task
 
 import java.lang.reflect.ParameterizedType
 
-abstract class SecurityTaskIntegrationSpec<T extends Task> extends SecurityIntegrationSpec {
+abstract class SecurityTaskIntegrationSpec<T> extends SecurityIntegrationSpec {
     Class<T> getSubjectUnderTestClass() {
         if (!_sutClass) {
             try {
@@ -25,6 +25,13 @@ abstract class SecurityTaskIntegrationSpec<T extends Task> extends SecurityInteg
 
     String getSubjectUnderTestTypeName() {
         subjectUnderTestClass.getTypeName()
+    }
+
+    def setup() {
+        buildFile << """
+        task ${subjectUnderTestName}(type: ${subjectUnderTestTypeName}) {
+        }
+        """.stripIndent()
     }
 
     void appendToSubjectTask(String... lines) {

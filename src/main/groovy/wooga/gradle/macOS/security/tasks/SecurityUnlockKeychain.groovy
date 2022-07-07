@@ -29,8 +29,12 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 
 class SecurityUnlockKeychain extends AbstractInteractiveSecurityTask {
+    private final Property<String> password
+
     @Input
-    final Property<String> password
+    Property<String> getPassword() {
+        password
+    }
 
     void setPassword(String value) {
         password.set(value)
@@ -40,19 +44,13 @@ class SecurityUnlockKeychain extends AbstractInteractiveSecurityTask {
         password.set(value)
     }
 
-    SecurityUnlockKeychain password(String value) {
-        setPassword(value)
-        this
-    }
-
-    SecurityUnlockKeychain password(Provider<String> value) {
-        setPassword(value)
-        this
-    }
+    private final RegularFileProperty keychain
 
     @Optional
     @InputFile
-    final RegularFileProperty keychain
+    RegularFileProperty getKeychain() {
+        keychain
+    }
 
     void setKeychain(File value) {
         keychain.set(value)
@@ -60,16 +58,6 @@ class SecurityUnlockKeychain extends AbstractInteractiveSecurityTask {
 
     void setKeychain(Provider<RegularFile> value) {
         keychain.set(value)
-    }
-
-    SecurityUnlockKeychain keychain(File value) {
-        setKeychain(value)
-        this
-    }
-
-    SecurityUnlockKeychain keychain(Provider<RegularFile> value) {
-        setKeychain(value)
-        this
     }
 
     SecurityUnlockKeychain() {
