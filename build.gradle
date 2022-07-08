@@ -71,10 +71,10 @@ repositories {
 dependencies {
     implementation "net.wooga.gradle:dotnet-sonarqube:[0.4,0.5["
     implementation "net.wooga.gradle:unity:[3,4["
-    implementation 'com.wooga.gradle:gradle-commons:[1.2.2,2['
     implementation "org.gradle:gradle-tooling-api:+"
     api 'net.wooga.gradle:secrets:1.0.0-rc.6'
     api 'net.wooga.gradle:xcodebuild:[1,2['
+    api "net.wooga.gradle:macos-security:[1.0.1,2["
     api 'software.amazon.awssdk:secretsmanager:[2.16,3['
     implementation 'xmlwise:xmlwise:1.2.11'
     implementation 'commons-codec:commons-codec:1.14'
@@ -90,8 +90,6 @@ dependencies {
 
     testImplementation "org.yaml:snakeyaml:1.28"
     testImplementation "com.wooga.gradle:gradle-commons-test:[1.6,2["
-
-    implementation('com.wooga.security:macos-security:[1,2[')
 
     //TODO: I have no idea why we need this now.
     implementation('org.apache.maven:maven-artifact:[3,4[')
