@@ -1,6 +1,7 @@
 package wooga.gradle.fastlane.models
 
-import com.wooga.gradle.BaseSpec
+
+import com.wooga.gradle.io.ExecSpec
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -9,7 +10,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 
-trait FastLaneSpec extends BaseSpec {
+trait FastLaneSpec extends ExecSpec {
 
     private final Property<String> username = objects.property(String)
 

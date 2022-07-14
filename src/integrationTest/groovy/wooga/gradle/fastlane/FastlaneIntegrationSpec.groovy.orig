@@ -16,7 +16,13 @@
 
 package wooga.gradle.fastlane
 
+<<<<<<< HEAD
 
+||||||| parent of 63fc102 (Improve fastlane tasks with ExecSpec)
+import com.wooga.gradle.PlatformUtils
+
+=======
+>>>>>>> 63fc102 (Improve fastlane tasks with ExecSpec)
 import java.nio.file.Paths
 
 abstract class FastlaneIntegrationSpec extends IntegrationSpec {

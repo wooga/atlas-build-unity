@@ -17,22 +17,19 @@
 package wooga.gradle.fastlane.tasks
 
 import com.wooga.gradle.ArgumentsSpec
-import com.wooga.gradle.io.FileUtils
 import com.wooga.gradle.io.LogFileSpec
-import com.wooga.gradle.io.OutputStreamSpec
-import org.gradle.api.Action
+import com.wooga.gradle.io.ProcessExecutor
+import com.wooga.gradle.io.ProcessOutputSpec
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskAction
-import org.gradle.process.ExecSpec
-import wooga.gradle.build.unity.internal.ExecUtil
 import wooga.gradle.fastlane.models.FastLaneTaskSpec
 
 abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskSpec,
-    ArgumentsSpec,
-    LogFileSpec,
-    OutputStreamSpec {
+        ArgumentsSpec,
+        LogFileSpec,
+        ProcessOutputSpec {
 
     AbstractFastlaneTask() {
 
@@ -60,25 +57,11 @@ abstract class AbstractFastlaneTask extends DefaultTask implements FastLaneTaskS
 
     @TaskAction
     protected void exec() {
-
-        def executablePath = ExecUtil.getExecutable("fastlane")
-        def _environment = environment.get()
-        def _logFile = logFile.asFile.getOrNull()
-        if (_logFile != null && !_logFile.exists()){
-            FileUtils.ensureFile(_logFile)
-        }
-
-        project.exec(new Action<ExecSpec>() {
-            @Override
-            void execute(ExecSpec exec) {
-                exec.with {
-                    executable executablePath
-                    args arguments.get()
-                    environment(_environment)
-                    standardOutput = getOutputStream(_logFile)
-                }
-            }
-        })
+        ProcessExecutor.from(this)
+                .withArguments(this, true)
+                .withOutput(this, logFile.asFile.getOrNull())
+                .withOutputLogFile(this, this)
+                .execute()
     }
 
     void addDefaultArguments(List<String> arguments) {
