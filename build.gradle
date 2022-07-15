@@ -71,6 +71,7 @@ repositories {
 dependencies {
     implementation "net.wooga.gradle:dotnet-sonarqube:[0.4,0.5["
     implementation "net.wooga.gradle:unity:[3,4["
+    implementation 'com.wooga.gradle:gradle-commons:[1.5,2['
     implementation "org.gradle:gradle-tooling-api:+"
     api 'net.wooga.gradle:secrets:1.0.0-rc.6'
     api 'net.wooga.gradle:xcodebuild:[1,2['
