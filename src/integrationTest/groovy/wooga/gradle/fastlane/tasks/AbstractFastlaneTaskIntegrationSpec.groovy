@@ -17,15 +17,10 @@
 package wooga.gradle.fastlane.tasks
 
 import com.wooga.gradle.PlatformUtils
-import com.wooga.gradle.io.FileUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Requires
 import spock.lang.Unroll
 import wooga.gradle.fastlane.FastlaneIntegrationSpec
-import wooga.gradle.xcodebuild.ConsoleSettings
-import wooga.gradle.xcodebuild.config.BuildSettings
-
-import javax.naming.spi.ObjectFactory
 
 abstract class AbstractFastlaneTaskIntegrationSpec extends FastlaneIntegrationSpec {
 
@@ -77,20 +72,7 @@ abstract class AbstractFastlaneTaskIntegrationSpec extends FastlaneIntegrationSp
         "apiKeyPath" | "setApiKeyPath"  | osPath("/some/path/key6.json") | _             | "Provider<RegularFile>"
 
         // TODO: Is this meant to be here?
-        value = wrapValueBasedOnType(rawValue, type, { type ->
-            switch (type) {
-                case ConsoleSettings.class.simpleName:
-                    return "${ConsoleSettings.class.name}.fromGradleOutput(org.gradle.api.logging.configuration.ConsoleOutput.${rawValue.toString().capitalize()})"
-
-                case BuildSettings.class.simpleName:
-                    return "new ${BuildSettings.class.name}()" + rawValue.replaceAll(/(\[|\])/, '').split(',').collect({
-                        List<String> parts = it.split("=")
-                        ".put('${parts[0].trim()}', '${parts[1].trim()}')"
-                    }).join("")
-                default:
-                    return rawValue
-            }
-        })
+        value = wrapValueBasedOnType(rawValue, type)
         path = PlatformUtils.escapedPath(osPath(value))
         invocation = (method == _) ? "${property} = ${path}" : "${method}(${path})"
         testValue = (expectedValue == _) ? rawValue : expectedValue

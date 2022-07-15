@@ -16,7 +16,6 @@
 
 package wooga.gradle.fastlane
 
-import com.wooga.gradle.PlatformUtils
 
 import java.nio.file.Paths
 

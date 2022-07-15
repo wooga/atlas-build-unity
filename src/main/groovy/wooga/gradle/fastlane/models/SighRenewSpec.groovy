@@ -3,13 +3,9 @@ package wooga.gradle.fastlane.models
 import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileCollection
-import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.OutputFiles
 
 trait SighRenewSpec extends BaseSpec {
 
