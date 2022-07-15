@@ -6,7 +6,6 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.TaskAction
 
 /**
  * Batch version of {@code SighRenew} to import multiple
@@ -65,8 +64,8 @@ class SighRenewBatch extends SighRenew {
         })
     }
 
-    @TaskAction
-    protected importProfiles() {
+    @Override
+    protected void exec() {
         def profiles = new HashMap<String, String>()
         profiles.putAll(this.profiles.getOrElse([:]))
         if ((appIdentifier.present && !profiles.containsKey(appIdentifier.get())) && (provisioningName.present && !profiles.containsValue(provisioningName.get()))) {
@@ -82,7 +81,7 @@ class SighRenewBatch extends SighRenew {
             fileName.set("${name}.mobileprovision")
 
             logger.info("import provisioning profile '${name}' for bundleIdentifier '${appId}' to file '${fileName.get()}'")
-            exec()
+            super.exec()
         }
     }
 }

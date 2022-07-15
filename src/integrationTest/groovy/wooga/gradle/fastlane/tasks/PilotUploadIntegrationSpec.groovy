@@ -18,7 +18,6 @@ package wooga.gradle.fastlane.tasks
 
 import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
-import org.apache.commons.io.FileUtils
 import spock.lang.Requires
 import spock.lang.Unroll
 
