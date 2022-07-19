@@ -2,7 +2,6 @@ package wooga.gradle.build.unity.ios
 
 import nebula.test.ProjectSpec
 import org.gradle.api.DefaultTask
-import org.gradle.api.Task
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Unroll
@@ -132,7 +131,8 @@ class IOSBuildPluginSpec extends ProjectSpec {
         project.evaluate()
         def task1 = project.tasks.getByName(taskName)
         def task2 = project.tasks.getByName(dependedTask)
-        task1.dependsOn.contains(task2) == dependsOnTask
+
+        task1.dependsOn.collect({ it.name }).contains(task2.name) == dependsOnTask
 
         where:
         taskName  | dependedTask        | publishToTestflight | dependsOnTask
@@ -140,6 +140,4 @@ class IOSBuildPluginSpec extends ProjectSpec {
         "publish" | "publishTestFlight" | false               | false
         message = (dependsOnTask) ? "depends" : "depends not"
     }
-
-
 }
