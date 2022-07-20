@@ -20,6 +20,8 @@ package wooga.gradle.build.unity.ios
 import com.wooga.gradle.test.ConventionSource
 import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.security.Domain
+import com.wooga.security.MacOsKeychainSearchList
 import nebula.test.functional.ExecutionResult
 import net.wooga.system.ProcessList
 import spock.lang.Requires
@@ -54,8 +56,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
     File buildKeychain
 
     @Shared
-    KeychainLookupList keychainLookupList = new KeychainLookupList()
-
+    MacOsKeychainSearchList keychainLookupList = new MacOsKeychainSearchList(Domain.user)
 
     static String certPassword = "test password"
 
