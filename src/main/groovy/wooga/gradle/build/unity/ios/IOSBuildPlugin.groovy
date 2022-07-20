@@ -21,19 +21,21 @@ import com.wooga.security.Domain
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskProvider
 import wooga.gradle.build.unity.ios.internal.DefaultIOSBuildPluginExtension
 import wooga.gradle.build.unity.ios.tasks.ImportCodeSigningIdentities
-import wooga.gradle.fastlane.tasks.SighRenewBatch
 import wooga.gradle.build.unity.ios.tasks.PodInstallTask
 import wooga.gradle.fastlane.FastlanePlugin
 import wooga.gradle.fastlane.FastlanePluginExtension
 import wooga.gradle.fastlane.tasks.PilotUpload
 import wooga.gradle.fastlane.tasks.SighRenew
+import wooga.gradle.fastlane.tasks.SighRenewBatch
 import wooga.gradle.macOS.security.tasks.*
 import wooga.gradle.xcodebuild.XcodeBuildPlugin
 import wooga.gradle.xcodebuild.tasks.ArchiveDebugSymbols
@@ -44,6 +46,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
     private static final Logger LOG = Logging.getLogger(IOSBuildPlugin.class)
     static final String EXTENSION_NAME = "iosBuild"
+    static final String PUBLISH_LIFECYCLE_TASK_NAME = "publish"
 
     @Override
     void apply(Project project) {
@@ -64,7 +67,7 @@ class IOSBuildPlugin implements Plugin<Project> {
 
         extension.exportOptionsPlist.convention(project.layout.projectDirectory.file("exportOptions.plist"))
         extension.teamId.convention(extension.exportOptions.map({ it.teamID }))
-        extension.signingIdentities.convention(extension.exportOptions.map({it.signingCertificate ? [it.signingCertificate] : []}).orElse(project.provider({ new ArrayList<String>() })))
+        extension.signingIdentities.convention(extension.exportOptions.map({ it.signingCertificate ? [it.signingCertificate] : [] }).orElse(project.provider({ new ArrayList<String>() })))
         extension.adhoc.convention(extension.exportOptions.map({ it.method == 'ad-hoc' }).orElse(false))
         extension.appIdentifier.convention(extension.exportOptions.map({ it.distributionBundleIdentifier }))
 
@@ -176,52 +179,52 @@ class IOSBuildPlugin implements Plugin<Project> {
     void generateBuildTasks(final Project project, IOSBuildPluginExtension extension) {
         def tasks = project.tasks
 
-        def createKeychain = tasks.create("createKeychain", SecurityCreateKeychain)
+        def createKeychain = tasks.register("createKeychain", SecurityCreateKeychain)
 
-        ImportCodeSigningIdentities buildKeychain = tasks.create("importCodeSigningIdentities", ImportCodeSigningIdentities) {
-            it.inputKeychain.set(createKeychain.getKeychain())
+        TaskProvider<ImportCodeSigningIdentities> buildKeychain = tasks.register("importCodeSigningIdentities", ImportCodeSigningIdentities) {
+            it.inputKeychain.set(createKeychain.flatMap({ it.keychain }))
             it.signingIdentities.convention(extension.signingIdentities)
             it.passphrase.convention(extension.codeSigningIdentityFilePassphrase)
             it.p12.convention(extension.codeSigningIdentityFile)
             dependsOn(createKeychain)
         }
 
-        def unlockKeychain = tasks.create("unlockKeychain", SecurityUnlockKeychain) {
+        def unlockKeychain = tasks.register("unlockKeychain", SecurityUnlockKeychain) {
             it.dependsOn(buildKeychain, buildKeychain)
-            it.password.set(createKeychain.password)
-            it.keychain.set(buildKeychain.keychain)
+            it.password.set(createKeychain.flatMap({ it.password }))
+            it.keychain.set(buildKeychain.flatMap({ it.keychain }))
         }
 
-        def lockKeychain = tasks.create("lockKeychain", SecurityLockKeychain) {
+        def lockKeychain = tasks.register("lockKeychain", SecurityLockKeychain) {
             it.dependsOn(buildKeychain)
-            it.keychain(buildKeychain.keychain.map({ it.asFile }))
+            it.keychain(buildKeychain.flatMap({ it.keychain }).map({ it.asFile }))
         }
 
-        def resetKeychains = tasks.create("resetKeychains", SecurityResetKeychainSearchList)
+        def resetKeychains = tasks.register("resetKeychains", SecurityResetKeychainSearchList)
 
-        def addKeychain = tasks.create("addKeychain", SecuritySetKeychainSearchList) {
+        def addKeychain = tasks.register("addKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
             it.domain.set(Domain.user)
             it.action = SecuritySetKeychainSearchList.Action.add
-            it.keychain(buildKeychain.keychain.map({ it.asFile }))
+            it.keychain(buildKeychain.flatMap({ it.keychain }).map({ it.asFile }))
             dependsOn(resetKeychains)
         }
 
-        def removeKeychain = tasks.create("removeKeychain", SecuritySetKeychainSearchList) {
+        def removeKeychain = tasks.register("removeKeychain", SecuritySetKeychainSearchList) {
             it.dependsOn(buildKeychain)
             it.domain.set(Domain.user)
             it.action = SecuritySetKeychainSearchList.Action.remove
-            it.keychain(buildKeychain.keychain.map({ it.asFile }))
+            it.keychain(buildKeychain.flatMap({ it.keychain }).map({ it.asFile }))
         }
 
-        buildKeychain.finalizedBy(removeKeychain, lockKeychain)
+        buildKeychain.configure({it.finalizedBy(removeKeychain, lockKeychain)})
 
         def shutdownHook = new Thread({
             System.err.println("shutdown hook called")
             System.err.flush()
-            if (addKeychain.didWork) {
-                System.err.println("task ${addKeychain.name} did run. Execute ${removeKeychain.name} shutdown action")
-                removeKeychain.shutdown()
+            if (addKeychain.get().didWork) {
+                System.err.println("task ${addKeychain.get().name} did run. Execute ${removeKeychain.get().name} shutdown action")
+                removeKeychain.get().shutdown()
             } else {
                 System.err.println("no actions to be executed")
                 System.err.flush()
@@ -229,71 +232,71 @@ class IOSBuildPlugin implements Plugin<Project> {
             System.err.flush()
         })
 
-        addKeychain.doLast {
-            addKeychain.logger.info("Add shutdown hook")
-            Runtime.getRuntime().addShutdownHook(shutdownHook)
-        }
+        addKeychain.configure({ Task t ->
+            t.doLast {
+                t.logger.info("Add shutdown hook")
+                Runtime.getRuntime().addShutdownHook(shutdownHook)
+            }
+        })
 
-        removeKeychain.doLast {
-            removeKeychain.logger.info("Remove shutdown hook")
-            Runtime.getRuntime().removeShutdownHook(shutdownHook)
-        }
+        removeKeychain.configure({ Task t ->
+            t.doLast {
+                t.logger.info("Remove shutdown hook")
+                Runtime.getRuntime().removeShutdownHook(shutdownHook)
+            }
+        })
 
-        def importProvisioningProfiles = tasks.create("importProvisioningProfiles", SighRenewBatch) {
-            it.profiles.set(extension.exportOptions.map({it.getProvisioningProfiles()}))
+        def importProvisioningProfiles = tasks.register("importProvisioningProfiles", SighRenewBatch) {
+            it.profiles.set(extension.exportOptions.map({ it.getProvisioningProfiles() }))
             it.dependsOn addKeychain, buildKeychain, unlockKeychain
             it.finalizedBy removeKeychain, lockKeychain
         }
 
-        PodInstallTask podInstall = tasks.create("podInstall", PodInstallTask) {
+        TaskProvider<PodInstallTask> podInstall = tasks.register("podInstall", PodInstallTask) {
             it.projectDirectory.set(extension.xcodeProjectDirectory)
             it.xcodeWorkspaceFileName.set(extension.xcodeWorkspaceFileName)
             it.xcodeProjectFileName.set(extension.xcodeProjectFileName)
         }
 
-        def xcodeArchive = tasks.create("xcodeArchive", XcodeArchive) {
+        def xcodeArchive = tasks.register("xcodeArchive", XcodeArchive) {
             it.dependsOn addKeychain, unlockKeychain, importProvisioningProfiles, podInstall, buildKeychain
             it.projectPath.set(extension.projectPath)
-            it.buildKeychain.set(buildKeychain.keychain)
+            it.buildKeychain.set(buildKeychain.flatMap({ it.keychain }))
         }
 
-        ExportArchive xcodeExport = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX) as ExportArchive
-        def publishTestFlight = tasks.create("publishTestFlight", PilotUpload) {
-            it.ipa.set(xcodeExport.outputPath)
+        def xcodeExport = tasks.named(xcodeArchive.name + XcodeBuildPlugin.EXPORT_ARCHIVE_TASK_POSTFIX, ExportArchive)
+        def archiveDSYM = tasks.named(xcodeArchive.name + XcodeBuildPlugin.ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX, ArchiveDebugSymbols)
+
+        def publishTestFlight = tasks.register("publishTestFlight", PilotUpload) {
+            it.ipa.set(xcodeExport.flatMap({ it.outputPath }))
             it.group = PublishingPlugin.PUBLISH_TASK_GROUP
             it.description = "Upload binary to TestFlightApp"
         }
 
-        project.afterEvaluate(new Action<Project>() {
-            @Override
-            void execute(Project _) {
-                if (extension.publishToTestFlight.getOrElse(false)) {
-                    def lifecyclePublishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
-                    lifecyclePublishTask.dependsOn(publishTestFlight)
-                }
+        tasks.named(PUBLISH_LIFECYCLE_TASK_NAME, {task ->
+            if (extension.publishToTestFlight.present && extension.publishToTestFlight.get()) {
+                task.dependsOn(publishTestFlight)
             }
         })
 
-        removeKeychain.mustRunAfter([xcodeArchive, xcodeExport])
-        lockKeychain.mustRunAfter([xcodeArchive, xcodeExport])
+        removeKeychain.configure({ it.mustRunAfter([xcodeArchive, xcodeExport]) })
+        lockKeychain.configure({ it.mustRunAfter([xcodeArchive, xcodeExport]) })
 
-        def archiveDSYM = tasks.getByName(xcodeArchive.name + XcodeBuildPlugin.ARCHIVE_DEBUG_SYMBOLS_TASK_POSTFIX) as ArchiveDebugSymbols
-
-        def collectOutputs = tasks.create("collectOutputs", Sync) {
+        def collectOutputs = tasks.register("collectOutputs", Sync) {
             it.from(xcodeExport, archiveDSYM)
             into(project.file("${project.buildDir}/outputs"))
         }
 
         project.artifacts {
-            archives(xcodeExport.publishArtifact) {
+            archives(xcodeExport.flatMap({ it.outputPath })) {
                 it.type = "iOS application archive"
             }
-            archives(archiveDSYM) {
+            archives(archiveDSYM.flatMap({ it.archiveFile })) {
                 it.type = "iOS application symbols"
             }
         }
 
-        archiveDSYM.mustRunAfter xcodeExport // not to spend time archiving if export fails
-        project.tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn xcodeExport, archiveDSYM, collectOutputs
+        archiveDSYM.configure({ it.mustRunAfter(xcodeExport) })
+        tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure({ it.dependsOn(xcodeExport, archiveDSYM, collectOutputs) })
     }
 }

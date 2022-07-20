@@ -76,7 +76,7 @@ dependencies {
     api 'net.wooga.gradle:secrets:1.0.0-rc.6'
     api 'net.wooga.gradle:xcodebuild:[1,2['
     api "net.wooga.gradle:macos-security:[1.0.1,2["
-    api "net.wooga.gradle:fastlane:[1,2["
+    api "net.wooga.gradle:fastlane:[1.0.1,2["
     api 'software.amazon.awssdk:secretsmanager:[2.16,3['
     implementation 'xmlwise:xmlwise:1.2.11'
     implementation 'commons-codec:commons-codec:1.14'
