@@ -37,20 +37,20 @@ abstract class CocoaPodSpec<T extends Task> extends IOSBuildIntegrationSpec {
     }
 
     def setup() {
-        setupPodMock()
         buildFile << """
         task $subjectUnderTestName(type: ${subjectUnderTestTypeName})
         """.stripIndent()
+        setupPodMock()
     }
 
     def setupPodMock() {
         podMockPath = File.createTempDir("pod", "mock")
 
-        def path = System.getenv("PATH")
-        environmentVariables.clear("PATH")
-        String newPath = "${podMockPath}${File.pathSeparator}${path}"
-        environmentVariables.set("PATH", newPath)
-        assert System.getenv("PATH") == newPath
+        buildFile << """
+        $subjectUnderTestName {
+            executableDirectory.set(${wrapValueBasedOnType(podMockPath, "File")})
+        } 
+        """.stripIndent()
 
         podMock = createFile("pod", podMockPath)
         podMock.executable = true

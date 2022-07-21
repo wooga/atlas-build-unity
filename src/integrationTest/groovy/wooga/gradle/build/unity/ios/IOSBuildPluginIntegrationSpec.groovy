@@ -17,9 +17,13 @@
 
 package wooga.gradle.build.unity.ios
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.ConventionSource
 import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.gradle.test.queries.TestValue
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import com.wooga.security.Domain
 import com.wooga.security.MacOsKeychainSearchList
 import nebula.test.functional.ExecutionResult
@@ -36,7 +40,8 @@ import wooga.gradle.xcodebuild.tasks.ExportArchive
 import wooga.gradle.xcodebuild.tasks.XcodeArchive
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
-import static com.wooga.gradle.test.PropertyUtils.*
+import static com.wooga.gradle.test.queries.TestValue.projectFile
+import static com.wooga.gradle.test.writers.PropertySetInvocation.*
 import static wooga.gradle.xcodebuild.config.ExportOptions.DistributionManifest.distributionManifest
 
 @Requires({ os.macOs })
@@ -130,6 +135,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         resetKeychainsEnabled << [true, false]
     }
 
+    @Requires({ os.macOs })
     def "removes custom build keychain"() {
         given: "an added build keychain"
         setupTestKeychainProperties()
@@ -211,7 +217,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         removes = removeKeychain ? "runs shutdown hook and removes" : "keeps"
     }
 
-
+    @Requires({ os.macOs })
     @Unroll
     def "removes custom build keychain when build #message"() {
         given: "project which will succeed/fail the assemble task"
@@ -284,6 +290,7 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         """.stripIndent()
     }
 
+    @Requires({ os.macOs })
     @Unroll
     def "sets convention for task type #taskType.simpleName and property #property"() {
         given: "write convention source assignment"
@@ -348,174 +355,218 @@ class IOSBuildPluginIntegrationSpec extends IOSBuildIntegrationSpec {
         invocation = (inv == _) ? ".getOrNull()" : inv
     }
 
-    @Unroll
-    def "extension property :#property returns '#testValue' if #reason"() {
-        given: "a set value"
-        switch (location) {
-            case PropertyLocation.script:
-                buildFile << "${extensionName}.${invocation}"
-                break
-            case PropertyLocation.property:
-                def propertiesFile = createFile("gradle.properties")
-                propertiesFile << "${extensionName}.${property} = ${escapedValue}"
-                break
-            case PropertyLocation.environment:
-                def envPropertyKey = envNameFromProperty(extensionName, property)
-                environmentVariables.set(envPropertyKey, value.toString())
-                break
-            default:
-                break
-        }
-
-        and: "the test value with replace placeholders"
-        if (testValue instanceof String) {
-            testValue = testValue.replaceAll("#projectDir#", escapedPath(projectDir.path))
-        }
-
-        when:
-        def query = new PropertyQueryTaskWriter("${extensionName}.${property}")
-        query.write(buildFile)
-        def result = runTasksSuccessfully(query.taskName)
-
-        then:
-        query.matches(result, testValue)
+    @Unroll()
+    def "extension property #property of type #type sets #rawValue when #location"() {
+        expect:
+        runPropertyQuery(get, set).matches(rawValue)
 
         where:
-        property                            | method                      | rawValue                                | expectedValue                               | type                     | location
-        "keychainPassword"                  | _                           | _                                       | null                                        | "Provider<String>"       | PropertyLocation.none
-        "keychainPassword"                  | toSetter(property)          | "password1"                             | _                                           | "Provider<String>"       | PropertyLocation.script
-        "keychainPassword"                  | toSetter(property)          | "password1"                             | _                                           | "String"                 | PropertyLocation.script
-        "keychainPassword"                  | toProviderSet(property)     | "password1"                             | _                                           | "Provider<String>"       | PropertyLocation.script
-        "keychainPassword"                  | toProviderSet(property)     | "password1"                             | _                                           | "String"                 | PropertyLocation.script
+        property                            | invocation                         | rawValue                                                                                   | type                     | location
+        "keychainPassword"                  | _                                  | "testPassword1"                                                                            | _                        | PropertyLocation.environment
+        "keychainPassword"                  | _                                  | "testPassword2"                                                                            | _                        | PropertyLocation.property
+        "keychainPassword"                  | assignment                         | "testPassword3"                                                                            | "String"                 | PropertyLocation.script
+        "keychainPassword"                  | assignment                         | "testPassword4"                                                                            | "Provider<String>"       | PropertyLocation.script
+        "keychainPassword"                  | providerSet                        | "testPassword5"                                                                            | "String"                 | PropertyLocation.script
+        "keychainPassword"                  | providerSet                        | "testPassword6"                                                                            | "Provider<String>"       | PropertyLocation.script
+        "keychainPassword"                  | setter                             | "testPassword7"                                                                            | "String"                 | PropertyLocation.script
+        "keychainPassword"                  | setter                             | "testPassword8"                                                                            | "Provider<String>"       | PropertyLocation.script
+        "keychainPassword"                  | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "signingIdentities"                 | _                           | _                                       | []                                          | _                        | PropertyLocation.none
-        "signingIdentities"                 | toSetter(property)          | ["ID1", "ID2"]                          | _                                           | "List<String>"           | PropertyLocation.script
-        "signingIdentities"                 | toSetter(property)          | ["ID3", "ID4"]                          | _                                           | "Provider<List<String>>" | PropertyLocation.script
-        "signingIdentities"                 | toProviderSet(property)     | ["ID5", "ID6"]                          | _                                           | "List<String>"           | PropertyLocation.script
-        "signingIdentities"                 | toProviderSet(property)     | ["ID7", "ID8"]                          | _                                           | "Provider<List<String>>" | PropertyLocation.script
-        "signingIdentities"                 | toSetter("signingIdentity") | "code sign: ID3"                        | [rawValue]                                  | "String"                 | PropertyLocation.script
-        "signingIdentities"                 | toSetter("signingIdentity") | "code sign: ID4"                        | [rawValue]                                  | "Provider<String>"       | PropertyLocation.script
+        "signingIdentities"                 | _                                  | TestValue.set("ID1,ID2").expect(["ID1", "ID2"])                                            | _                        | PropertyLocation.environment
+        "signingIdentities"                 | _                                  | TestValue.set("ID1,ID2").expect(["ID1", "ID2"])                                            | _                        | PropertyLocation.property
+        "signingIdentities"                 | assignment                         | ["ID1", "ID2"]                                                                             | "List<String>"           | PropertyLocation.script
+        "signingIdentities"                 | assignment                         | ["ID1", "ID2"]                                                                             | "Provider<List<String>>" | PropertyLocation.script
+        "signingIdentities"                 | providerSet                        | ["ID1", "ID2"]                                                                             | "List<String>"           | PropertyLocation.script
+        "signingIdentities"                 | providerSet                        | ["ID1", "ID2"]                                                                             | "Provider<List<String>>" | PropertyLocation.script
+        "signingIdentities"                 | setter                             | ["ID1", "ID2"]                                                                             | "List<String>"           | PropertyLocation.script
+        "signingIdentities"                 | setter                             | ["ID1", "ID2"]                                                                             | "Provider<List<String>>" | PropertyLocation.script
+        "signingIdentities"                 | customSetter("setSigningIdentity") | TestValue.set(wrapValueBasedOnType("code sign: ID3", "String")).expect(["code sign: ID3"]) | "Provider<String>>"      | PropertyLocation.script
+        "signingIdentities"                 | customSetter("setSigningIdentity") | TestValue.set(wrapValueBasedOnType("code sign: ID3", "String")).expect(["code sign: ID3"]) | "String>"                | PropertyLocation.script
+        "signingIdentities"                 | _                                  | []                                                                                         | _                        | PropertyLocation.none
 
-        "codeSigningIdentityFile"           | _                           | _                                       | null                                        | "Provider<RegularFile>"  | PropertyLocation.none
-        "codeSigningIdentityFile"           | property                    | "/path/to/p12"                          | _                                           | "File"                   | PropertyLocation.script
-        "codeSigningIdentityFile"           | property                    | "/path/to/p12"                          | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
-        "codeSigningIdentityFile"           | toProviderSet(property)     | "/path/to/p12"                          | _                                           | "File"                   | PropertyLocation.script
-        "codeSigningIdentityFile"           | toProviderSet(property)     | "/path/to/p12"                          | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
-        "codeSigningIdentityFile"           | toSetter(property)          | "/path/to/p12"                          | _                                           | "File"                   | PropertyLocation.script
-        "codeSigningIdentityFile"           | toSetter(property)          | "/path/to/p12"                          | _                                           | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | _                                  | osPath("/path/to/p12")                                                                     | _                        | PropertyLocation.environment
+        "codeSigningIdentityFile"           | _                                  | osPath("/path/to/p12")                                                                     | _                        | PropertyLocation.property
+        "codeSigningIdentityFile"           | assignment                         | osPath("/path/to/p12")                                                                     | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | assignment                         | osPath("/path/to/p12")                                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | providerSet                        | osPath("/path/to/p12")                                                                     | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | providerSet                        | osPath("/path/to/p12")                                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | setter                             | osPath("/path/to/p12")                                                                     | "File"                   | PropertyLocation.script
+        "codeSigningIdentityFile"           | setter                             | osPath("/path/to/p12")                                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "codeSigningIdentityFile"           | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "codeSigningIdentityFilePassphrase" | _                           | _                                       | null                                        | "Provider<String>"       | PropertyLocation.none
-        "codeSigningIdentityFilePassphrase" | property                    | "testPassphrase1"                       | _                                           | "String"                 | PropertyLocation.script
-        "codeSigningIdentityFilePassphrase" | property                    | "testPassphrase2"                       | _                                           | "Provider<String>"       | PropertyLocation.script
-        "codeSigningIdentityFilePassphrase" | toProviderSet(property)     | "testPassphrase3"                       | _                                           | "String"                 | PropertyLocation.script
-        "codeSigningIdentityFilePassphrase" | toProviderSet(property)     | "testPassphrase4"                       | _                                           | "Provider<String>"       | PropertyLocation.script
-        "codeSigningIdentityFilePassphrase" | toSetter(property)          | "testPassphrase5"                       | _                                           | "String"                 | PropertyLocation.script
-        "codeSigningIdentityFilePassphrase" | toSetter(property)          | "testPassphrase6"                       | _                                           | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | _                                  | "testPassphrase1"                                                                          | _                        | PropertyLocation.environment
+        "codeSigningIdentityFilePassphrase" | _                                  | "testPassphrase2"                                                                          | _                        | PropertyLocation.property
+        "codeSigningIdentityFilePassphrase" | assignment                         | "testPassphrase3"                                                                          | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | assignment                         | "testPassphrase4"                                                                          | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | providerSet                        | "testPassphrase5"                                                                          | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | providerSet                        | "testPassphrase6"                                                                          | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | setter                             | "testPassphrase7"                                                                          | "String"                 | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | setter                             | "testPassphrase8"                                                                          | "Provider<String>"       | PropertyLocation.script
+        "codeSigningIdentityFilePassphrase" | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "appIdentifier"                     | property                    | "com.test.app.1"                        | _                                           | "String"                 | PropertyLocation.script
-        "appIdentifier"                     | property                    | "com.test.app.2"                        | _                                           | "Provider<String>"       | PropertyLocation.script
-        "appIdentifier"                     | toProviderSet(property)     | "com.test.app.3"                        | _                                           | "String"                 | PropertyLocation.script
-        "appIdentifier"                     | toProviderSet(property)     | "com.test.app.4"                        | _                                           | "Provider<String>"       | PropertyLocation.script
-        "appIdentifier"                     | toSetter(property)          | "com.test.app.5"                        | _                                           | "String"                 | PropertyLocation.script
-        "appIdentifier"                     | toSetter(property)          | "com.test.app.6"                        | _                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | _                                  | "com.test.app.1"                                                                           | _                        | PropertyLocation.environment
+        "appIdentifier"                     | _                                  | "com.test.app.2"                                                                           | _                        | PropertyLocation.property
+        "appIdentifier"                     | assignment                         | "com.test.app.3"                                                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | assignment                         | "com.test.app.4"                                                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | providerSet                        | "com.test.app.5"                                                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | providerSet                        | "com.test.app.6"                                                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | setter                             | "com.test.app.7"                                                                           | "String"                 | PropertyLocation.script
+        "appIdentifier"                     | setter                             | "com.test.app.8"                                                                           | "Provider<String>"       | PropertyLocation.script
+        "appIdentifier"                     | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "teamId"                            | property                    | "team1"                                 | _                                           | "String"                 | PropertyLocation.script
-        "teamId"                            | property                    | "team2"                                 | _                                           | "Provider<String>"       | PropertyLocation.script
-        "teamId"                            | toProviderSet(property)     | "team3"                                 | _                                           | "String"                 | PropertyLocation.script
-        "teamId"                            | toProviderSet(property)     | "team4"                                 | _                                           | "Provider<String>"       | PropertyLocation.script
-        "teamId"                            | toSetter(property)          | "team5"                                 | _                                           | "String"                 | PropertyLocation.script
-        "teamId"                            | toSetter(property)          | "team6"                                 | _                                           | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | _                                  | "team1"                                                                                    | _                        | PropertyLocation.environment
+        "teamId"                            | _                                  | "team2"                                                                                    | _                        | PropertyLocation.property
+        "teamId"                            | assignment                         | "team3"                                                                                    | "String"                 | PropertyLocation.script
+        "teamId"                            | assignment                         | "team4"                                                                                    | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | providerSet                        | "team5"                                                                                    | "String"                 | PropertyLocation.script
+        "teamId"                            | providerSet                        | "team6"                                                                                    | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | setter                             | "team7"                                                                                    | "String"                 | PropertyLocation.script
+        "teamId"                            | setter                             | "team8"                                                                                    | "Provider<String>"       | PropertyLocation.script
+        "teamId"                            | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "scheme"                            | property                    | "value1"                                | _                                           | "String"                 | PropertyLocation.script
-        "scheme"                            | property                    | "value2"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "scheme"                            | toProviderSet(property)     | "value3"                                | _                                           | "String"                 | PropertyLocation.script
-        "scheme"                            | toProviderSet(property)     | "value4"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "scheme"                            | toSetter(property)          | "value5"                                | _                                           | "String"                 | PropertyLocation.script
-        "scheme"                            | toSetter(property)          | "value6"                                | _                                           | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | _                                  | "value1"                                                                                   | _                        | PropertyLocation.environment
+        "scheme"                            | _                                  | "value2"                                                                                   | _                        | PropertyLocation.property
+        "scheme"                            | assignment                         | "value3"                                                                                   | "String"                 | PropertyLocation.script
+        "scheme"                            | assignment                         | "value4"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | providerSet                        | "value5"                                                                                   | "String"                 | PropertyLocation.script
+        "scheme"                            | providerSet                        | "value6"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | setter                             | "value7"                                                                                   | "String"                 | PropertyLocation.script
+        "scheme"                            | setter                             | "value8"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "scheme"                            | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "configuration"                     | property                    | "value1"                                | _                                           | "String"                 | PropertyLocation.script
-        "configuration"                     | property                    | "value2"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "configuration"                     | toProviderSet(property)     | "value3"                                | _                                           | "String"                 | PropertyLocation.script
-        "configuration"                     | toProviderSet(property)     | "value4"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "configuration"                     | toSetter(property)          | "value5"                                | _                                           | "String"                 | PropertyLocation.script
-        "configuration"                     | toSetter(property)          | "value6"                                | _                                           | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | _                                  | "value1"                                                                                   | _                        | PropertyLocation.environment
+        "configuration"                     | _                                  | "value2"                                                                                   | _                        | PropertyLocation.property
+        "configuration"                     | assignment                         | "value3"                                                                                   | "String"                 | PropertyLocation.script
+        "configuration"                     | assignment                         | "value4"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | providerSet                        | "value5"                                                                                   | "String"                 | PropertyLocation.script
+        "configuration"                     | providerSet                        | "value6"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | setter                             | "value7"                                                                                   | "String"                 | PropertyLocation.script
+        "configuration"                     | setter                             | "value8"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "configuration"                     | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "provisioningName"                  | property                    | "value1"                                | _                                           | "String"                 | PropertyLocation.script
-        "provisioningName"                  | property                    | "value2"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "provisioningName"                  | toProviderSet(property)     | "value3"                                | _                                           | "String"                 | PropertyLocation.script
-        "provisioningName"                  | toProviderSet(property)     | "value4"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "provisioningName"                  | toSetter(property)          | "value5"                                | _                                           | "String"                 | PropertyLocation.script
-        "provisioningName"                  | toSetter(property)          | "value6"                                | _                                           | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | _                                  | "value1"                                                                                   | _                        | PropertyLocation.environment
+        "provisioningName"                  | _                                  | "value2"                                                                                   | _                        | PropertyLocation.property
+        "provisioningName"                  | assignment                         | "value3"                                                                                   | "String"                 | PropertyLocation.script
+        "provisioningName"                  | assignment                         | "value4"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | providerSet                        | "value5"                                                                                   | "String"                 | PropertyLocation.script
+        "provisioningName"                  | providerSet                        | "value6"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | setter                             | "value7"                                                                                   | "String"                 | PropertyLocation.script
+        "provisioningName"                  | setter                             | "value8"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "provisioningName"                  | _                                  | null                                                                                       | _                        | PropertyLocation.none
 
-        "adhoc"                             | _                           | false                                   | _                                           | "Boolean"                | PropertyLocation.script
-        "adhoc"                             | property                    | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "adhoc"                             | property                    | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "adhoc"                             | toProviderSet(property)     | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "adhoc"                             | toProviderSet(property)     | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "adhoc"                             | toSetter(property)          | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "adhoc"                             | toSetter(property)          | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | _                                  | true                                                                                       | _                        | PropertyLocation.environment
+        "adhoc"                             | _                                  | true                                                                                       | _                        | PropertyLocation.property
+        "adhoc"                             | assignment                         | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | assignment                         | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | providerSet                        | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | providerSet                        | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | setter                             | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "adhoc"                             | setter                             | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "adhoc"                             | _                                  | false                                                                                      | _                        | PropertyLocation.none
 
-        "publishToTestFlight"               | property                    | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "publishToTestFlight"               | property                    | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "publishToTestFlight"               | toProviderSet(property)     | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "publishToTestFlight"               | toProviderSet(property)     | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "publishToTestFlight"               | toSetter(property)          | true                                    | _                                           | "Boolean"                | PropertyLocation.script
-        "publishToTestFlight"               | toSetter(property)          | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | _                                  | true                                                                                       | _                        | PropertyLocation.environment
+        "publishToTestFlight"               | _                                  | true                                                                                       | _                        | PropertyLocation.property
+        "publishToTestFlight"               | assignment                         | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | assignment                         | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | providerSet                        | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | providerSet                        | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | setter                             | true                                                                                       | "Boolean"                | PropertyLocation.script
+        "publishToTestFlight"               | setter                             | true                                                                                       | "Provider<Boolean>"      | PropertyLocation.script
+        "publishToTestFlight"               | _                                  | false                                                                                      | _                        | PropertyLocation.none
 
-        "exportOptionsPlist"                | _                           | "exportOptions.plist"                   | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "exportOptionsPlist"                | toProviderSet(property)     | "path/to/exportOptions1.plist"          | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "exportOptionsPlist"                | toProviderSet(property)     | "path/to/exportOptions1.plist"          | "#projectDir#/build/${rawValue}".toString() | "Provider<RegularFile>"  | PropertyLocation.script
-        "exportOptionsPlist"                | toSetter(property)          | "path/to/exportOptions1.plist"          | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "exportOptionsPlist"                | toSetter(property)          | "path/to/exportOptions1.plist"          | "#projectDir#/build/${rawValue}".toString() | "Provider<RegularFile>"  | PropertyLocation.script
+        "exportOptionsPlist"                | _                                  | osPath("/path/to/exportOptions.plist")                                                     | _                        | PropertyLocation.environment
+        "exportOptionsPlist"                | _                                  | osPath("/path/to/exportOptions.plist")                                                     | _                        | PropertyLocation.property
+        "exportOptionsPlist"                | assignment                         | osPath("/path/to/exportOptions.plist")                                                     | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | assignment                         | osPath("/path/to/exportOptions.plist")                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "exportOptionsPlist"                | providerSet                        | osPath("/path/to/exportOptions.plist")                                                     | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | providerSet                        | osPath("/path/to/exportOptions.plist")                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "exportOptionsPlist"                | setter                             | osPath("/path/to/exportOptions.plist")                                                     | "File"                   | PropertyLocation.script
+        "exportOptionsPlist"                | setter                             | osPath("/path/to/exportOptions.plist")                                                     | "Provider<RegularFile>"  | PropertyLocation.script
+        "exportOptionsPlist"                | _                                  | projectFile("exportOptions.plist")                                                         | _                        | PropertyLocation.none
 
-        "projectBaseName"                   | property                    | "Unity-iPhone"                          | _                                           | "String"                 | PropertyLocation.none
-        "projectBaseName"                   | property                    | "value1"                                | _                                           | "String"                 | PropertyLocation.script
-        "projectBaseName"                   | property                    | "value2"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "projectBaseName"                   | toProviderSet(property)     | "value3"                                | _                                           | "String"                 | PropertyLocation.script
-        "projectBaseName"                   | toProviderSet(property)     | "value4"                                | _                                           | "Provider<String>"       | PropertyLocation.script
-        "projectBaseName"                   | toSetter(property)          | "value5"                                | _                                           | "String"                 | PropertyLocation.script
-        "projectBaseName"                   | toSetter(property)          | "value6"                                | _                                           | "Provider<String>"       | PropertyLocation.script
+        "preferWorkspace"                   | _                                  | false                                                                                      | _                        | PropertyLocation.environment
+        "preferWorkspace"                   | _                                  | false                                                                                      | _                        | PropertyLocation.property
+        "preferWorkspace"                   | assignment                         | false                                                                                      | "Boolean"                | PropertyLocation.script
+        "preferWorkspace"                   | assignment                         | false                                                                                      | "Provider<Boolean>"      | PropertyLocation.script
+        "preferWorkspace"                   | providerSet                        | false                                                                                      | "Boolean"                | PropertyLocation.script
+        "preferWorkspace"                   | providerSet                        | false                                                                                      | "Provider<Boolean>"      | PropertyLocation.script
+        "preferWorkspace"                   | setter                             | false                                                                                      | "Boolean"                | PropertyLocation.script
+        "preferWorkspace"                   | setter                             | false                                                                                      | "Provider<Boolean>"      | PropertyLocation.script
+        "preferWorkspace"                   | _                                  | true                                                                                       | _                        | PropertyLocation.none
 
-        "preferWorkspace"                   | property                    | true                                    | _                                           | "Boolean"                | PropertyLocation.none
-        "preferWorkspace"                   | property                    | false                                   | _                                           | "Boolean"                | PropertyLocation.script
-        "preferWorkspace"                   | property                    | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "preferWorkspace"                   | toProviderSet(property)     | false                                   | _                                           | "Boolean"                | PropertyLocation.script
-        "preferWorkspace"                   | toProviderSet(property)     | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
-        "preferWorkspace"                   | toSetter(property)          | false                                   | _                                           | "Boolean"                | PropertyLocation.script
-        "preferWorkspace"                   | toSetter(property)          | true                                    | _                                           | "Provider<Boolean>"      | PropertyLocation.script
+        "xcodeProjectDirectory"             | _                                  | osPath("/path/to/project")                                                                 | _                        | PropertyLocation.environment
+        "xcodeProjectDirectory"             | _                                  | osPath("/path/to/project2")                                                                | _                        | PropertyLocation.property
+        "xcodeProjectDirectory"             | assignment                         | osPath("/path/to/project3")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectDirectory"             | assignment                         | osPath("/path/to/project4")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectDirectory"             | providerSet                        | osPath("/path/to/project5")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectDirectory"             | providerSet                        | osPath("/path/to/project6")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectDirectory"             | setter                             | osPath("/path/to/project7")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectDirectory"             | setter                             | osPath("/path/to/project8")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectDirectory"             | _                                  | projectFile("")                                                                            | _                        | PropertyLocation.none
 
-        "xcodeProjectDirectory"             | _                           | "#projectDir#"                          | _                                           | "File"                   | PropertyLocation.none
-        "xcodeProjectDirectory"             | _                           | "path/to/project"                       | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectDirectory"             | toProviderSet(property)     | "path/to/project2"                      | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectDirectory"             | toProviderSet(property)     | "path/to/project3"                      | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
-        "xcodeProjectDirectory"             | toSetter(property)          | "path/to/project4"                      | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectDirectory"             | toSetter(property)          | "path/to/project5"                      | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectPath"                  | _                                  | osPath("/path/to/project")                                                                 | _                        | PropertyLocation.environment
+        "xcodeProjectPath"                  | _                                  | osPath("/path/to/project2")                                                                | _                        | PropertyLocation.property
+        "xcodeProjectPath"                  | assignment                         | osPath("/path/to/project3")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectPath"                  | assignment                         | osPath("/path/to/project4")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectPath"                  | providerSet                        | osPath("/path/to/project5")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectPath"                  | providerSet                        | osPath("/path/to/project6")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectPath"                  | setter                             | osPath("/path/to/project7")                                                                | "File"                   | PropertyLocation.script
+        "xcodeProjectPath"                  | setter                             | osPath("/path/to/project8")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeProjectPath"                  | _                                  | projectFile("Unity-iPhone.xcodeproj")                                                      | _                        | PropertyLocation.none
 
-        "xcodeProjectPath"                  | _                           | "#projectDir#/Unity-iPhone.xcodeproj"   | _                                           | "File"                   | PropertyLocation.none
-        "xcodeProjectPath"                  | _                           | "path/to/Unity-iPhone1.xcodeproj"       | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectPath"                  | toProviderSet(property)     | "path/to/Unity-iPhone2.xcodeproj"       | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectPath"                  | toProviderSet(property)     | "path/to/Unity-iPhone3.xcodeproj"       | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
-        "xcodeProjectPath"                  | toSetter(property)          | "path/to/Unity-iPhone4.xcodeproj"       | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeProjectPath"                  | toSetter(property)          | "path/to/Unity-iPhone5.xcodeproj"       | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeWorkspacePath"                | _                                  | osPath("/path/to/project")                                                                 | _                        | PropertyLocation.environment
+        "xcodeWorkspacePath"                | _                                  | osPath("/path/to/project2")                                                                | _                        | PropertyLocation.property
+        "xcodeWorkspacePath"                | assignment                         | osPath("/path/to/project3")                                                                | "File"                   | PropertyLocation.script
+        "xcodeWorkspacePath"                | assignment                         | osPath("/path/to/project4")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeWorkspacePath"                | providerSet                        | osPath("/path/to/project5")                                                                | "File"                   | PropertyLocation.script
+        "xcodeWorkspacePath"                | providerSet                        | osPath("/path/to/project6")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeWorkspacePath"                | setter                             | osPath("/path/to/project7")                                                                | "File"                   | PropertyLocation.script
+        "xcodeWorkspacePath"                | setter                             | osPath("/path/to/project8")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "xcodeWorkspacePath"                | _                                  | projectFile("Unity-iPhone.xcworkspace")                                                    | _                        | PropertyLocation.none
 
-        "xcodeWorkspacePath"                | _                           | "#projectDir#/Unity-iPhone.xcworkspace" | _                                           | "File"                   | PropertyLocation.none
-        "xcodeWorkspacePath"                | _                           | "path/to/Unity-iPhone1.xcworkspace"     | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeWorkspacePath"                | toProviderSet(property)     | "path/to/Unity-iPhone2.xcworkspace"     | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeWorkspacePath"                | toProviderSet(property)     | "path/to/Unity-iPhone3.xcworkspace"     | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
-        "xcodeWorkspacePath"                | toSetter(property)          | "path/to/Unity-iPhone4.xcworkspace"     | "#projectDir#/${rawValue}".toString()       | "File"                   | PropertyLocation.script
-        "xcodeWorkspacePath"                | toSetter(property)          | "path/to/Unity-iPhone5.xcworkspace"     | "#projectDir#/build/${rawValue}".toString() | "Provider<Directory>"    | PropertyLocation.script
+        "projectBaseName"                   | _                                  | "value1"                                                                                   | _                        | PropertyLocation.environment
+        "projectBaseName"                   | _                                  | "value2"                                                                                   | _                        | PropertyLocation.property
+        "projectBaseName"                   | assignment                         | "value3"                                                                                   | "String"                 | PropertyLocation.script
+        "projectBaseName"                   | assignment                         | "value4"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "projectBaseName"                   | providerSet                        | "value5"                                                                                   | "String"                 | PropertyLocation.script
+        "projectBaseName"                   | providerSet                        | "value6"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "projectBaseName"                   | setter                             | "value7"                                                                                   | "String"                 | PropertyLocation.script
+        "projectBaseName"                   | setter                             | "value8"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "projectBaseName"                   | _                                  | "Unity-iPhone"                                                                             | _                        | PropertyLocation.none
 
-        "projectPath"                       | _                           | "#projectDir#/Unity-iPhone.xcodeproj"   | _                                           | "File"                   | PropertyLocation.none
-        "xcodeProjectFileName"              | _                           | "Unity-iPhone.xcodeproj"                | _                                           | "String"                 | PropertyLocation.none
-        "xcodeWorkspaceFileName"            | _                           | "Unity-iPhone.xcworkspace"              | _                                           | "String"                 | PropertyLocation.none
-        "preferredProjectFileName"          | _                           | "Unity-iPhone.xcworkspace"              | _                                           | "String"                 | PropertyLocation.none
+        "cocoapods.executableName"          | _                                  | "value1"                                                                                   | _                        | PropertyLocation.environment
+        "cocoapods.executableName"          | _                                  | "value2"                                                                                   | _                        | PropertyLocation.property
+        "cocoapods.executableName"          | assignment                         | "value3"                                                                                   | "String"                 | PropertyLocation.script
+        "cocoapods.executableName"          | assignment                         | "value4"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "cocoapods.executableName"          | providerSet                        | "value5"                                                                                   | "String"                 | PropertyLocation.script
+        "cocoapods.executableName"          | providerSet                        | "value6"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "cocoapods.executableName"          | setter                             | "value7"                                                                                   | "String"                 | PropertyLocation.script
+        "cocoapods.executableName"          | setter                             | "value8"                                                                                   | "Provider<String>"       | PropertyLocation.script
+        "cocoapods.executableName"          | _                                  | "pod"                                                                                      | _                        | PropertyLocation.none
 
-        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
-        providedValue = (location == PropertyLocation.script) ? type : value
-        testValue = (expectedValue == _) ? rawValue : expectedValue
-        reason = location.reason() + ((location == PropertyLocation.none) ? "" : "  with '$providedValue' ")
-        escapedValue = (value instanceof String) ? escapedPath(value) : value
-        invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
+        "cocoapods.executableDirectory"     | _                                  | osPath("/path/to/project")                                                                 | _                        | PropertyLocation.environment
+        "cocoapods.executableDirectory"     | _                                  | osPath("/path/to/project2")                                                                | _                        | PropertyLocation.property
+        "cocoapods.executableDirectory"     | assignment                         | osPath("/path/to/project3")                                                                | "File"                   | PropertyLocation.script
+        "cocoapods.executableDirectory"     | assignment                         | osPath("/path/to/project4")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "cocoapods.executableDirectory"     | providerSet                        | osPath("/path/to/project5")                                                                | "File"                   | PropertyLocation.script
+        "cocoapods.executableDirectory"     | providerSet                        | osPath("/path/to/project6")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "cocoapods.executableDirectory"     | setter                             | osPath("/path/to/project7")                                                                | "File"                   | PropertyLocation.script
+        "cocoapods.executableDirectory"     | setter                             | osPath("/path/to/project8")                                                                | "Provider<Directory>"    | PropertyLocation.script
+        "cocoapods.executableDirectory"     | _                                  | null                                                                                       | _                        | PropertyLocation.none
+
+        "projectPath"                       | _                                  | projectFile("Unity-iPhone.xcodeproj")                                                      | "File"                   | PropertyLocation.none
+        "xcodeProjectFileName"              | _                                  | "Unity-iPhone.xcodeproj"                                                                   | "String"                 | PropertyLocation.none
+        "xcodeWorkspaceFileName"            | _                                  | "Unity-iPhone.xcworkspace"                                                                 | "String"                 | PropertyLocation.none
+        "preferredProjectFileName"          | _                                  | "Unity-iPhone.xcworkspace"                                                                 | "String"                 | PropertyLocation.none
+
+
+        set = new PropertySetterWriter(extensionName, property)
+                .serialize(wrapValueFallback)
+                .set(rawValue, type)
+                .to(location)
+                .use(invocation)
+
+        get = new PropertyGetterTaskWriter(set)
     }
 
     @Unroll
