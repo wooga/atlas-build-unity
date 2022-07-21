@@ -1,5 +1,9 @@
 package wooga.gradle.build.unity.ios.tasks
 
+import com.wooga.gradle.io.ExecSpec
+import com.wooga.gradle.io.LogFileSpec
+import com.wooga.gradle.io.ProcessExecutor
+import com.wooga.gradle.io.ProcessOutputSpec
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
@@ -7,9 +11,8 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import wooga.gradle.build.unity.internal.ExecUtil
 
-class PodInstallTask extends DefaultTask {
+class PodInstallTask extends DefaultTask implements ExecSpec, LogFileSpec, ProcessOutputSpec {
     private final DirectoryProperty projectDirectory = project.objects.directoryProperty()
 
     @Internal
@@ -39,8 +42,8 @@ class PodInstallTask extends DefaultTask {
     }
 
     @OutputDirectory
-    protected getPodsDir() {
-        projectDirectory.file("Pods")
+    protected Provider<Directory> getPodsDir() {
+        projectDirectory.dir("Pods")
     }
 
     private final Property<String> xcodeWorkspaceFileName = project.objects.property(String)
@@ -84,20 +87,21 @@ class PodInstallTask extends DefaultTask {
         projectDirectory.dir(xcodeProjectFileName)
     }
 
+    PodInstallTask() {
+        executableName.convention("pod")
+    }
+
     @TaskAction
     protected void install() {
-        def executablePath = ExecUtil.getExecutable("pod")
-        project.exec {
-            executable executablePath
-            args 'repo'
-            args 'update'
-        }
+        ProcessExecutor.from(this)
+                .withArguments(['repo', 'update'])
+                .withOutputLogFile(this, this)
+                .execute()
+                .assertNormalExitValue()
 
-        project.exec {
-            executable executablePath
-            workingDir
-            args 'install'
-            args "--project-directory=${projectDirectory.get().asFile.absolutePath}"
-        }
+        ProcessExecutor.from(this)
+                .withArguments('install', "--project-directory=${projectDirectory.get().asFile.absolutePath}")
+                .execute()
+                .assertNormalExitValue()
     }
 }

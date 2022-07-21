@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-22 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 package wooga.gradle.build.unity.ios
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.security.Domain
 import org.gradle.api.Action
 import org.gradle.api.Plugin
@@ -50,13 +51,6 @@ class IOSBuildPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        //check if system is running mac os
-        String osName = System.getProperty("os.name").toLowerCase()
-        if (!osName.contains('mac os')) {
-            LOG.warn("This plugin is only supported on Mac OS systems.")
-            return
-        }
-
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(XcodeBuildPlugin.class)
         project.pluginManager.apply(FastlanePlugin.class)
@@ -65,17 +59,52 @@ class IOSBuildPlugin implements Plugin<Project> {
         def extension = project.getExtensions().create(IOSBuildPluginExtension, EXTENSION_NAME, DefaultIOSBuildPluginExtension.class)
         def fastlaneExtension = project.getExtensions().getByType(FastlanePluginExtension)
 
-        extension.exportOptionsPlist.convention(project.layout.projectDirectory.file("exportOptions.plist"))
-        extension.teamId.convention(extension.exportOptions.map({ it.teamID }))
-        extension.signingIdentities.convention(extension.exportOptions.map({ it.signingCertificate ? [it.signingCertificate] : [] }).orElse(project.provider({ new ArrayList<String>() })))
-        extension.adhoc.convention(extension.exportOptions.map({ it.method == 'ad-hoc' }).orElse(false))
-        extension.appIdentifier.convention(extension.exportOptions.map({ it.distributionBundleIdentifier }))
+        extension.exportOptionsPlist.convention(IOSBuildPluginConventions.exportOptionsPlist.getFileValueProvider(project)
+                .orElse(project.layout.projectDirectory.file("exportOptions.plist")))
 
-        extension.preferWorkspace.convention(true)
-        extension.xcodeProjectDirectory.convention(project.layout.projectDirectory)
-        extension.projectBaseName.convention("Unity-iPhone")
-        extension.xcodeProjectPath.convention(extension.xcodeProjectDirectory.dir(extension.xcodeProjectFileName))
-        extension.xcodeWorkspacePath.convention(extension.xcodeProjectDirectory.dir(extension.xcodeWorkspaceFileName))
+        extension.teamId.convention(extension.exportOptions.map({ it.teamID })
+                .orElse(IOSBuildPluginConventions.teamId.getStringValueProvider(project)))
+        extension.signingIdentities.convention(extension.exportOptions.map({ it.signingCertificate ? [it.signingCertificate] : null })
+                .orElse(IOSBuildPluginConventions.signingIdentities.getStringValueProvider(project).map({
+                    it.split(",").collect {it.trim()}.toList() }))
+                .orElse([]))
+        extension.adhoc.convention(extension.exportOptions.map({
+            if(it.method != null) {
+                return it.method == 'ad-hoc'
+            }
+            null
+        }).orElse(IOSBuildPluginConventions.adhoc.getBooleanValueProvider(project)))
+        extension.appIdentifier.convention(extension.exportOptions.map({ it.distributionBundleIdentifier })
+                .orElse(IOSBuildPluginConventions.appIdentifier.getStringValueProvider(project)))
+
+        extension.preferWorkspace.convention(IOSBuildPluginConventions.preferWorkspace.getBooleanValueProvider(project))
+
+        extension.xcodeProjectDirectory.convention(IOSBuildPluginConventions.xcodeProjectDirectory.getStringValueProvider(project).map({
+            project.layout.projectDirectory.dir(it)
+        }).orElse(project.layout.projectDirectory))
+
+        extension.projectBaseName.convention(IOSBuildPluginConventions.projectBaseName.getStringValueProvider(project))
+
+        extension.xcodeProjectPath.convention(IOSBuildPluginConventions.xcodeProjectPath.getStringValueProvider(project).map({
+            project.layout.projectDirectory.dir(it)
+        }).orElse(extension.xcodeProjectDirectory.dir(extension.xcodeProjectFileName)))
+
+        extension.xcodeWorkspacePath.convention(IOSBuildPluginConventions.xcodeWorkspacePath.getStringValueProvider(project).map({
+            project.layout.projectDirectory.dir(it)
+        }).orElse(extension.xcodeProjectDirectory.dir(extension.xcodeWorkspaceFileName)))
+
+        extension.cocoapods.executableName.convention(IOSBuildPluginConventions.cocoaPodsExecutableName.getStringValueProvider(project))
+        extension.cocoapods.executableDirectory.convention(IOSBuildPluginConventions.cocoaPodsExecutableDirectory.getStringValueProvider(project).map({
+            project.layout.projectDirectory.dir(it)}))
+
+        extension.provisioningName.convention(IOSBuildPluginConventions.provisioningName.getStringValueProvider(project))
+        extension.configuration.convention(IOSBuildPluginConventions.configuration.getStringValueProvider(project))
+
+        extension.codeSigningIdentityFile.convention(IOSBuildPluginConventions.codeSigningIdentityFile.getFileValueProvider(project))
+        extension.codeSigningIdentityFilePassphrase.convention(IOSBuildPluginConventions.codeSigningIdentityFilePassphrase.getStringValueProvider(project))
+        extension.keychainPassword.convention(IOSBuildPluginConventions.keychainPassword.getStringValueProvider(project))
+        extension.publishToTestFlight.convention(IOSBuildPluginConventions.publishToTestFlight.getBooleanValueProvider(project))
+        extension.scheme.convention(IOSBuildPluginConventions.scheme.getStringValueProvider(project))
 
         //register some defaults
         project.tasks.withType(XcodeArchive.class, new Action<XcodeArchive>() {
@@ -172,6 +201,19 @@ class IOSBuildPlugin implements Plugin<Project> {
                 task.applicationAccessPaths.convention(["/usr/bin/codesign"])
             }
         })
+
+        project.tasks.withType(PodInstallTask.class, new Action<PodInstallTask>() {
+            @Override
+            void execute(PodInstallTask task) {
+                task.executableName.convention(extension.cocoapods.executableName)
+                task.executableDirectory.convention(extension.cocoapods.executableDirectory)
+            }
+        })
+
+        if (!PlatformUtils.mac) {
+            LOG.warn("This plugin is only supported on Mac OS systems.")
+            return
+        }
 
         generateBuildTasks(project, extension)
     }
