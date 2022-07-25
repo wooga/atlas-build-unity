@@ -17,69 +17,12 @@
 
 package wooga.gradle.build
 
-import nebula.test.functional.ExecutionResult
-import org.apache.commons.text.StringEscapeUtils
-import org.junit.Rule
-import org.junit.contrib.java.lang.system.EnvironmentVariables
-import org.junit.contrib.java.lang.system.ProvideSystemProperty
-
-class IntegrationSpec extends nebula.test.IntegrationSpec{
-
-    @Rule
-    ProvideSystemProperty properties = new ProvideSystemProperty("ignoreDeprecations", "true")
-
-    @Rule
-    public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
-
-    def escapedPath(String path) {
-        String osName = System.getProperty("os.name").toLowerCase()
-        if (osName.contains("windows")) {
-            return StringEscapeUtils.escapeJava(path)
-        }
-        path
-    }
-
+class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
     def setup() {
         def gradleVersion = System.getenv("GRADLE_VERSION")
         if (gradleVersion) {
             this.gradleVersion = gradleVersion
             fork = true
         }
-    }
-
-    Boolean outputContains(ExecutionResult result, String message) {
-        result.standardOutput.contains(message) || result.standardError.contains(message)
-    }
-
-    String wrapValueBasedOnType(Object rawValue, String type) {
-        def value
-        def rawValueEscaped = String.isInstance(rawValue) ? "'${rawValue}'" : rawValue
-
-        switch (type) {
-            case "Closure":
-                value = "{$rawValueEscaped}"
-                break
-            case "Callable":
-                value = "new java.util.concurrent.Callable<${rawValue.class.typeName}>() {@Override ${rawValue.class.typeName} call() throws Exception { $rawValueEscaped }}"
-                break
-            case "Object":
-                value = "new Object() {@Override String toString() { ${rawValueEscaped}.toString() }}"
-                break
-            case "String":
-                value = "$rawValueEscaped"
-                break
-            case "File":
-                value = "new File('${escapedPath(rawValue.toString())}')"
-                break
-            case "List<String>":
-                value = "['$rawValue']"
-                break
-            case "List":
-                value = "[${rawValue.collect {'"' + it + '"'}.join(", ")}]"
-                break
-            default:
-                value = rawValue
-        }
-        value
     }
 }

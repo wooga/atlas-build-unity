@@ -17,9 +17,12 @@
 
 package wooga.gradle.build.unity.tasks
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.gradle.api.DefaultTask
+import org.gradle.api.Transformer
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.ListProperty
@@ -32,41 +35,143 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
+import wooga.gradle.secrets.SecretSpec
+import wooga.gradle.secrets.internal.Secrets
 
-class GradleBuild extends DefaultTask {
+import javax.crypto.spec.SecretKeySpec
+
+class GradleBuild extends DefaultTask implements SecretSpec {
+
+    private final DirectoryProperty dir = project.objects.directoryProperty()
 
     @Internal
-    final DirectoryProperty dir = project.layout.directoryProperty()
+    DirectoryProperty getDir() {
+        dir
+    }
+
+    private final ListProperty<String> tasks = project.objects.listProperty(String.class)
 
     @Input
-    final ListProperty<String> tasks = project.objects.listProperty(String.class)
+    ListProperty<String> getTasks() {
+        tasks
+    }
+
+    private final RegularFileProperty initScript
 
     @Optional
     @InputFile
-    final RegularFileProperty initScript
+    RegularFileProperty getInitScript() {
+        initScript
+    }
 
-    @Optional
-    @Internal
-    final Property<File> buildDirBase
+    private final Property<File> buildDirBase
 
     @Internal
-    final Property<Boolean> cleanBuildDirBeforeBuild
+    Property<File> getBuildDirBase() {
+        buildDirBase
+    }
 
-    @Optional
+    private final Property<Boolean> cleanBuildDirBeforeBuild
+
     @Internal
+    Property<Boolean> getCleanBuildDirBeforeBuild() {
+        cleanBuildDirBeforeBuild
+    }
+
     private final Provider<File> projectCacheDir
 
-    @Input
-    final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
+    private final ListProperty<String> buildArguments = project.objects.listProperty(String.class)
 
     @Input
-    final Property<String> gradleVersion = project.objects.property(String.class)
+    ListProperty<String> getBuildArguments() {
+        buildArguments
+    }
+
+    private final Property<Boolean> continueOnFailure = project.objects.property(Boolean)
+
+    @Input
+    @Optional
+    Property<Boolean> getContinueOnFailure() {
+        continueOnFailure
+    }
+
+    void setContinueOnFailure(Provider<Boolean> value) {
+        continueOnFailure.set(value)
+    }
+
+    void setContinueOnFailure(Boolean value) {
+        continueOnFailure.set(value)
+    }
+
+
+    private final Property<String> gradleVersion = project.objects.property(String.class)
+
+    @Input
+    Property<String> getGradleVersion() {
+        gradleVersion
+    }
+
+    private final RegularFileProperty secretsFile
+
+    @Optional
+    @InputFile
+    RegularFileProperty getSecretsFile() {
+        secretsFile
+    }
+
+    protected final Provider<Secrets> secrets
+
+    protected final Provider<Secrets.EnvironmentSecrets> environmentSecrets
+
+    final Map<String, Object> environment
+
+    @Internal
+    Map<String, Object> getEnvironment() {
+        environment
+    }
+
+    void setEnvironment(Map<String, ?> environment) {
+        this.environment.clear()
+        this.environment.putAll(environment)
+    }
+
+    GradleBuild environment(Map<String, ?> environment) {
+        this.environment.putAll(environment)
+        this
+    }
+
+    GradleBuild environment(String key, Object value) {
+        this.environment.put(key, value)
+        this
+    }
 
     GradleBuild() {
-        initScript = project.layout.fileProperty()
+        initScript = project.objects.fileProperty()
         buildDirBase = project.objects.property(File)
-        projectCacheDir = buildDirBase.map({it -> new File(it, ".gradle")})
+        projectCacheDir = buildDirBase.map({ it -> new File(it, ".gradle") })
         cleanBuildDirBeforeBuild = project.objects.property(Boolean)
+
+        secretsKey = project.objects.property(SecretKeySpec.class)
+        secretsFile = project.objects.fileProperty()
+        secrets = secretsFile.map(new Transformer<Secrets, RegularFile>() {
+            @Override
+            Secrets transform(RegularFile secretsFile) {
+                Secrets.decode(secretsFile.asFile.text)
+            }
+        })
+
+        environmentSecrets = project.provider({
+            if (secrets.present && secretsKey.present) {
+                def s = secrets.get()
+                def key = secretsKey.get()
+                return s.encodeEnvironment(key)
+            } else {
+                new Secrets.EnvironmentSecrets()
+            }
+        })
+
+        environment = [:]
+        environment.putAll(System.getenv())
     }
 
     @TaskAction
@@ -80,7 +185,7 @@ class GradleBuild extends DefaultTask {
             def tempInitScript = new File(getTemporaryDir(), 'initScript.groovy')
             tempInitScript.text = ""
 
-            if(initScript.isPresent()) {
+            if (initScript.isPresent()) {
                 tempInitScript << initScript.get().getAsFile().text
             } else {
                 tempInitScript << getClass().getResource('/buildUnityExportInit.gradle').text
@@ -92,11 +197,11 @@ class GradleBuild extends DefaultTask {
                     def projectCacheDir = projectCacheDir.get()
                     def projectDir = dir.get().asFile
 
-                    if(!buildBase.isAbsolute()) {
+                    if (!buildBase.isAbsolute()) {
                         buildBase = new File(projectDir, buildBase.path)
                     }
 
-                    if(!projectCacheDir.isAbsolute()) {
+                    if (!projectCacheDir.isAbsolute()) {
                         projectCacheDir = new File(projectDir, projectCacheDir.path)
                     }
 
@@ -105,7 +210,7 @@ class GradleBuild extends DefaultTask {
                     args << "--project-cache-dir=${projectCacheDir.getPath()}".toString()
                 }
 
-                if(cleanBuildDirBeforeBuild) {
+                if (cleanBuildDirBeforeBuild) {
                     args << "-Pexport.deleteBuildDirBeforeBuild=1"
                 }
             }
@@ -128,20 +233,29 @@ class GradleBuild extends DefaultTask {
             }
         }
 
+        if(!args.contains('--continue') && continueOnFailure.getOrElse(this.project.gradle.startParameter.continueOnFailure)) {
+            args << '--continue'
+        }
+
         ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(dir.get().asFile)
                 .useGradleVersion(gradleVersion.get())
                 .connect()
 
+        def secrets = environmentSecrets.get()
+        environment(secrets)
+
         try {
             connection.newBuild()
                     .forTasks(*tasks.get().toArray(new String[0]))
                     .withArguments(args)
+                    .setEnvironmentVariables(environment.collectEntries { k, v -> [(k): v.toString()] } as Map<String, String>)
                     .setColorOutput(false)
                     .setStandardOutput(System.out)
                     .setStandardError(System.err)
                     .run()
         } finally {
+            secrets.clear()
             connection.close()
         }
     }

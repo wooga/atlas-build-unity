@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2018-2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package wooga.gradle.build.unity.tasks
@@ -23,7 +22,14 @@ import spock.lang.Issue
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
-import wooga.gradle.unity.batchMode.BatchModeFlags
+import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
+import wooga.gradle.secrets.internal.SecretText
+import wooga.gradle.secrets.internal.Secrets
+import wooga.gradle.unity.models.UnityCommandLineOption
+
+import javax.crypto.spec.SecretKeySpec
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 
 class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
@@ -34,6 +40,8 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
         ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+            it << UNITY_ASSET_HEADER
+            it << "\n"
             Yaml yaml = new Yaml()
             it << yaml.dump(appConfig)
         }
@@ -130,6 +138,34 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         value = wrapValueBasedOnType(rawValue, type)
     }
 
+    @Unroll("can append custom arguments with #message with property '#property'")
+    def "can provide custom arguments"() {
+        given: "a export task with custom configuration"
+        buildFile << """
+            exportCustom {
+                ${property} = ${value}
+            }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("exportCustom")
+
+        then:
+        expectedProperties.every { result.standardOutput.contains(it) }
+
+        where:
+        property          | rawValue                        | type  | useSetter | message
+        "customArguments" | null                            | 'Map' | true      | "null value"
+        "customArguments" | [:]                             | 'Map' | true      | "empty map"
+        "customArguments" | ['foo': 'bar']                  | 'Map' | true      | "simple map"
+        "customArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | true      | "multiple values"
+        "customArguments" | ['anInt': 22]                   | 'Map' | true      | "integer values"
+        "customArguments" | ['anInt': 22.2]                 | 'Map' | true      | "float values"
+        "customArguments" | ['aFile': File.createTempDir()] | 'Map' | true      | "file values"
+        expectedProperties = (rawValue) ? rawValue.collect({ key, value -> "${key}=${value};" }) : ""
+        value = wrapValueBasedOnType(rawValue, type)
+    }
+
     @Unroll
     def "#message buildTarget from appConfig when value is #valueType"() {
         given: "a custom app config"
@@ -137,7 +173,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def appConfigsDir = new File(assets, "CustomConfigs")
 
         def appConfigFile = createFile('buildTarget_config.asset', appConfigsDir)
-        appConfigFile.text = "MonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
+        appConfigFile.text = "${UNITY_ASSET_HEADER}\nMonoBehaviour: {bundleId: net.wooga.test, batchModeBuildTarget: $batchModeBuildTarget}"
 
         and: "the app config configured"
         buildFile << """
@@ -148,9 +184,9 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("exportCustom")
 
         then:
-        result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET}") == shouldContainBuildTargetFlag
+        result.standardOutput.contains(" ${UnityCommandLineOption.buildTarget.flag}") == shouldContainBuildTargetFlag
         if (shouldContainBuildTargetFlag) {
-            result.standardOutput.contains(" ${BatchModeFlags.BUILD_TARGET} ${batchModeBuildTarget}")
+            result.standardOutput.contains(" ${UnityCommandLineOption.buildTarget.flag} ${batchModeBuildTarget}")
         }
 
         where:
@@ -263,6 +299,37 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         files = mockProjectFiles.collect { it[0] }
         [file, upToDate] << mockProjectFiles
         statusMessage = (upToDate) ? "is" : "is not"
+    }
+
+    def "can pass provided secrets in environment"() {
+        given: "a secrets file an matching key"
+        Secrets secrets = new Secrets()
+        SecretKeySpec key = EncryptionSpecHelper.createSecretKey("some_value")
+        secrets.putSecret(secretId, new SecretText(secretValue), key)
+
+        and: "serialized key and secrets text"
+        def secretsKey = File.createTempFile("atlas-build-unity.GradleBuild", ".key")
+        def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
+
+        secretsKey.bytes = key.encoded
+        secretsFile.text = secrets.encode()
+
+        and: "secrets and key configured in task"
+        buildFile << """
+            import javax.crypto.spec.SecretKeySpec
+            exportCustom.secretsFile = project.file('${escapedPath(secretsFile.path)}')
+            exportCustom.secretsKey = new SecretKeySpec(project.file('${escapedPath(secretsKey.path)}').bytes, 'AES')
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully('exportCustom')
+
+        then:
+        result.standardOutput.contains("${secretId.toUpperCase()}=${secretValue}")
+
+        where:
+        secretId  | secretValue
+        "secret1" | "secret1Value"
     }
 
     @Unroll
