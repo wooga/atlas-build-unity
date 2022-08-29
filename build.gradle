@@ -77,7 +77,7 @@ dependencies {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
     }
 
-    testImplementation "org.yaml:snakeyaml:1.28"
+    testImplementation "org.yaml:snakeyaml:1.31"
     testImplementation "com.wooga.gradle:gradle-commons-test:[1.6,2["
 
     //TODO: I have no idea why we need this now.
