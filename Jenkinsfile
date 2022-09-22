@@ -5,7 +5,7 @@ withCredentials([
                     string(credentialsId: 'aws.secretsmanager.integration.accesskey', variable: 'accesskey'),
                     string(credentialsId: 'aws.secretsmanager.integration.secretkey', variable: 'secretkey'),
                     string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token'),
-                    string(credentialsId: 'atlas_plugins_snyk_token', variable: 'SNYK_TOKEN')
+                    string(credentialsId: 'snyk-wooga-frontend-integration-token', variable: 'SNYK_TOKEN')
                 ])
 {
     def env = [
