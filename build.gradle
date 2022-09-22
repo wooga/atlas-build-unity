@@ -83,6 +83,6 @@ dependencies {
     //TODO: I have no idea why we need this now.
     implementation('org.apache.maven:maven-artifact:[3,4[')
 
-    integrationTestImplementation('commons-io:commons-io:2.6')
+    integrationTestImplementation('commons-io:commons-io:2.11.0')
 }
 
