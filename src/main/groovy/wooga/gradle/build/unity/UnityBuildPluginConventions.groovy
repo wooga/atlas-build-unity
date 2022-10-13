@@ -26,7 +26,7 @@ class UnityBuildPluginConventions {
     /**
      * Method used by the Unity editor application to start a build
      */
-    static final PropertyLookup EXPORT_METHOD_NAME = new PropertyLookup("UNITY_BUILD_EXPORT_METHOD_NAME", "unityBuild.exportMethodName", "Wooga.UnifiedBuildSystem.Build.Export")
+    static final PropertyLookup EXPORT_METHOD_NAME = new PropertyLookup("UNITY_BUILD_EXPORT_METHOD_NAME", "unityBuild.exportMethodName", "Wooga.UnifiedBuildSystem.Editor.Build.Export")
 
     /**
      * The name of the default AppConfig, the serialized configuration for the build
