@@ -4,7 +4,9 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.file.*
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.internal.BuildEngineArgs
+import wooga.gradle.build.unity.models.UBSCompatibility
 import wooga.gradle.build.unity.models.UnityBuildEngineSpec
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.internal.Secrets
@@ -19,6 +21,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
     }
 
     protected BuildEngineArgs defaultArgs() {
+        ubsCompatibilityVersion.convention(UBSVersion.v100)
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
 
         def secrets = secretsFile.map { RegularFile secretsFile ->

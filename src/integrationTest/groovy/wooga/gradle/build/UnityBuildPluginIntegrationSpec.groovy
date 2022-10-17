@@ -40,13 +40,18 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Shared
     File appConfigsDir
 
+    @Shared
+    File appConfigsDir2
+
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
         appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
+        appConfigsDir2 = new File(assets, "UnifiedBuildSystem-Assets/Configs")
         appConfigsDir.mkdirs()
+        appConfigsDir2.mkdirs()
 
-        ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+        ['ios_ci', 'android_ci', 'webGL_ci'].collectMany { [createFile("${it}.asset", appConfigsDir), createFile("${it}.asset", appConfigsDir2)] }.each {
             it << UNITY_ASSET_HEADER
             it << "\n"
             Yaml yaml = new Yaml()
@@ -56,12 +61,12 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         }
 
         Yaml yaml = new Yaml()
-        def appconfig = createFile("custom.asset", appConfigsDir)
-        appconfig << UNITY_ASSET_HEADER
-        appconfig << "\n"
-        appconfig << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
-
-
+        [appConfigsDir, appConfigsDir2].each {
+            def appconfig = createFile("custom.asset", it)
+            appconfig << UNITY_ASSET_HEADER
+            appconfig << "\n"
+            appconfig << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
+        }
     }
 
     @Unroll
@@ -105,6 +110,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | null
         "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v100
         "exportCustom" | "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment" | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v120
+        "exportCustom" | "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment" | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
     }
 
     String convertPropertyToEnvName(String property) {
