@@ -19,6 +19,7 @@ package wooga.gradle.build
 
 import org.apache.commons.lang3.StringUtils
 import org.yaml.snakeyaml.Yaml
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPlugin
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
@@ -56,6 +57,15 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         }
 
         unityTestLocation
+    }
+
+    static wrapValueFallback = { Object rawValue, String type, Closure<String> fallback ->
+        switch (type) {
+            case UBSVersion.getSimpleName():
+                return "${UBSVersion.canonicalName}.${rawValue.toString()}".toString()
+            default:
+                return rawValue.toString()
+        }
     }
 
     File createAppConfig(String path) {

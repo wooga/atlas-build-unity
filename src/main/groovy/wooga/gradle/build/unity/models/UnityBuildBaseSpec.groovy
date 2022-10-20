@@ -4,7 +4,7 @@ import com.wooga.gradle.BaseSpec
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 
-trait UnityBuildBaseSpec implements BaseSpec {
+trait UnityBuildBaseSpec implements UBSCompatibility, BaseSpec {
 
     private final Property<String> exportMethodName = objects.property(String)
 

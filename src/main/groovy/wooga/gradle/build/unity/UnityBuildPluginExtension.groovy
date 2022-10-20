@@ -23,10 +23,11 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import wooga.gradle.build.unity.models.UBSCompatibility
 import wooga.gradle.build.unity.models.UnityBuildSpec
 import wooga.gradle.build.unity.models.VersionSpec
 
-trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec {
+trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec, UBSCompatibility {
 
     private final DirectoryProperty appConfigsDirectory = objects.directoryProperty()
 
@@ -38,12 +39,6 @@ trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends Uni
 
     DirectoryProperty getOutputDirectoryBase() {
         outputDirectoryBase
-    }
-
-    private final Property<UBSVersion> ubsCompatibilityVersion = objects.property(UBSVersion)
-
-    Property<UBSVersion> getUbsCompatibilityVersion() {
-        ubsCompatibilityVersion
     }
 
     private final Property<String> defaultAppConfigName = objects.property(String)

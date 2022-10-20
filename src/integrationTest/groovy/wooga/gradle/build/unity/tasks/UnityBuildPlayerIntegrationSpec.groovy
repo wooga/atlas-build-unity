@@ -5,6 +5,7 @@ import org.gradle.api.GradleException
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.build.unity.UBSVersion
 
 class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
 
@@ -38,7 +39,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         hasKeyValue("--version", version, customArgsParts)
         hasKeyValue("--outputPath",
                 new File(projectDir, "build/export/${appConfigName}/project").path, customArgsParts)
-        if(argName == "configPath") {
+        if (argName == "configPath") {
             hasKeyValue("-buildTarget", "android", customArgsParts)
         }
 
@@ -90,5 +91,31 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         then:
         def e = thrown(GradleException)
         rootCause(e) instanceof IllegalArgumentException
+    }
+
+    @Unroll
+    def "property #property will be mapped to cli parameter #expectedParamter when UBSCompatibility is #compatibility"() {
+        buildFile << """
+            task("customExport", type: ${UnityBuildPlayer.class.name}) {
+                ubsCompatibilityVersion = ${wrapValueBasedOnType(compatibility, "UBSVersion", wrapValueFallback)}
+                appConfigFile = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
+                ${property} = ${wrapValueBasedOnType(expectedValue, "String")}
+            }           
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("customExport")
+
+        then:
+        result.standardOutput.contains("${expectedParamter} ${expectedValue}")
+
+        where:
+        property      | expectedParamter       | expectedValue | compatibility
+        "version"     | "--version"            | "1.0.0"       | UBSVersion.v100
+        "version"     | "--version"            | "2.0.0"       | UBSVersion.v120
+        "version"     | "--build-version"      | "3.0.0"       | UBSVersion.v160
+        "versionCode" | "--versionCode"       | "1"           | UBSVersion.v100
+        "versionCode" | "--versionCode"       | "2"           | UBSVersion.v120
+        "versionCode" | "--build-version-code" | "3"           | UBSVersion.v160
     }
 }

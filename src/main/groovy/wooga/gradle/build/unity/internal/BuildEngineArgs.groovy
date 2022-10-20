@@ -1,31 +1,73 @@
 package wooga.gradle.build.unity.internal
 
-import org.gradle.api.provider.ListProperty
+
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
 class BuildEngineArgs {
 
-    private final ProviderFactory providers;
-    final Provider<String> method;
-    private Map<String, BuildEngineArg> args
-    private List<BuildEngineRawArg> rawArgs
-    private Provider<Map<String,?>> environment;
+    private static class BuildEngineArg {
+
+        final Provider<String> argument
+        final Provider<Object> value
+        final Boolean isFlag
+
+        BuildEngineArg(Provider<String> argument, Provider<Object> value) {
+            this.argument = argument
+            this.value = value
+            this.isFlag = false
+        }
+
+        List<Provider<?>> toList() {
+            if (value.present) {
+                return [argument, value]
+            }
+            return []
+        }
+    }
+
+    private static class BuildEngineFlag {
+        final Provider<String> flag
+
+        BuildEngineFlag(Provider<String> flag) {
+            this.option = flag
+        }
+
+        List<Provider<String>> toList() {
+            return [flag]
+        }
+    }
+
+    private final ProviderFactory providers
+    final Provider<String> method
+    private Provider<Map<String, ?>> environment
+    private List<Provider<?>> args
 
     BuildEngineArgs(ProviderFactory providers, Provider<String> method) {
-        this.args = new HashMap<>()
-        this.rawArgs = new ArrayList<>()
         this.providers = providers
         this.method = method
-        this.environment = providers.provider{ new HashMap<String, ?>() };
+        this.environment = providers.provider { new HashMap<String, ?>() }
+        this.args = []
     }
 
-    void addArg(String key, Provider<?> rawValueProvider) {
-        args.put(key, new BuildEngineArg(key, rawValueProvider))
+    void addArg(Provider<String> arg, Provider<Object> value) {
+        args << providers.provider { new BuildEngineArg(arg, value) }
     }
 
-    void addRawArgs(Provider<List<?>> rawArgsProvider) {
-        rawArgs.add(new BuildEngineRawArg(rawArgsProvider))
+    void addArg(String arg, Provider<Object> value) {
+        addArg(providers.provider({ arg }), value)
+    }
+
+    void addFlag(Provider<String> flag) {
+        args << providers.provider({ new BuildEngineFlag(flag) })
+    }
+
+    void addFlag(String flag) {
+        addFlag(providers.provider({ flag }))
+    }
+
+    void addArgs(Provider<List<?>> arguments) {
+        this.args << arguments
     }
 
     void addEnvs(Provider<Map<String, ?>> envsProvider) {
@@ -39,20 +81,46 @@ class BuildEngineArgs {
         return environment
     }
 
-    Provider<List<String>> getArgsProviders() {
+    private List<String> fetchArguments(Object arg) {
+        if (arg instanceof BuildEngineArg) {
+            def buildEngineArg = arg as BuildEngineArg
+            return buildEngineArg.toList()
+                    .findAll { it.present }
+                    .collect { argItem -> fetchArguments(argItem.get()) }
+                    .flatten().collect { it.toString() }
+        }
+
+        if (arg instanceof BuildEngineFlag) {
+            def buildEngineFlag = arg as BuildEngineFlag
+            return buildEngineFlag.toList()
+                    .findAll { it.present }
+                    .collect { it.get() }
+        }
+
+        if (arg instanceof List) {
+            def argList = arg as List
+            return argList.collect { argItem -> fetchArguments(argItem) }.flatten().collect { it.toString() }
+        }
+        if (arg instanceof Map) {
+            def argsMap = arg as Map
+            return argsMap.collect { key, value ->
+                [key.toString(), value.toString()]
+            }.flatten().collect { it.toString() }
+        } else {
+            return [arg.toString()]
+        }
+    }
+
+    Provider<List<String>> getArguments() {
         return providers.provider {
-            def allArgs = new ArrayList<String>()
-            args.values().each {
-                if(it.argStringProvider.present) {
-                    allArgs.addAll(it.argStringProvider.get())
-                }
-            }
-            rawArgs.each {
-                if(it.argStringProvider.present) {
-                    allArgs.addAll(it.argStringProvider.get())
+            def allArgs = []
+            this.args.each {
+                if (it.present) {
+                    allArgs.addAll(fetchArguments(it.get()))
                 }
             }
             return allArgs
         }
     }
+
 }

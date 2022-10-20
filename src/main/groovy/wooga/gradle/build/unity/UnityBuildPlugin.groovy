@@ -60,8 +60,11 @@ class UnityBuildPlugin implements Plugin<Project> {
     }
 
     static void configureExtension(UnityBuildPluginExtension extension, Project project) {
+        extension.ubsCompatibilityVersion.convention(UBSVersion.v100)
+        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project).orElse(extension.ubsCompatibilityVersion.map({
+            (it >= UBSVersion.v120) ? UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V2 : UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V1
+        })))
 
-        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
         extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
         extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
         extension.toolsVersion.set(UnityBuildPluginConventions.BUILD_TOOLS_VERSION.getStringValueProvider(project))
@@ -80,7 +83,9 @@ class UnityBuildPlugin implements Plugin<Project> {
         UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
         extension.assetsDir.convention(unity.assetsDir)
 
-        extension.appConfigsDirectory.convention(extension.assetsDir.dir(UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY))
+        extension.appConfigsDirectory.convention(extension.assetsDir.dir(extension.ubsCompatibilityVersion.map({
+            (it >= UBSVersion.v120) ? UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY_V2 : UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY
+        })))
         extension.exportInitScript.convention(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT.getFileValueProvider(project))
 
         extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({ new File(it) }))
@@ -91,7 +96,6 @@ class UnityBuildPlugin implements Plugin<Project> {
     }
 
     static void configureTasks(UnityBuildPluginExtension extension, Project project) {
-
         def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def lifecycleExport = project.tasks.register("export") {
             description = "export unity project"
@@ -181,6 +185,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def config = new GenericUnityAssetFile(it.asFile)
                 return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
             }))
+            t.ubsCompatibilityVersion.convention(extension.ubsCompatibilityVersion)
         }
 
         project.tasks.withType(UnityBuildPlayer).configureEach { task ->
@@ -234,7 +239,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
 
                 TaskProvider<? extends Task> exportTask;
-                def ubsVersion = extension.ubsCompatibilityVersion.getOrElse(UBSVersion.v100)
+                def ubsVersion = extension.ubsCompatibilityVersion.get()
                 if (ubsVersion >= UBSVersion.v120) {
                     exportTask = project.tasks.register("export${baseName}", UnityBuildPlayer) {
                         UnityBuildPlayer t ->

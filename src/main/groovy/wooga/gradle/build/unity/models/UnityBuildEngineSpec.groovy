@@ -10,9 +10,11 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SkipWhenEmpty
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.models.UnityBuildBaseSpec
 
 trait UnityBuildEngineSpec extends UnityBuildBaseSpec {

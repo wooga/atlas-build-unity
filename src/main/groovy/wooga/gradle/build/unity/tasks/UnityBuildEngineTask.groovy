@@ -4,7 +4,9 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.file.*
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.internal.BuildEngineArgs
+import wooga.gradle.build.unity.models.UBSCompatibility
 import wooga.gradle.build.unity.models.UnityBuildEngineSpec
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.internal.Secrets
@@ -19,6 +21,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
     }
 
     protected BuildEngineArgs defaultArgs() {
+        ubsCompatibilityVersion.convention(UBSVersion.v100)
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
 
         def secrets = secretsFile.map { RegularFile secretsFile ->
@@ -36,7 +39,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
             addArg("--config", config)
             addArg("--outputPath", outputDirectory.map { out -> out.asFile.path })
             addArg("--logPath", logDir.map { out -> out.asFile.path })
-            addRawArgs(customArguments)
+            addArgs(customArguments)
             addEnvs(environmentSecrets)
         }
         return buildEngineArgs
@@ -44,7 +47,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
 
     protected void setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
-        unityArgs.argsProviders.each { Provider<List<String>> argsProvider ->
+        unityArgs.arguments.each { Provider<List<String>> argsProvider ->
             additionalArguments.addAll(argsProvider)
         }
         additionalArguments.add("-executeMethod")
