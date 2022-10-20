@@ -96,7 +96,6 @@ class UnityBuildPlugin implements Plugin<Project> {
     }
 
     static void configureTasks(UnityBuildPluginExtension extension, Project project) {
-
         def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def lifecycleExport = project.tasks.register("export") {
             description = "export unity project"

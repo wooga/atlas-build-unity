@@ -22,8 +22,8 @@ class UnityBuildPlayer extends UnityBuildEngineTask implements VersionSpec {
         def versionCodeFlag = ubsCompatibilityVersion.map({ it >= v160 ? "--build-version-code" : "--versionCode" })
 
         exportArgs.with {
-            addArg("--version", versionFlag, version)
-            addArg("--version-code", versionCodeFlag, versionCode)
+            addArg(versionFlag, version)
+            addArg(versionCodeFlag, versionCode)
             addArg("--toolsVersion", toolsVersion)
             addArg("--commitHash", commitHash)
         }

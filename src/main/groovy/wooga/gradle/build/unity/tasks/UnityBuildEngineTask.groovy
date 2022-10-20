@@ -39,7 +39,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
             addArg("--config", config)
             addArg("--outputPath", outputDirectory.map { out -> out.asFile.path })
             addArg("--logPath", logDir.map { out -> out.asFile.path })
-            addRawArgs(customArguments)
+            addArgs(customArguments)
             addEnvs(environmentSecrets)
         }
         return buildEngineArgs
@@ -47,7 +47,7 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
 
     protected void setupExecution(BuildEngineArgs unityArgs) {
         environment.putAll(unityArgs.environment)
-        unityArgs.argsProviders.each { Provider<List<String>> argsProvider ->
+        unityArgs.arguments.each { Provider<List<String>> argsProvider ->
             additionalArguments.addAll(argsProvider)
         }
         additionalArguments.add("-executeMethod")
