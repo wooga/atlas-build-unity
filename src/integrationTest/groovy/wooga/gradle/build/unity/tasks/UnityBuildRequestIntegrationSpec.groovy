@@ -18,6 +18,7 @@ package wooga.gradle.build.unity.tasks
 
 import org.gradle.api.GradleException
 import org.gradle.api.InvalidUserDataException
+import org.gradle.internal.execution.WorkValidationException
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
@@ -76,8 +77,8 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
         then:
         def e = thrown(GradleException)
         def rootE = rootCause(e)
-        rootE.class.name == InvalidUserDataException.class.name
-        rootE.message.contains("No value has been specified for property 'build'")
+        rootE.class.name == WorkValidationException.class.name
+        rootE.message.contains("property 'build' doesn't have a configured value")
     }
 
     def "can configure custom unity entrypoint"() {

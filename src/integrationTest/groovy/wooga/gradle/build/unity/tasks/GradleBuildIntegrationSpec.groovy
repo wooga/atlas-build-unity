@@ -237,7 +237,9 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         def result = runTasksWithFailure('externalGradle')
 
         then:
-        outputContains(result, "Task 'foo' not found")
+        outputContains(result,
+                "A Gradle build should contain a 'settings.gradle' or 'settings.gradle.kts' file in its root directory. It may also contain a 'build.gradle' or 'build.gradle.kts' file."
+        )
     }
 
     def "task fails when task is not part of external build"() {

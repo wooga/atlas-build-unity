@@ -336,7 +336,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.wasExecuted(expectedExportTask)
         result.wasExecuted(handleTaskName)
 
-        def expectedVersion = version ?: "6.9"
+        def expectedVersion = version ?: "7.6.1"
         def error = "Could not execute build using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
         // we expecting this task to fail because its not a real integration test
         // but gradle should have attempted to run the exported gradle project with the configured version
@@ -345,8 +345,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun  | appConfigName | version | expectedDefaultHandlerTask
-//        "assemble" | "android_ci"  | "5.0.0" | 'AndroidCi'
-//        "assemble" | "ios_ci"      | "4.4.0" | 'IosCi'
+        "assemble" | "android_ci"  | "5.0.0" | 'AndroidCi'
+        "assemble" | "ios_ci"      | "4.4.0" | 'IosCi'
         "assemble" | "webGL_ci"    | null    | 'WebGLCi'
     }
 
