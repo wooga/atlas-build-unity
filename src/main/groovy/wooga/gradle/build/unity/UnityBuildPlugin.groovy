@@ -55,11 +55,12 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.pluginManager.apply(DotNetSonarqubePlugin.class)
 
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
-        configureExtension(extension, project)
-        configureTasks(extension, project)
+        UnityPluginExtension unityExt = project.extensions.getByType(UnityPluginExtension)
+        configureExtension(unityExt, extension, project)
+        configureTasks(unityExt, extension, project)
     }
 
-    static void configureExtension(UnityBuildPluginExtension extension, Project project) {
+    static void configureExtension(UnityPluginExtension unityExt, UnityBuildPluginExtension extension, Project project) {
         extension.ubsCompatibilityVersion.convention(UBSVersion.v100)
         extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project).orElse(extension.ubsCompatibilityVersion.map({
             (it >= UBSVersion.v120) ? UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V2 : UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V1
@@ -80,8 +81,8 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.versionCode.convention(UnityBuildPluginConventions.BUILD_VERSION_CODE.getStringValueProvider(project))
         extension.outputDirectoryBase.convention(project.layout.buildDirectory.dir(UnityBuildPluginConventions.DEFAULT_EXPORT_DIRECTORY_NAME))
 
-        UnityPluginExtension unity = project.extensions.getByType(UnityPluginExtension)
-        extension.assetsDir.convention(unity.assetsDir)
+
+        extension.assetsDir.convention(unityExt.assetsDir)
 
         extension.appConfigsDirectory.convention(extension.assetsDir.dir(extension.ubsCompatibilityVersion.map({
             (it >= UBSVersion.v120) ? UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY_V2 : UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY
@@ -95,7 +96,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
     }
 
-    static void configureTasks(UnityBuildPluginExtension extension, Project project) {
+    static void configureTasks(UnityPluginExtension unityExt, UnityBuildPluginExtension extension, Project project) {
         def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def lifecycleExport = project.tasks.register("export") {
             description = "export unity project"
@@ -176,9 +177,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
             t.outputDirectory.convention(outputDir)
 
-            t.logPath.convention(t.unityLogFile.map { logFile ->
-                return logFile.asFile.toPath().parent.toString()
-            })
+            t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map {it.asFile.absolutePath })
             t.customArguments.convention(extension.customArguments.map { [it] })
             t.inputFiles.from(inputFiles(t))
             t.buildTarget.convention(t.configPath.map({

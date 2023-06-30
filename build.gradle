@@ -22,7 +22,7 @@ buildscript {
 }
 
 plugins {
-    id 'net.wooga.plugins' version '4.0.0'
+    id 'net.wooga.plugins' version '5.0.0-rc.2'
     id 'net.wooga.snyk' version '0.12.0'
     id 'net.wooga.snyk-gradle-plugin' version '0.6.0'
     id "net.wooga.cve-dependency-resolution" version "0.4.0"
@@ -62,13 +62,14 @@ repositories {
 }
 
 dependencies {
-    implementation "net.wooga.gradle:dotnet-sonarqube:[0.4,0.5["
-    implementation "net.wooga.gradle:unity:[3,4["
+    api 'software.amazon.awssdk:secretsmanager:[2.16,3['
+    api 'net.wooga.gradle:secrets:[2,3['
+    api "net.wooga.gradle:macos-security:[2,3["
+    implementation "net.wooga.gradle:dotnet-sonarqube:[1,2["
+    implementation "net.wooga.gradle:unity:[4,5["
     implementation 'com.wooga.gradle:gradle-commons:[1.5,2['
     implementation "org.gradle:gradle-tooling-api:+"
-    api 'net.wooga.gradle:secrets:[1,2['
-    api "net.wooga.gradle:macos-security:[1.0.1,2["
-    api 'software.amazon.awssdk:secretsmanager:[2.16,3['
+
     implementation 'org.apache.commons:commons-text:1.8'
     testImplementation('com.nagternal:spock-genesis:0.6.0') {
         // This library tries to pull groovy-all in version 2.4 which is not compatible with groovy-all 2.5

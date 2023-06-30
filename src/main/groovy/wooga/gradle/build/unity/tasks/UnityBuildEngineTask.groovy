@@ -6,7 +6,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.internal.BuildEngineArgs
-import wooga.gradle.build.unity.models.UBSCompatibility
 import wooga.gradle.build.unity.models.UnityBuildEngineSpec
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.internal.Secrets
@@ -31,13 +30,12 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
             generateSecretsEnvironment(secrets, secretsKey)
         }.memoize())
 
-
         def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
         buildEngineArgs.with {
             addArg("--build", build)
             addArg("--configPath", configPath)
             addArg("--config", config)
-            addArg("--outputPath", outputDirectory.map { out -> out.asFile.path })
+            addArg("--outputPath", outputDirectory.asFile.map { out -> out.path })
             addArg("--logPath", logDir.map { out -> out.asFile.path })
             addArgs(customArguments)
             addEnvs(environmentSecrets)
@@ -70,6 +68,5 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
             project.layout.projectDirectory.dir(path)
         }
     }
-
 
 }

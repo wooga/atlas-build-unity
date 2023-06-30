@@ -67,7 +67,7 @@ class UnityBuildPlayerTask extends UnityTask implements SecretSpec, UnityBuildSp
 
     private final Provider<Directory> outputDirectory
 
-    @OutputDirectory
+    @Internal //TODO: rethink this to get advantage from gradle UP-TO-DATE checks.
     Provider<Directory> getOutputDirectory() {
         outputDirectory
     }
