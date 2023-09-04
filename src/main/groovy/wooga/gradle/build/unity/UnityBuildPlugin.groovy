@@ -45,6 +45,8 @@ class UnityBuildPlugin implements Plugin<Project> {
     static final String EXTENSION_NAME = "unityBuild"
     static final String EXPORT_TASK_NAME = "export"
 
+    static final String appConfigBuildTarget = "batchModeBuildTarget"
+    static final String buildConfigBuildTarget = "buildTargetString"
 
     @Override
     void apply(Project project) {
@@ -177,12 +179,19 @@ class UnityBuildPlugin implements Plugin<Project> {
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
             t.outputDirectory.convention(outputDir)
 
-            t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map {it.asFile.absolutePath })
+            t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
             t.customArguments.convention(extension.customArguments.map { [it] })
             t.inputFiles.from(inputFiles(t))
             t.buildTarget.convention(t.configPath.map({
                 def config = new GenericUnityAssetFile(it.asFile)
-                return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
+                // AppConfig
+                if (config.containsKey(appConfigBuildTarget)) {
+                    return config[appConfigBuildTarget]?.toString()?.toLowerCase()
+                }
+                // BuildConfig
+                else if (config.containsKey(buildConfigBuildTarget)) {
+                    return config[buildConfigBuildTarget]?.toString()?.toLowerCase()
+                }
             }))
             t.ubsCompatibilityVersion.convention(extension.ubsCompatibilityVersion)
         }
@@ -190,7 +199,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(UnityBuildPlayer).configureEach { task ->
             task.build.convention("Player")
             def appConfigName = task.config.orElse(
-                    task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
+                task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
             )
             def configRelativePath = appConfigName.map { return new File(it, "project").path }
             def outputPath = extension.outputDirectoryBase.dir(configRelativePath)
