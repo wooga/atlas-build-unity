@@ -79,6 +79,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final Property<String> config = objects.property(String)
 
+    /**
+     * @return The name of the configuration file to use. This should be used when no path is specified in {@code configPath}.
+     */
     @Optional
     @Input
     Property<String> getConfig() {
@@ -91,6 +94,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final RegularFileProperty configPath = objects.fileProperty()
 
+    /**
+     * @return The path to the configuration file for the build. This should be used when no name is specified in {@code config}
+     */
     @Optional
     @InputFile
     RegularFileProperty getConfigPath() {

@@ -208,10 +208,6 @@ class UnityBuildPlugin implements Plugin<Project> {
             task.commitHash.convention(extension.commitHash)
             task.version.convention(extension.version)
             task.versionCode.convention(extension.versionCode)
-            task.buildTarget.convention(task.appConfigFile.map({
-                def config = new GenericUnityAssetFile(it.asFile)
-                return config["batchModeBuildTarget"]?.toString()?.toLowerCase()
-            }))
         }
 
         project.tasks.withType(GradleBuild).configureEach({ GradleBuild t ->

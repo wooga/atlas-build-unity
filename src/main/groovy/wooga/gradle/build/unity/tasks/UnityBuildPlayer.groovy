@@ -29,18 +29,4 @@ class UnityBuildPlayer extends UnityBuildEngineTask implements VersionSpec {
         }
         super.setupExecution(exportArgs)
     }
-
-    @Optional
-    @InputFile
-    RegularFileProperty getAppConfigFile() {
-        return configPath
-    }
-
-    void setAppConfigFile(String appConfigFile) {
-        this.configPath.set(new File(appConfigFile))
-    }
-
-    void setAppConfigFile(File appConfigFile) {
-        this.configPath.set(appConfigFile)
-    }
 }

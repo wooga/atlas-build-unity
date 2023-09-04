@@ -26,6 +26,7 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
+import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.models.UnityBuildSpec
 import wooga.gradle.build.unity.models.VersionSpec
 import wooga.gradle.secrets.internal.Secrets
@@ -41,7 +42,7 @@ import javax.crypto.spec.SecretKeySpec
 @Deprecated
 class UnityBuildPlayerTask extends UnityTask implements SecretSpec, UnityBuildSpec, VersionSpec {
 
-    static String BUILD_TARGET_KEY = "batchModeBuildTarget"
+    static String BUILD_TARGET_KEY = UnityBuildPlugin.appConfigBuildTarget
 
     private final ConfigurableFileCollection inputFiles
 
