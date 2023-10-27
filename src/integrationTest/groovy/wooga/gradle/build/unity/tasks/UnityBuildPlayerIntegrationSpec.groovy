@@ -38,16 +38,15 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         hasKeyValue("--${argName}".toString(), actualConfigValue, customArgsParts)
         hasKeyValue("--version", version, customArgsParts)
         hasKeyValue("--outputPath",
-                new File(projectDir, "build/export/${appConfigName}/project").path, customArgsParts)
+            new File(projectDir, "build/export/${appConfigName}/project").path, customArgsParts)
         if (argName == "configPath") {
             hasKeyValue("-buildTarget", "android", customArgsParts)
         }
 
         where:
-        configProperty  | argName      | configValue                         | configValueType
-        "config"        | "config"     | "configName"                        | String
-        "configPath"    | "configPath" | "Assets/CustomConfigs/custom.asset" | File
-        "appConfigFile" | "configPath" | "Assets/CustomConfigs/custom.asset" | File
+        configProperty | argName      | configValue                         | configValueType
+        "config"       | "config"     | "configName"                        | String
+        "configPath"   | "configPath" | "Assets/CustomConfigs/custom.asset" | File
     }
 
     @Unroll
@@ -98,7 +97,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             task("customExport", type: ${UnityBuildPlayer.class.name}) {
                 ubsCompatibilityVersion = ${wrapValueBasedOnType(compatibility, "UBSVersion", wrapValueFallback)}
-                appConfigFile = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
+                configPath = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
                 ${property} = ${wrapValueBasedOnType(expectedValue, "String")}
             }           
         """.stripIndent()
@@ -114,8 +113,8 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         "version"     | "--version"            | "1.0.0"       | UBSVersion.v100
         "version"     | "--version"            | "2.0.0"       | UBSVersion.v120
         "version"     | "--build-version"      | "3.0.0"       | UBSVersion.v160
-        "versionCode" | "--versionCode"       | "1"           | UBSVersion.v100
-        "versionCode" | "--versionCode"       | "2"           | UBSVersion.v120
+        "versionCode" | "--versionCode"        | "1"           | UBSVersion.v100
+        "versionCode" | "--versionCode"        | "2"           | UBSVersion.v120
         "versionCode" | "--build-version-code" | "3"           | UBSVersion.v160
     }
 }
