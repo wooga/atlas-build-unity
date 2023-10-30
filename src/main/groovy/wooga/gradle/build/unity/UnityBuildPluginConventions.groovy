@@ -31,7 +31,7 @@ class UnityBuildPluginConventions {
 
     static final String EXPORT_METHOD_DEFAULT_VALUE_V1 = "Wooga.UnifiedBuildSystem.Build.Export"
     static final String EXPORT_METHOD_DEFAULT_VALUE_V2 = "Wooga.UnifiedBuildSystem.Editor.Build.Export"
-
+    static final String EXPORT_METHOD_DEFAULT_VALUE_V3 = "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment"
     /**
      * The name of the default AppConfig, the serialized configuration for the build
      */
@@ -41,6 +41,11 @@ class UnityBuildPluginConventions {
      * The version used for the Unity application being built
      */
     static PropertyLookup BUILD_VERSION = new PropertyLookup("UNITY_BUILD_VERSION", "unityBuild.version", null)
+
+    /**
+     * The version of the Unified Build System to be compatible for, which affects task generation and certain configurations.
+     */
+    static PropertyLookup COMPATIBILITY_VERSION = new PropertyLookup("UNITY_BUILD_COMPATIBILITY_VERSION", "unityBuild.version", UBSVersion.v160)
 
     /**
      * The version code used for the Unity application being built
@@ -114,4 +119,6 @@ class UnityBuildPluginConventions {
      * @see UnityBuildPluginExtension#getAppConfigs()
      */
     static String DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN = "*.meta"
+
+
 }

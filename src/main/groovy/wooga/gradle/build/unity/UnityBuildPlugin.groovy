@@ -56,14 +56,16 @@ class UnityBuildPlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(UnityBuildPluginExtension, EXTENSION_NAME, DefaultUnityBuildPluginExtension, project)
         UnityPluginExtension unityExt = project.extensions.getByType(UnityPluginExtension)
-        configureExtension(unityExt, extension, project)
-        configureTasks(unityExt, extension, project)
+        configureExtension(project, extension, unityExt)
+        configureTasks(project, extension, unityExt)
     }
 
-    static void configureExtension(UnityPluginExtension unityExt, UnityBuildPluginExtension extension, Project project) {
-        extension.ubsCompatibilityVersion.convention(UBSVersion.v100)
+    static void configureExtension(Project project, UnityBuildPluginExtension extension, UnityPluginExtension unityExtension) {
+        extension.ubsCompatibilityVersion.convention(UnityBuildPluginConventions.COMPATIBILITY_VERSION.getEnumValueProvider(project, UBSVersion.class))
         extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project).orElse(extension.ubsCompatibilityVersion.map({
-            (it >= UBSVersion.v120) ? UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V2 : UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V1
+            (it >= UBSVersion.v120)
+                ? UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V2
+                : UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V1
         })))
 
         extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
@@ -82,7 +84,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.outputDirectoryBase.convention(project.layout.buildDirectory.dir(UnityBuildPluginConventions.DEFAULT_EXPORT_DIRECTORY_NAME))
 
 
-        extension.assetsDir.convention(unityExt.assetsDir)
+        extension.assetsDir.convention(unityExtension.assetsDir)
 
         extension.appConfigsDirectory.convention(extension.assetsDir.dir(extension.ubsCompatibilityVersion.map({
             (it >= UBSVersion.v120) ? UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY_V2 : UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY
@@ -96,7 +98,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.appConfigSecretsKey.set(UnityBuildPluginConventions.APP_CONFIG_SECRETS_KEY.getStringValueProvider(project))
     }
 
-    static void configureTasks(UnityPluginExtension unityExt, UnityBuildPluginExtension extension, Project project) {
+    static void configureTasks(Project project, UnityBuildPluginExtension extension, UnityPluginExtension unityExt) {
         def secretsExtension = project.extensions.getByType(SecretsPluginExtension.class)
         def lifecycleExport = project.tasks.register("export") {
             description = "export unity project"
@@ -195,7 +197,8 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
     }
 
-    private static void configureBaseTasks(extension, Project project, unityExt) {
+    private static void configureBaseTasks(UnityBuildPluginExtension extension, Project project, UnityPluginExtension unityExt) {
+
         def inputFiles = { UnityTask t ->
             return {
                 def assetsDir = extension.assetsDir
@@ -245,7 +248,8 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
 
         project.tasks.withType(BuildUnityTask).configureEach { t ->
-            t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
+            // TODO: This can be removed, right? Since it's set by the extension
+            t.exportMethodName.convention(UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V3)
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
             t.outputDirectory.convention(outputDir)
@@ -268,7 +272,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
     }
 
-    private static configureUnityBuildPlayerTasks(Project project, extension) {
+    private static configureUnityBuildPlayerTasks(Project project, UnityBuildPluginExtension extension) {
         project.tasks.withType(PlayerBuildUnityTask).configureEach { task ->
             task.build.convention("Player")
             def appConfigName = task.config.orElse(
