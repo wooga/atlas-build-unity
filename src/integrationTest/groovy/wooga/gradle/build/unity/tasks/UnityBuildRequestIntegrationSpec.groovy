@@ -16,12 +16,11 @@
 
 package wooga.gradle.build.unity.tasks
 
+
 import org.gradle.api.GradleException
-import org.gradle.api.InvalidUserDataException
 import org.gradle.internal.execution.WorkValidationException
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
@@ -30,7 +29,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 
-class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
+class UnityBuildRequestIntegrationSpec extends UnityBuildTaskIntegrationSpec<UnityBuildEngineTask> {
 
     @Shared
     File configFile;
@@ -41,16 +40,18 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "uses default settings when not configured"() {
         given: "a custom export task without configuration"
+
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
-                build = "UBSBuild"
-            }
         """.stripIndent()
 
+        addSubjectTask(true, """
+            build = "UBSBuild"
+        """.stripIndent())
+
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -67,12 +68,11 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
-            }
         """.stripIndent()
+        addSubjectTask()
 
         when:
-        runTasksSuccessfully("customExport")
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def e = thrown(GradleException)
@@ -83,15 +83,14 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure custom unity entrypoint"() {
         given: "a export task with a custom unity entrypoint"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 exportMethodName = "${entrypoint}"
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -103,15 +102,20 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure custom output directory"() {
         given: "a export task with a custom output directory"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+//        buildFile << """
+//            task("customExport", type: ${subjectUnderTestTypeName}) {
+//                build = "mandatoryBuildName"
+//                outputDirectory = file("${outputPath}")
+//            }
+//        """.stripIndent()
+
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 outputDirectory = file("${outputPath}")
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -123,15 +127,13 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure custom log directory"() {
         given: "a export task with a custom log directory"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 logPath = "${logPath}"
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -144,15 +146,13 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure custom configuration"() {
         given: "a export task with a custom output directory"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 config = "configName"
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -162,15 +162,13 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure custom path to config file"() {
         given: "a export task with a custom output directory"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 configPath = ${wrapValueBasedOnType(configFile, File)}
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -180,15 +178,13 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure extra arguments"() {
         given: "a export task custom configuration"
-        buildFile << """
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 customArguments = ${extraArgsString}
-            }
-        """.stripIndent()
+        """.stripIndent())
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -209,11 +205,9 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
 
     def "can configure encrypted secrets file"() {
         given: "a basic export task"
-        buildFile << """
-            import javax.crypto.spec.SecretKeySpec
-            task("customExport", type: ${UnityBuildRequest.class.name}) {
+        addSubjectTask(true, """
                 build = "mandatoryBuildName"
-        """.stripIndent()
+        """.stripIndent())
 
         and: "a secret key"
         SecretKeySpec key = EncryptionSpecHelper.createSecretKey("some_value")
@@ -231,7 +225,7 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsString = substringAt(result.standardOutput, "environment")
@@ -299,26 +293,27 @@ class UnityBuildRequestIntegrationSpec extends UnityIntegrationSpec {
         buildFile << """
             def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
             ext.customArguments.set(["--key":"value"])
-            task("exportCustom", type: ${UnityBuildRequest.class.name}) {
-                build = "UBSBuild"
-                buildTarget = 'android'
-            }
         """.stripIndent()
 
-        and: "a up-to-date project state"
-        def result = runTasksSuccessfully("exportCustom")
-        assert !result.wasUpToDate('exportCustom')
+        addSubjectTask(true, """
+            build = "UBSBuild"
+            buildTarget = 'android'
+        """.stripIndent())
 
-        result = runTasksSuccessfully("exportCustom")
-        assert result.wasUpToDate('exportCustom')
+        and: "a up-to-date project state"
+        def result = runTasksSuccessfully(subjectUnderTestName)
+        assert !result.wasUpToDate(subjectUnderTestName)
+
+        result = runTasksSuccessfully(subjectUnderTestName)
+        assert result.wasUpToDate(subjectUnderTestName)
 
         when: "change content of one source file"
         testFile.text = "new content"
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.wasUpToDate('exportCustom') == upToDate
+        result.wasUpToDate(subjectUnderTestName) == upToDate
 
         where:
         files = mockProjectFiles.collect { it[0] }

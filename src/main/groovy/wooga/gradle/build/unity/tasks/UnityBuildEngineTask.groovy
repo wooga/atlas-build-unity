@@ -13,10 +13,13 @@ import wooga.gradle.unity.UnityTask
 
 import javax.crypto.spec.SecretKeySpec
 
-
-abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
+/**
+ * The base task that can run builds via the Unified Build System, our Unity-side package for executing builds in the Unity Editor.
+ */
+class UnityBuildEngineTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
 
     UnityBuildEngineTask() {
+        setupExecution()
     }
 
     protected BuildEngineArgs defaultArgs() {
@@ -41,6 +44,11 @@ abstract class UnityBuildEngineTask extends UnityTask implements SecretSpec, Uni
             addEnvs(environmentSecrets)
         }
         return buildEngineArgs
+    }
+
+    protected void setupExecution(){
+        def args = defaultArgs()
+        setupExecution(args)
     }
 
     protected void setupExecution(BuildEngineArgs unityArgs) {
