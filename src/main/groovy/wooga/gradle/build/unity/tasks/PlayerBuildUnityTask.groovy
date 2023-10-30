@@ -8,8 +8,8 @@ import static wooga.gradle.build.unity.UBSVersion.v160
 /**
  * The build task that executes default build request (pipeline) provided by the Unified Build System.
  */
-class UnityBuildPlayer extends UnityBuildEngineTask implements VersionSpec {
-    UnityBuildPlayer() {
+class PlayerBuildUnityTask extends BuildUnityTask implements VersionSpec {
+    PlayerBuildUnityTask() {
         super.build.convention("Player")
         this.doFirst {
             if (!configPath.present && !config.present) {
@@ -32,4 +32,10 @@ class UnityBuildPlayer extends UnityBuildEngineTask implements VersionSpec {
         }
         super.setupExecution(exportArgs)
     }
+}
+
+/**
+ * Use the newer type, {@link PlayerBuildUnityTask}
+ */
+class UnityBuildPlayer extends PlayerBuildUnityTask {
 }

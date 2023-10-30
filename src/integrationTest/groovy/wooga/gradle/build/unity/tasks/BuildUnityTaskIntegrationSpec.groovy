@@ -3,7 +3,7 @@ package wooga.gradle.build.unity.tasks
 import com.wooga.gradle.test.TaskIntegrationSpec
 import wooga.gradle.build.UnityIntegrationSpec
 
-class UnityBuildTaskIntegrationSpec<T extends UnityBuildEngineTask> extends UnityIntegrationSpec
+class BuildUnityTaskIntegrationSpec<T extends BuildUnityTask> extends UnityIntegrationSpec
     implements TaskIntegrationSpec<T> {
 
     @Override

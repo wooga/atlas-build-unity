@@ -32,7 +32,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 
-class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
+class UnityBuildPlayerTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<UnityBuildPlayer> {
 
     def setup() {
         def assets = new File(projectDir, "Assets")
@@ -47,18 +47,15 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
             it << yaml.dump(appConfig)
         }
 
-        buildFile << """
-            task("exportCustom", type: wooga.gradle.build.unity.tasks.UnityBuildPlayerTask) {
-                appConfigFile = file('Assets/CustomConfigs/custom.asset')
-            }
-        """.stripIndent()
+        addSubjectTask(false, "appConfigFile = file('Assets/CustomConfigs/custom.asset')")
+
     }
 
     def "uses default settings when not configured"() {
         given: "a custom export task without configuration"
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
@@ -75,7 +72,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains("-buildTarget android")
@@ -92,7 +89,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
 
@@ -149,7 +146,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         expectedProperties.every { result.standardOutput.contains(it) }
@@ -182,7 +179,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains(" ${UnityCommandLineOption.buildTarget.flag}") == shouldContainBuildTargetFlag
@@ -212,7 +209,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
             exportCustom.${property} = ${value}
         """.stripIndent()
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         !result.wasUpToDate('exportCustom')
@@ -232,7 +229,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully("exportCustom")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains(":exportCustom NO-SOURCE")
@@ -291,7 +288,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         when: "change content of one source file"
         testFile.text = "new content"
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.wasUpToDate('exportCustom') == upToDate
@@ -323,7 +320,7 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         when:
-        def result = runTasksSuccessfully('exportCustom')
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains("${secretId.toUpperCase()}=${secretValue}")
@@ -341,23 +338,23 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
 
         and: "a custom inputCollection"
         buildFile << """
-            exportCustom.${methodName}.setFrom(${value})
+            ${subjectUnderTestName}.${methodName}.setFrom(${value})
         """.stripIndent()
 
         and: "a up-to-date project state"
-        def result = runTasksSuccessfully("exportCustom")
-        assert !result.wasUpToDate('exportCustom')
+        def result = runTasksSuccessfully(subjectUnderTestName)
+        assert !result.wasUpToDate(subjectUnderTestName)
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
         assert result.wasUpToDate('exportCustom')
 
         when: "change content of one source file"
         testFile.text = "new content"
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.wasUpToDate('exportCustom') == upToDate
+        result.wasUpToDate(subjectUnderTestName) == upToDate
 
         where:
         file                                          | upToDate | type             | value
@@ -388,19 +385,19 @@ class UnityBuildPlayerTaskIntegrationSpec extends UnityIntegrationSpec {
         """.stripIndent()
 
         and: "a up-to-date project state"
-        def result = runTasksSuccessfully("exportCustom")
-        assert !result.wasUpToDate('exportCustom')
+        def result = runTasksSuccessfully(subjectUnderTestName)
+        assert !result.wasUpToDate(subjectUnderTestName)
 
-        result = runTasksSuccessfully("exportCustom")
-        assert result.wasUpToDate('exportCustom')
+        result = runTasksSuccessfully(subjectUnderTestName)
+        assert result.wasUpToDate(subjectUnderTestName)
 
         when: "change content of one source file"
         testFile.text = "new content"
 
-        result = runTasksSuccessfully("exportCustom")
+        result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.wasUpToDate('exportCustom') == upToDate
+        result.wasUpToDate(subjectUnderTestName) == upToDate
 
         where:
         file                                              | upToDate | type             | value

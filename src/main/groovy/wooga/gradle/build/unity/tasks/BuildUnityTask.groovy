@@ -16,9 +16,9 @@ import javax.crypto.spec.SecretKeySpec
 /**
  * The base task that can run builds via the Unified Build System, our Unity-side package for executing builds in the Unity Editor.
  */
-class UnityBuildEngineTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
+class BuildUnityTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
 
-    UnityBuildEngineTask() {
+    BuildUnityTask() {
         setupExecution()
     }
 

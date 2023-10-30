@@ -145,8 +145,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                 TaskProvider<? extends Task> exportTask = null
                 def ubsVersion = extension.ubsCompatibilityVersion.get()
                 if (ubsVersion >= UBSVersion.v120) {
-                    exportTask = project.tasks.register("export${baseName}", UnityBuildPlayer) {
-                        UnityBuildPlayer t ->
+                    exportTask = project.tasks.register("export${baseName}", PlayerBuildUnityTask) {
+                        PlayerBuildUnityTask t ->
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
                             t.configPath.set(appConfig)
@@ -244,7 +244,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(UnityBuildEngineTask).configureEach { t ->
+        project.tasks.withType(BuildUnityTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
@@ -269,7 +269,7 @@ class UnityBuildPlugin implements Plugin<Project> {
     }
 
     private static configureUnityBuildPlayerTasks(Project project, extension) {
-        project.tasks.withType(UnityBuildPlayer).configureEach { task ->
+        project.tasks.withType(PlayerBuildUnityTask).configureEach { task ->
             task.build.convention("Player")
             def appConfigName = task.config.orElse(
                 task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }

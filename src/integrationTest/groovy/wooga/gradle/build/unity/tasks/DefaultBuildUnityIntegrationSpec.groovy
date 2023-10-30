@@ -29,7 +29,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 
-class UnityBuildRequestIntegrationSpec extends UnityBuildTaskIntegrationSpec<UnityBuildEngineTask> {
+class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<BuildUnityTask> {
 
     @Shared
     File configFile;

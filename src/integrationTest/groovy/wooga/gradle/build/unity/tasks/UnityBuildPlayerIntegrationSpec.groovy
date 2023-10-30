@@ -21,7 +21,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
         given: "a custom export task without configuration"
         def version = "0.0.1"
         buildFile << """
-            task("customExport", type: ${UnityBuildPlayer.class.name}) {
+            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
                 ${configProperty} = ${wrapValueBasedOnType(configValue, configValueType)}
                 version = "${version}"    
             }           
@@ -53,7 +53,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
     def "can configure optional #argName argument"() {
         given: "a custom export task without configuration"
         buildFile << """
-            task("customExport", type: ${UnityBuildPlayer.class.name}) {
+            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
                 config = "configPath"
                 version = "0.0.1"  
                 ${propName} = "${argValue}"         
@@ -78,7 +78,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
     def "throws exception when no config/configPath/appConfigFile property is given"() {
         given: "a custom export task without configuration"
         buildFile << """
-            task("customExport", type: ${UnityBuildPlayer.class.name}) {
+            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
                 version = "0.0.1"  
                 outputDirectory = file("any")
             }
@@ -95,7 +95,7 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def "property #property will be mapped to cli parameter #expectedParamter when UBSCompatibility is #compatibility"() {
         buildFile << """
-            task("customExport", type: ${UnityBuildPlayer.class.name}) {
+            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
                 ubsCompatibilityVersion = ${wrapValueBasedOnType(compatibility, "UBSVersion", wrapValueFallback)}
                 configPath = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
                 ${property} = ${wrapValueBasedOnType(expectedValue, "String")}
