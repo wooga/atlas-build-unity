@@ -69,11 +69,12 @@ class SecretSpecIntegrationSpec extends UnityIntegrationSpec {
         GradleBuild                      | "secretsKey"     | "keyFile" | false
         GradleBuild                      | "secretsKey"     | "keyFile" | true
 
-        UnityBuildPlayerTask             | "secretsKey"     | "key"     | false
-        UnityBuildPlayerTask             | "secretsKey"     | "key"     | true
-        UnityBuildPlayerTask             | "secretsKey.set" | "key"     | false
-        UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | false
-        UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | true
+        // This task got deprecated
+//        UnityBuildPlayerTask             | "secretsKey"     | "key"     | false
+//        UnityBuildPlayerTask             | "secretsKey"     | "key"     | true
+//        UnityBuildPlayerTask             | "secretsKey.set" | "key"     | false
+//        UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | false
+//        UnityBuildPlayerTask             | "secretsKey"     | "keyFile" | true
 
         method = (useSetter) ? "set${property.capitalize()}" : property
         containerTypeName = Task.isAssignableFrom(containerType) ? "task" : "extension"

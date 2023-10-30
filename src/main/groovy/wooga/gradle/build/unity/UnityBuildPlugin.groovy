@@ -162,17 +162,6 @@ class UnityBuildPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(UnityBuildPlayerTask).configureEach({ UnityBuildPlayerTask t ->
-            t.exportMethodName.convention(extension.exportMethodName)
-            t.toolsVersion.convention(extension.toolsVersion)
-            t.commitHash.convention(extension.commitHash)
-            t.outputDirectoryBase.convention(extension.outputDirectoryBase)
-            t.version.convention(extension.version)
-            t.versionCode.convention(extension.versionCode)
-            t.customArguments.convention(extension.customArguments)
-            t.inputFiles.from(inputFiles(t))
-        })
-
         project.tasks.withType(UnityBuildEngineTask).configureEach { t ->
             t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
@@ -242,7 +231,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     }))
                 }
 
-                TaskProvider<? extends Task> exportTask;
+                TaskProvider<? extends Task> exportTask = null
                 def ubsVersion = extension.ubsCompatibilityVersion.get()
                 if (ubsVersion >= UBSVersion.v120) {
                     exportTask = project.tasks.register("export${baseName}", UnityBuildPlayer) {
@@ -250,15 +239,6 @@ class UnityBuildPlugin implements Plugin<Project> {
                             t.group = "build unity"
                             t.description = "exports player targeted gradle project for app config ${appConfigName}"
                             t.configPath.set(appConfig)
-                            t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
-                            t.secretsKey.set(secretsExtension.secretsKey)
-                    }
-                } else {
-                    exportTask = project.tasks.register("export${baseName}", UnityBuildPlayerTask) {
-                        UnityBuildPlayerTask t ->
-                            t.group = "build unity"
-                            t.description = "exports gradle project for app config ${appConfigName}"
-                            t.appConfigFile.set(appConfig)
                             t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                             t.secretsKey.set(secretsExtension.secretsKey)
                     }
