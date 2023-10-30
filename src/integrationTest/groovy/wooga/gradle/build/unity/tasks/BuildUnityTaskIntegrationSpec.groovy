@@ -10,4 +10,5 @@ class BuildUnityTaskIntegrationSpec<T extends BuildUnityTask> extends UnityInteg
     String getSubjectUnderTestName() {
         "${subjectUnderTestClass.simpleName.uncapitalize()}Test"
     }
+
 }

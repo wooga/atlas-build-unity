@@ -7,7 +7,7 @@ import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.UBSVersion
 
-class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
+class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<PlayerBuildUnityTask> {
 
     @Shared
     File appConfigFile;
@@ -20,15 +20,13 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
     def "uses default settings when configuring only with mandatory variables"() {
         given: "a custom export task without configuration"
         def version = "0.0.1"
-        buildFile << """
-            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
+        addSubjectTask(false, """
                 ${configProperty} = ${wrapValueBasedOnType(configValue, configValueType)}
                 version = "${version}"    
-            }           
-        """.stripIndent()
+        """)
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def appConfigName = FilenameUtils.removeExtension(new File(configValue).name)
@@ -52,16 +50,14 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def "can configure optional #argName argument"() {
         given: "a custom export task without configuration"
-        buildFile << """
-            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
+        addSubjectTask(false, """
                 config = "configPath"
                 version = "0.0.1"  
-                ${propName} = "${argValue}"         
-            }
-        """.stripIndent()
+                ${propName} = "${argValue}"      
+        """)
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
@@ -77,15 +73,13 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
 
     def "throws exception when no config/configPath/appConfigFile property is given"() {
         given: "a custom export task without configuration"
-        buildFile << """
-            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
+        addSubjectTask(false, """
                 version = "0.0.1"  
                 outputDirectory = file("any")
-            }
-        """.stripIndent()
+        """)
 
         when:
-        runTasksSuccessfully("customExport")
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def e = thrown(GradleException)
@@ -94,16 +88,16 @@ class UnityBuildPlayerIntegrationSpec extends UnityIntegrationSpec {
 
     @Unroll
     def "property #property will be mapped to cli parameter #expectedParamter when UBSCompatibility is #compatibility"() {
-        buildFile << """
-            task("customExport", type: ${PlayerBuildUnityTask.class.name}) {
+
+        given: "a configured task"
+        addSubjectTask(false, """
                 ubsCompatibilityVersion = ${wrapValueBasedOnType(compatibility, "UBSVersion", wrapValueFallback)}
                 configPath = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
                 ${property} = ${wrapValueBasedOnType(expectedValue, "String")}
-            }           
-        """.stripIndent()
+        """)
 
         when:
-        def result = runTasksSuccessfully("customExport")
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
         result.standardOutput.contains("${expectedParamter} ${expectedValue}")

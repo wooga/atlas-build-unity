@@ -33,9 +33,3 @@ class PlayerBuildUnityTask extends BuildUnityTask implements VersionSpec {
         super.setupExecution(exportArgs)
     }
 }
-
-/**
- * Use the newer type, {@link PlayerBuildUnityTask}
- */
-class UnityBuildPlayer extends PlayerBuildUnityTask {
-}
