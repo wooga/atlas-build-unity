@@ -7,6 +7,9 @@ import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.UBSVersion
 
+/**
+ * Tests of the task for the default build request, {@link PlayerBuildUnityTask}
+ */
 class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<PlayerBuildUnityTask> {
 
     @Shared

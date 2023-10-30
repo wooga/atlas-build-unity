@@ -29,6 +29,9 @@ import javax.crypto.spec.SecretKeySpec
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 
+/**
+ * Tests of the base task, {@link BuildUnityTask}
+ */
 class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<BuildUnityTask> {
 
     @Shared
@@ -203,6 +206,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | ["--an-arg", ["--varg": "val"], ["--oarg": "oval"]]
     }
 
+    @Unroll
     def "can configure encrypted secrets file"() {
         given: "a basic export task"
         addSubjectTask(true, """
@@ -218,11 +222,10 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         def secretsFile = generateSecretsFile(key, secretsMap)
 
         and: "secrets and key configured in task"
-        buildFile << """
+        appendToSubjectTask("""  
             secretsFile = file('${escapedPath(secretsFile.path)}')
-            secretsKey = new SecretKeySpec(file('${escapedPath(secretsKey.path)}').bytes, 'AES')
-        }
-        """.stripIndent()
+            secretsKey = new ${SecretKeySpec.class.name}(file('${escapedPath(secretsKey.path)}').bytes, 'AES')
+        """)
 
         when:
         def result = runTasksSuccessfully(subjectUnderTestName)
