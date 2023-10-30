@@ -1,5 +1,10 @@
 package wooga.gradle.build.unity
 
 enum UBSVersion {
-    v100, v120, v160
+    /**
+     * No longer supported
+     */
+    v100,
+    v120,
+    v160
 }

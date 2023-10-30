@@ -29,6 +29,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
+import wooga.gradle.build.unity.internal.PropertyUtils
 import wooga.gradle.build.unity.tasks.*
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
@@ -38,12 +39,9 @@ import wooga.gradle.unity.UnityPluginExtension
 import wooga.gradle.unity.UnityTask
 import wooga.gradle.unity.utils.GenericUnityAssetFile
 
-import java.util.concurrent.Callable
-
 class UnityBuildPlugin implements Plugin<Project> {
 
     static final String EXTENSION_NAME = "unityBuild"
-    static final String EXPORT_TASK_NAME = "export"
 
     static final String appConfigBuildTarget = "batchModeBuildTarget"
     static final String buildConfigBuildTarget = "buildTargetString"
@@ -114,101 +112,14 @@ class UnityBuildPlugin implements Plugin<Project> {
                                        LifecycleBasePlugin.VERIFICATION_GROUP,
                                        LifecycleBasePlugin.BUILD_GROUP,
                                        PublishingPlugin.PUBLISH_TASK_GROUP]
-        def inputFiles = { UnityTask t ->
-            return {
-                def assetsDir = extension.assetsDir
-                def assetsFileTree = project.fileTree(assetsDir)
 
-                def includeSpec = { FileTreeElement element ->
-                    def path = element.getRelativePath().getPathString().toLowerCase()
-                    def name = element.name.toLowerCase()
-                    def status = true
-                    if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
-                        /*
-                         Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
-                         The getPath() method is not the same as {@code File.getPath()}
-                         From the docs:
-
-                         * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-                         * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-                         *
-                         * @return The path. Never returns null.
-                         */
-                        if (t.buildTarget.isPresent()) {
-                            status = path.contains("plugins/" + t.buildTarget.get())
-                        } else {
-                            status = true
-                        }
-                    }
-                    return status
-                }
-
-                def excludeSpec = { FileTreeElement element ->
-                    return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
-                }
-
-                assetsFileTree.include(includeSpec)
-                assetsFileTree.exclude(excludeSpec)
-
-                def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
-                def projectSettingsFileTree = project.fileTree(projectSettingsDir)
-                projectSettingsFileTree.exclude(excludeSpec)
-
-                def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
-                def packageManagerDirFileTree = project.fileTree(packageManagerDir)
-                packageManagerDirFileTree.exclude(excludeSpec)
-
-                project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
-            }
-        }
-
-        project.tasks.withType(UnityBuildEngineTask).configureEach { t ->
-            t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
-
-            def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
-            t.outputDirectory.convention(outputDir)
-
-            t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
-            t.customArguments.convention(extension.customArguments.map { [it] })
-            t.inputFiles.from(inputFiles(t))
-            t.buildTarget.convention(t.configPath.map({
-                def config = new GenericUnityAssetFile(it.asFile)
-                // AppConfig
-                if (config.containsKey(appConfigBuildTarget)) {
-                    return config[appConfigBuildTarget]?.toString()?.toLowerCase()
-                }
-                // BuildConfig
-                else if (config.containsKey(buildConfigBuildTarget)) {
-                    return config[buildConfigBuildTarget]?.toString()?.toLowerCase()
-                }
-            }))
-            t.ubsCompatibilityVersion.convention(extension.ubsCompatibilityVersion)
-        }
-
-        project.tasks.withType(UnityBuildPlayer).configureEach { task ->
-            task.build.convention("Player")
-            def appConfigName = task.config.orElse(
-                task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
-            )
-            def configRelativePath = appConfigName.map { return new File(it, "project").path }
-            def outputPath = extension.outputDirectoryBase.dir(configRelativePath)
-            task.outputDirectory.convention(outputPath)
-            task.toolsVersion.convention(extension.toolsVersion)
-            task.commitHash.convention(extension.commitHash)
-            task.version.convention(extension.version)
-            task.versionCode.convention(extension.versionCode)
-        }
-
-        project.tasks.withType(GradleBuild).configureEach({ GradleBuild t ->
-            t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
-        })
+        // Configure the base tasks (which many other derive from)
+        configureBaseTasks(extension, project, unityExt)
+        // Configure the opinionated task to build a player, which derives from the base unity build task
+        configureUnityBuildPlayerTasks(project, extension)
+        configureGradleBuildTasks(project)
         configureSonarqubeTasks(project)
-
-        project.tasks.withType(FetchSecrets).configureEach { task ->
-            task.secretsFile.convention(project.provider {
-                project.layout.buildDirectory.dir("secret/${task.name}").get().file("secrets.yml")
-            })
-        }
+        configureFetchSecretsTasks(project)
 
         project.afterEvaluate {
             def defaultAppConfigName = extension.getDefaultAppConfigName().getOrNull()
@@ -284,6 +195,109 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
     }
 
+    private static void configureBaseTasks(extension, Project project, unityExt) {
+        def inputFiles = { UnityTask t ->
+            return {
+                def assetsDir = extension.assetsDir
+                def assetsFileTree = project.fileTree(assetsDir)
+
+                def includeSpec = { FileTreeElement element ->
+                    def path = element.getRelativePath().getPathString().toLowerCase()
+                    def name = element.name.toLowerCase()
+                    def status = true
+                    if (path.contains("plugins") && !((name == "plugins") || (name == "plugins.meta"))) {
+                        /*
+                         Why can we use / here? Because {@code element} is a {@code FileTreeElement} object.
+                         The getPath() method is not the same as {@code File.getPath()}
+                         From the docs:
+
+                         * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
+                         * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
+                         *
+                         * @return The path. Never returns null.
+                         */
+                        if (t.buildTarget.isPresent()) {
+                            status = path.contains("plugins/" + t.buildTarget.get())
+                        } else {
+                            status = true
+                        }
+                    }
+                    return status
+                }
+
+                def excludeSpec = { FileTreeElement element ->
+                    return extension.ignoreFilesForExportUpToDateCheck.contains(element.getFile())
+                }
+
+                assetsFileTree.include(includeSpec)
+                assetsFileTree.exclude(excludeSpec)
+
+                def projectSettingsDir = t.projectDirectory.dir("ProjectSettings")
+                def projectSettingsFileTree = project.fileTree(projectSettingsDir)
+                projectSettingsFileTree.exclude(excludeSpec)
+
+                def packageManagerDir = t.projectDirectory.dir("UnityPackageManager")
+                def packageManagerDirFileTree = project.fileTree(packageManagerDir)
+                packageManagerDirFileTree.exclude(excludeSpec)
+
+                project.files(assetsFileTree, projectSettingsFileTree, packageManagerDirFileTree)
+            }
+        }
+
+        project.tasks.withType(UnityBuildEngineTask).configureEach { t ->
+            t.exportMethodName.convention("Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
+
+            def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
+            t.outputDirectory.convention(outputDir)
+
+            t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
+            t.customArguments.convention(extension.customArguments.map { [it] })
+            t.inputFiles.from(inputFiles(t))
+            t.buildTarget.convention(t.configPath.map({
+                def config = new GenericUnityAssetFile(it.asFile)
+                // AppConfig
+                if (config.containsKey(appConfigBuildTarget)) {
+                    return config[appConfigBuildTarget]?.toString()?.toLowerCase()
+                }
+                // BuildConfig
+                else if (config.containsKey(buildConfigBuildTarget)) {
+                    return config[buildConfigBuildTarget]?.toString()?.toLowerCase()
+                }
+            }))
+            t.ubsCompatibilityVersion.convention(extension.ubsCompatibilityVersion)
+        }
+    }
+
+    private static configureUnityBuildPlayerTasks(Project project, extension) {
+        project.tasks.withType(UnityBuildPlayer).configureEach { task ->
+            task.build.convention("Player")
+            def appConfigName = task.config.orElse(
+                task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
+            )
+            def configRelativePath = appConfigName.map { return new File(it, "project").path }
+            def outputPath = extension.outputDirectoryBase.dir(configRelativePath)
+            task.outputDirectory.convention(outputPath)
+            task.toolsVersion.convention(extension.toolsVersion)
+            task.commitHash.convention(extension.commitHash)
+            task.version.convention(extension.version)
+            task.versionCode.convention(extension.versionCode)
+        }
+    }
+
+    private static configureFetchSecretsTasks(Project project) {
+        project.tasks.withType(FetchSecrets).configureEach { task ->
+            task.secretsFile.convention(project.provider {
+                project.layout.buildDirectory.dir("secret/${task.name}").get().file("secrets.yml")
+            })
+        }
+    }
+
+    private static void configureGradleBuildTasks(Project project) {
+        project.tasks.withType(GradleBuild).configureEach({ GradleBuild t ->
+            t.gradleVersion.convention(project.provider({ project.gradle.gradleVersion }))
+        })
+    }
+
     static void configureSonarqubeTasks(Project project) {
         def unityExt = project.extensions.findByType(UnityPluginExtension)
         def sonarExt = project.extensions.findByType(SonarQubeExtension)
@@ -294,19 +308,5 @@ class UnityBuildPlugin implements Plugin<Project> {
             return it
         }.configure(unityExt, sonarExt)
     }
-
-    private static class PropertyUtils {
-        static String convertToString(Object value) {
-            if (!value) {
-                return null
-            }
-
-            if (value instanceof Callable) {
-                value = ((Callable) value).call()
-            }
-
-            value.toString()
-        }
-
-    }
 }
+

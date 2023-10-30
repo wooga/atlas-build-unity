@@ -21,6 +21,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final Property<String> build = objects.property(String)
 
+    /**
+     * @return The name of the build request type or its alias
+     */
     @Input
     Property<String> getBuild() {
         return build
