@@ -8,10 +8,11 @@ enum BuildRequestOption {
     build,
     configPath,
     config,
-    version("--build-version"),
-    versionCode("--build-versionCode"),
     outputPath,
     logPath,
+
+    version("--build-version"),
+    versionCode("--build-version-code"),
     toolsVersion,
     commitHash
 

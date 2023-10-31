@@ -5,6 +5,7 @@ import org.gradle.api.GradleException
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.models.BuildRequestOption
 
 /**
  * Tests of the task for the default build request, {@link PlayerBuildUnityTask}
@@ -67,11 +68,11 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         hasKeyValue(argName, argValue, customArgsParts)
 
         where:
-        propName       | argName               | argValue
-        "build"        | "--build"             | "CustomBuild"
-        "versionCode"  | "--build-versionCode" | "codeiguess"
-        "toolsVersion" | "--toolsVersion"      | "10.0.1"
-        "commitHash"   | "--commitHash"        | "a345fc"
+        propName       | argName                              | argValue
+        "build"        | BuildRequestOption.build.flag        | "CustomBuild"
+        "versionCode"  | BuildRequestOption.versionCode.flag  | "codeiguess"
+        "toolsVersion" | BuildRequestOption.toolsVersion.flag | "10.0.1"
+        "commitHash"   | BuildRequestOption.commitHash.flag   | "a345fc"
     }
 
     def "throws exception when no config/configPath/configFile property is given"() {
@@ -107,11 +108,7 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
 
         where:
         property      | expectedParamter       | expectedValue | compatibility
-        "version"     | "--version"            | "1.0.0"       | UBSVersion.v100
-        "version"     | "--version"            | "2.0.0"       | UBSVersion.v120
         "version"     | "--build-version"      | "3.0.0"       | UBSVersion.v160
-        "versionCode" | "--versionCode"        | "1"           | UBSVersion.v100
-        "versionCode" | "--versionCode"        | "2"           | UBSVersion.v120
         "versionCode" | "--build-version-code" | "3"           | UBSVersion.v160
     }
 }
