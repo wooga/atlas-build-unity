@@ -78,7 +78,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         given: "a export task with a custom unity entrypoint"
         addSubjectTask(true, """
                 build = "mandatoryBuildName"
-                exportMethodName = "${entrypoint}"
+                executeMethod = "${entrypoint}"
         """.stripIndent())
 
         when:

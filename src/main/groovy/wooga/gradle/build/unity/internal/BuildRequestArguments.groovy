@@ -46,17 +46,12 @@ class BuildRequestArguments {
      */
     private final ProviderFactory factory
     /**
-     * The method to execute, which itself will parse in the other arguments provided
-     */
-    final Provider<String> executeMethod
-    /**
      * The arguments list
      */
     private List<Provider<?>> providers
 
-    BuildRequestArguments(ProviderFactory factory, Provider<String> executeMethod) {
+    BuildRequestArguments(ProviderFactory factory) {
         this.factory = factory
-        this.executeMethod = executeMethod
         this.providers = []
     }
 

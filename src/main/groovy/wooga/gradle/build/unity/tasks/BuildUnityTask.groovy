@@ -21,7 +21,7 @@ class BuildUnityTask extends UnityTask implements SecretSpec, UnityBuildEngineSp
 
     BuildUnityTask() {
         additionalArguments.addAll(project.provider {
-            def args  = new BuildRequestArguments(project.providers, exportMethodName)
+            def args  = new BuildRequestArguments(project.providers)
             appendBuildArguments(args)
             def list = args.getArguments().get()
             list

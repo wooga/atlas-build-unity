@@ -243,7 +243,6 @@ class UnityBuildPlugin implements Plugin<Project> {
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
             t.outputDirectory.convention(outputDir)
-            t.exportMethodName.convention(extension.exportMethodName)
             t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
             t.inputFiles.from(inputFiles(t))
             t.buildTarget.convention(t.configPath.map({
