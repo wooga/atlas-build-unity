@@ -18,6 +18,7 @@
 package wooga.gradle.build.unity
 
 import com.wooga.gradle.PropertyLookup
+import wooga.gradle.build.unity.models.UBSVersion
 
 class UnityBuildPluginConventions {
 

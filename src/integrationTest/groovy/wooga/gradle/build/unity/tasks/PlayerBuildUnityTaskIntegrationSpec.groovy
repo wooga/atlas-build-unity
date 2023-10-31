@@ -4,7 +4,7 @@ import org.apache.commons.io.FilenameUtils
 import org.gradle.api.GradleException
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.models.UBSVersion
 import wooga.gradle.build.unity.models.BuildRequestOption
 
 /**

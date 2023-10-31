@@ -24,11 +24,11 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import wooga.gradle.build.unity.models.UBSCompatibility
+import wooga.gradle.build.unity.models.UBSCompatibilitySpec
 import wooga.gradle.build.unity.models.UnityBuildSpec
 import wooga.gradle.build.unity.models.VersionSpec
 
-trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec, UBSCompatibility {
+trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec, UBSCompatibilitySpec {
 
     /**
      * @return The method to have Unity execute

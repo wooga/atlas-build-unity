@@ -19,7 +19,7 @@ package wooga.gradle.build
 
 import org.apache.commons.lang3.StringUtils
 import org.yaml.snakeyaml.Yaml
-import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.models.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPlugin
 
 import static com.wooga.gradle.PlatformUtils.escapedPath

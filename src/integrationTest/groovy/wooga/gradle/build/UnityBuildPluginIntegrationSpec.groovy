@@ -29,7 +29,7 @@ import spock.genesis.transform.Iterations
 import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.models.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.build.unity.models.BuildRequestOption
@@ -100,9 +100,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         given: "a project with multiple configs"
         and: "a custom config without buildTarget"
         and: "a set ubs version"
-        buildFile << "import wooga.gradle.build.unity.UBSVersion"
+        buildFile << "import wooga.gradle.build.unity.models.UBSVersion"
         buildFile << (ubsVersion ? """
-            import wooga.gradle.build.unity.UBSVersion
+            import wooga.gradle.build.unity.models.UBSVersion
             unityBuild.ubsCompatibilityVersion=UBSVersion.${ubsVersion.name()}
         """ : "")
         when:

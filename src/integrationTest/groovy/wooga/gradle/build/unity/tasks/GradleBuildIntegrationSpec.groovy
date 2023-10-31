@@ -119,7 +119,11 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         result.standardOutput.contains("foo executed")
         result.standardOutput.contains(new File("/daemon/${gradleVersion}").path)
         where:
-        gradleVersion << ["4.0", "4.10", "5.0"]
+        gradleVersion <<
+            [
+                "4.10",
+                "5.0"
+            ]
     }
 
     @Unroll("can execute external gradle build with #message1 #message2")

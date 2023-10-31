@@ -31,6 +31,7 @@ import org.sonarqube.gradle.SonarQubeExtension
 import wooga.gradle.build.unity.internal.DefaultUnityBuildPluginExtension
 import wooga.gradle.build.unity.internal.PropertyUtils
 import wooga.gradle.build.unity.models.SonarQubeConfiguration
+import wooga.gradle.build.unity.models.UBSVersion
 import wooga.gradle.build.unity.tasks.*
 import wooga.gradle.dotnetsonar.DotNetSonarqubePlugin
 import wooga.gradle.secrets.SecretsPlugin
