@@ -22,6 +22,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.UnityIntegrationSpec
+import wooga.gradle.build.unity.tasks.BuildUnityTask
 import wooga.gradle.secrets.Secret
 import wooga.gradle.secrets.SecretResolver
 import wooga.gradle.secrets.internal.SecretFile
@@ -57,7 +58,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
-        appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
+        appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/Configs")
         appConfigsDir.mkdirs()
 
         ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
@@ -114,8 +115,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
         """.stripIndent()
 
         buildFile << """
-            import wooga.gradle.build.unity.tasks.UnityBuildPlayerTask
-            project.tasks.withType(UnityBuildPlayerTask) { task ->
+            project.tasks.withType(${BuildUnityTask.name}) { task ->
                 task.doLast {
                     project.copy {
                         from(project.file('${escapedPath(externalDir.path)}'))

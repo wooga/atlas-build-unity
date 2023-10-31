@@ -27,11 +27,8 @@ class UnityBuildPluginConventions {
     /**
      * Method used by the Unity editor application to start a build
      */
-    static final PropertyLookup EXPORT_METHOD_NAME = new PropertyLookup("UNITY_BUILD_EXPORT_METHOD_NAME", "unityBuild.exportMethodName", EXPORT_METHOD_DEFAULT_VALUE_V3)
+    static final PropertyLookup EXPORT_METHOD_NAME = new PropertyLookup("UNITY_BUILD_EXPORT_METHOD_NAME", "unityBuild.exportMethodName", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
-    static final String EXPORT_METHOD_DEFAULT_VALUE_V1 = "Wooga.UnifiedBuildSystem.Build.Export"
-    static final String EXPORT_METHOD_DEFAULT_VALUE_V2 = "Wooga.UnifiedBuildSystem.Editor.Build.Export"
-    static final String EXPORT_METHOD_DEFAULT_VALUE_V3 = "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment"
     /**
      * The name of the default AppConfig, the serialized configuration for the build
      */
@@ -101,8 +98,7 @@ class UnityBuildPluginConventions {
      * @value "export"
      * @see UnityBuildPluginExtension#getAppConfigsDirectory()
      */
-    static String DEFAULT_APP_CONFIGS_DIRECTORY = "UnifiedBuildSystem-Assets/AppConfigs"
-    static String DEFAULT_APP_CONFIGS_DIRECTORY_V2 = "UnifiedBuildSystem-Assets/Configs"
+    static String DEFAULT_CONFIGS_DIRECTORY_V2 = "UnifiedBuildSystem-Assets/Configs"
 
     /**
      * Default include pattern for app configs.

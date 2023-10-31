@@ -248,11 +248,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         //need to convert the relative files to absolute files
         def (_, File testFile) = prepareMockedProject(projectDir, files as Iterable<File>, file as File)
 
-        buildFile << """
-            def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
-            ext.customArguments.set(["--key":"value"])
-        """.stripIndent()
-
         addSubjectTask(true, """
             build = "UBSBuild"
             buildTarget = 'android'

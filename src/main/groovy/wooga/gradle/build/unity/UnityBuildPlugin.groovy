@@ -65,12 +65,7 @@ class UnityBuildPlugin implements Plugin<Project> {
      */
     static void configureExtension(Project project, UnityBuildPluginExtension extension, UnityPluginExtension unityExtension) {
         extension.ubsCompatibilityVersion.convention(UnityBuildPluginConventions.COMPATIBILITY_VERSION.getEnumValueProvider(project, UBSVersion.class))
-        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project).orElse(extension.ubsCompatibilityVersion.map({
-            (it >= UBSVersion.v120)
-                ? UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V2
-                : UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V1
-        })))
-
+        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
         extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
         extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
         extension.toolsVersion.set(UnityBuildPluginConventions.BUILD_TOOLS_VERSION.getStringValueProvider(project))
@@ -86,9 +81,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         extension.versionCode.convention(UnityBuildPluginConventions.BUILD_VERSION_CODE.getStringValueProvider(project))
         extension.outputDirectoryBase.convention(project.layout.buildDirectory.dir(UnityBuildPluginConventions.DEFAULT_EXPORT_DIRECTORY_NAME))
         extension.assetsDir.convention(unityExtension.assetsDir)
-        extension.appConfigsDirectory.convention(extension.assetsDir.dir(extension.ubsCompatibilityVersion.map({
-            (it >= UBSVersion.v120) ? UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY_V2 : UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_DIRECTORY
-        })))
+        extension.appConfigsDirectory.convention(extension.assetsDir.dir(UnityBuildPluginConventions.DEFAULT_CONFIGS_DIRECTORY_V2))
         extension.exportInitScript.convention(UnityBuildPluginConventions.EXPORT_INIT_SCRIPT.getFileValueProvider(project))
         extension.exportBuildDirBase.convention(UnityBuildPluginConventions.EXPORT_BUILD_DIR_BASE.getStringValueProvider(project).map({ new File(it) }))
         extension.cleanBuildDirBeforeBuild.set(UnityBuildPluginConventions.CLEAN_BUILD_DIR_BEFORE_BUILD.getBooleanValueProvider(project))
@@ -144,16 +137,14 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
 
                 TaskProvider<? extends Task> exportTask = null
-                def ubsVersion = extension.ubsCompatibilityVersion.get()
-                if (ubsVersion >= UBSVersion.v120) {
-                    exportTask = project.tasks.register("export${baseName}", PlayerBuildUnityTask) {
-                        PlayerBuildUnityTask t ->
-                            t.group = "build unity"
-                            t.description = "exports player targeted gradle project for app config ${appConfigName}"
-                            t.configPath.set(appConfig)
-                            t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
-                            t.secretsKey.set(secretsExtension.secretsKey)
-                    }
+                //def ubsVersion = extension.ubsCompatibilityVersion.get()
+                exportTask = project.tasks.register("export${baseName}", PlayerBuildUnityTask) {
+                    PlayerBuildUnityTask t ->
+                        t.group = "build unity"
+                        t.description = "exports player targeted gradle project for app config ${appConfigName}"
+                        t.configPath.set(appConfig)
+                        t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
+                        t.secretsKey.set(secretsExtension.secretsKey)
                 }
 
                 exportTask.configure({
@@ -250,12 +241,10 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
 
         project.tasks.withType(BuildUnityTask).configureEach { t ->
-            // TODO: This can be removed, right? Since it's set by the extension
-            t.exportMethodName.convention(UnityBuildPluginConventions.EXPORT_METHOD_DEFAULT_VALUE_V3)
 
             def outputDir = extension.outputDirectoryBase.dir(t.build.map { new File(it, "project").path })
             t.outputDirectory.convention(outputDir)
-
+            t.exportMethodName.convention(extension.exportMethodName)
             t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
             t.inputFiles.from(inputFiles(t))
             t.buildTarget.convention(t.configPath.map({
