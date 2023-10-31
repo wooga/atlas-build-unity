@@ -4,7 +4,6 @@ import org.apache.commons.io.FilenameUtils
 import org.gradle.api.GradleException
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.UnityIntegrationSpec
 import wooga.gradle.build.unity.UBSVersion
 
 /**
@@ -13,10 +12,10 @@ import wooga.gradle.build.unity.UBSVersion
 class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<PlayerBuildUnityTask> {
 
     @Shared
-    File appConfigFile;
+    File configFile;
 
     def setup() {
-        appConfigFile = createAppConfig("Assets/CustomConfigs")
+        configFile = createConfig("Assets/CustomConfigs")
     }
 
     @Unroll("uses default settings when configuring only with mandatory variables with #configProperty")
@@ -32,14 +31,14 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        def appConfigName = FilenameUtils.removeExtension(new File(configValue).name)
+        def configName = FilenameUtils.removeExtension(new File(configValue).name)
         def actualConfigValue = configValueType == File ? new File(projectDir, configValue).absolutePath : configValue
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "Player", customArgsParts)
         hasKeyValue("--${argName}".toString(), actualConfigValue, customArgsParts)
         hasKeyValue("--version", version, customArgsParts)
         hasKeyValue("--outputPath",
-            new File(projectDir, "build/export/${appConfigName}/project").path, customArgsParts)
+            new File(projectDir, "build/export/${configName}/project").path, customArgsParts)
         if (argName == "configPath") {
             hasKeyValue("-buildTarget", "android", customArgsParts)
         }
@@ -74,7 +73,7 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         "commitHash"   | "--commitHash"   | "a345fc"
     }
 
-    def "throws exception when no config/configPath/appConfigFile property is given"() {
+    def "throws exception when no config/configPath/configFile property is given"() {
         given: "a custom export task without configuration"
         addSubjectTask(false, """
                 version = "0.0.1"  

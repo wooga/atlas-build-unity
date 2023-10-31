@@ -29,22 +29,31 @@ import wooga.gradle.build.unity.models.VersionSpec
 
 trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends UnityBuildSpec implements VersionSpec, UBSCompatibility {
 
-    private final DirectoryProperty appConfigsDirectory = objects.directoryProperty()
+    private final DirectoryProperty configsDirectory = objects.directoryProperty()
 
-    DirectoryProperty getAppConfigsDirectory() {
-        appConfigsDirectory
+    /**
+     * @return The directory where Configs are located
+     */
+    DirectoryProperty getConfigsDirectory() {
+        configsDirectory
     }
 
     private final DirectoryProperty outputDirectoryBase = objects.directoryProperty()
 
+    /**
+     * @return The base of the output direectory
+     */
     DirectoryProperty getOutputDirectoryBase() {
         outputDirectoryBase
     }
 
-    private final Property<String> defaultAppConfigName = objects.property(String)
+    private final Property<String> defaultConfigName = objects.property(String)
 
-    Property<String> getDefaultAppConfigName() {
-        defaultAppConfigName
+    /**
+     * @return The name of the default configuration
+     */
+    Property<String> getDefaultConfigName() {
+        defaultConfigName
     }
 
     private final RegularFileProperty exportInitScript = objects.fileProperty()
@@ -83,22 +92,22 @@ trait UnityBuildPluginExtension<T extends UnityBuildPluginExtension> extends Uni
         ignoreFilesForExportUpToDateCheck
     }
 
-    private final Property<String> appConfigSecretsKey = objects.property(String)
+    private final Property<String> configSecretsKey = objects.property(String)
 
-    Property<String> getAppConfigSecretsKey() {
-        return appConfigSecretsKey
+    Property<String> getConfigSecretsKey() {
+        return configSecretsKey
     }
 
-    void setAppConfigSecretsKey(String key) {
-        appConfigSecretsKey.set(key)
+    void setConfigSecretsKey(String key) {
+        configSecretsKey.set(key)
     }
 
-    T appConfigSecretsKey(String key) {
-        appConfigSecretsKey.set(key)
+    T configSecretsKey(String key) {
+        configSecretsKey.set(key)
         this
     }
 
-    FileCollection getAppConfigs() {
+    FileCollection getConfigs() {
         null
     }
 }

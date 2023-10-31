@@ -18,13 +18,7 @@
 package wooga.gradle.build.unity.internal
 
 import org.gradle.api.Project
-import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.MapProperty
-import org.gradle.api.provider.Property
-import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.build.unity.UnityBuildPluginExtension
 
@@ -37,10 +31,10 @@ class DefaultUnityBuildPluginExtension implements UnityBuildPluginExtension {
     }
 
     @Override
-    FileCollection getAppConfigs() {
-        project.fileTree(getAppConfigsDirectory()) {
-            it.include UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_INCLUDE_PATTERN
-            it.exclude UnityBuildPluginConventions.DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN
+    FileCollection getConfigs() {
+        project.fileTree(getConfigsDirectory()) {
+            it.include UnityBuildPluginConventions.DEFAULT_CONFIGS_INCLUDE_PATTERN
+            it.exclude UnityBuildPluginConventions.DEFAULT_CONFIGS_EXCLUDE_PATTERN
         }
     }
 }

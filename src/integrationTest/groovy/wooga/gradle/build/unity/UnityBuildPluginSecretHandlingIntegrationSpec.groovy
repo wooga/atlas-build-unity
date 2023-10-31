@@ -37,7 +37,7 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
     @Shared
-    File appConfigsDir
+    File configsDir
 
     @Shared
     File externalDir
@@ -58,15 +58,15 @@ class UnityBuildPluginSecretHandlingIntegrationSpec extends UnityIntegrationSpec
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
-        appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/Configs")
-        appConfigsDir.mkdirs()
+        configsDir = new File(assets, "UnifiedBuildSystem-Assets/Configs")
+        configsDir.mkdirs()
 
-        ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+        ['ios_ci', 'android_ci', 'webGL_ci'].collect { createFile("${it}.asset", configsDir) }.each {
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
             unityAsset(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget, secretIds: secretIds]]).write(it)
         }
 
-        unityAsset(['MonoBehaviour': ['bundleId': 'net.wooga.test']]).write(createFile("custom.asset", appConfigsDir))
+        unityAsset(['MonoBehaviour': ['bundleId': 'net.wooga.test']]).write(createFile("custom.asset", configsDir))
 
         buildFile << """
             import ${SecretResolver.name}

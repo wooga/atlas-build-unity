@@ -68,18 +68,18 @@ abstract class UnityIntegrationSpec extends IntegrationSpec {
         }
     }
 
-    File createAppConfig(String path) {
-        def appConfigsDir = new File(projectDir, path)
-        appConfigsDir.mkdirs()
+    File createConfig(String path) {
+        def configsDir = new File(projectDir, path)
+        configsDir.mkdirs()
 
-        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
-        ['custom', 'test'].collect { createFile("${it}.asset", appConfigsDir) }.each {
+        def config = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': 'android']]
+        ['custom', 'test'].collect { createFile("${it}.asset", configsDir) }.each {
             it << UNITY_ASSET_HEADER
             it << "\n"
             Yaml yaml = new Yaml()
-            it << yaml.dump(appConfig)
+            it << yaml.dump(config)
         }
-        return new File(appConfigsDir, "custom.asset")
+        return new File(configsDir, "custom.asset")
     }
 
     String[] unityArgs(String base) {

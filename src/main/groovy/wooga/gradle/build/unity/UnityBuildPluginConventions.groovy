@@ -30,9 +30,9 @@ class UnityBuildPluginConventions {
         "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
 
     /**
-     * The name of the default AppConfig, the serialized configuration for the build
+     * The name of the default configuration to use
      */
-    static final PropertyLookup DEFAULT_APP_CONFIG_NAME = new PropertyLookup("UNITY_BUILD_DEFAULT_APP_CONFIG_NAME", "unityBuild.defaultAppConfigName", null)
+    static final PropertyLookup DEFAULT_CONFIG_NAME = new PropertyLookup("UNITY_BUILD_DEFAULT_CONFIG_NAME", "unityBuild.defaultConfigName", null)
 
     /**
      * The version used for the Unity application being built
@@ -82,39 +82,35 @@ class UnityBuildPluginConventions {
     /**
      * The key used for looking up secrets in the AppConfig during a build
      */
-    static PropertyLookup APP_CONFIG_SECRETS_KEY = new PropertyLookup("UNITY_BUILD_APP_CONFIG_SECRETS_KEY", "unityBuild.appConfigSecretsKey", "secretIds")
+    static PropertyLookup CONFIG_SECRETS_KEY = new PropertyLookup("UNITY_BUILD_CONFIG_SECRETS_KEY", "unityBuild.configSecretsKey", "secretIds")
 
     /**
      * Default name for the base export location.
-     *
      * @value "export"
      * @see UnityBuildPluginExtension#getOutputDirectoryBase()
      */
     static String DEFAULT_EXPORT_DIRECTORY_NAME = "export"
 
     /**
-     * Default path to app configs in Assets dir.
-     *
+     * Default path to configs in Assets dir.
      * @value "export"
-     * @see UnityBuildPluginExtension#getAppConfigsDirectory()
+     * @see UnityBuildPluginExtension#getConfigsDirectory()
      */
     static String DEFAULT_CONFIGS_DIRECTORY_V2 = "UnifiedBuildSystem-Assets/Configs"
 
     /**
-     * Default include pattern for app configs.
-     *
+     * Default include pattern for configs.
      * @value "unityBuild.toolsVersion"
-     * @see UnityBuildPluginExtension#getAppConfigs()
+     * @see UnityBuildPluginExtension#getConfigs()
      */
-    static String DEFAULT_APP_CONFIGS_INCLUDE_PATTERN = "*.asset"
+    static String DEFAULT_CONFIGS_INCLUDE_PATTERN = "*.asset"
 
     /**
-     * Default exclude pattern for app configs.
-     *
+     * Default exclude pattern for configs.
      * @value "unityBuild.toolsVersion"
-     * @see UnityBuildPluginExtension#getAppConfigs()
+     * @see UnityBuildPluginExtension#getConfigs()
      */
-    static String DEFAULT_APP_CONFIGS_EXCLUDE_PATTERN = "*.meta"
+    static String DEFAULT_CONFIGS_EXCLUDE_PATTERN = "*.meta"
 
 
 }

@@ -21,7 +21,6 @@ import org.gradle.api.GradleException
 import org.gradle.internal.execution.WorkValidationException
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.build.unity.UnityBuildPluginExtension
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
@@ -39,7 +38,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
     File configFile;
 
     def setup() {
-        configFile = createAppConfig("Assets/CustomConfigs")
+        configFile = createConfig("Assets/CustomConfigs")
     }
 
     def "uses default settings when not configured"() {

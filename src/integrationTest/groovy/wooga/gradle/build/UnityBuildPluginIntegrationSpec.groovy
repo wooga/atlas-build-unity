@@ -61,23 +61,23 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
             it << "\n"
             Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
-            def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
-            it << yaml.dump(appConfig)
+            def config = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
+            it << yaml.dump(config)
         }
 
         Yaml yaml = new Yaml()
         [configsDir, configsDir2].each {
-            def appconfig = createFile("custom.asset", it)
-            appconfig << UNITY_ASSET_HEADER
-            appconfig << "\n"
-            appconfig << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
+            def config = createFile("custom.asset", it)
+            config << UNITY_ASSET_HEADER
+            config << "\n"
+            config << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test']])
         }
     }
 
     @Unroll
-    def "#taskToRun calls Unity export method with buildType fetched from appConfig"() {
-        given: "a project with multiple appConfigs"
-        and: "a custom appConfig without buildTarget"
+    def "#taskToRun calls Unity export method with buildType fetched from config"() {
+        given: "a project with multiple configs"
+        and: "a custom config without buildTarget"
 
         when:
         def result = runTasksSuccessfully(taskToRun)
@@ -94,9 +94,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "#taskToRun calls Unity export method corresponding to ubs version #ubsVersion without buildType when not contained in appConfig"() {
-        given: "a project with multiple appConfigs"
-        and: "a custom appConfig without buildTarget"
+    def "#taskToRun calls Unity export method corresponding to ubs version #ubsVersion without buildType when not contained in config"() {
+        given: "a project with multiple configs"
+        and: "a custom config without buildTarget"
         and: "a set ubs version"
         buildFile << "import wooga.gradle.build.unity.UBSVersion"
         buildFile << (ubsVersion ? """
@@ -271,18 +271,16 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "picks gradle version from appConfig and executes exported project"() {
+    def "picks gradle version from config and executes exported project"() {
         given: "a default gradle project with adjusted default platform/environment settings"
-        buildFile << "unityBuild.defaultAppConfigName = '${appConfigName}'"
+        buildFile << "unityBuild.defaultConfigName = '${configName}'"
 
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
 
         and: "an app config with configured gradle version"
-//        if(version) {
-//        }
         Yaml yaml = new Yaml()
-        createFile("${appConfigName}.asset", configsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
+        createFile("${configName}.asset", configsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
 
         when:
         def result = runTasks(taskToRun)
@@ -299,7 +297,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         outputContains(result, error)
 
         where:
-        taskToRun  | appConfigName | version | expectedDefaultHandlerTask
+        taskToRun  | configName | version | expectedDefaultHandlerTask
         "assemble" | "android_ci"  | "5.0.0" | 'AndroidCi'
         "assemble" | "ios_ci"      | "4.4.0" | 'IosCi'
         "assemble" | "webGL_ci"    | null    | 'WebGLCi'
@@ -335,26 +333,26 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @IgnoreIf({ os.windows })
     @Iterations(100)
     @Unroll
-    def "generates task #expectedTaskName from app config name #appConfigName"() {
+    def "generates task #expectedTaskName from config name #configName"() {
         given: "a project with custom app config directory"
         def assets = new File(projectDir, "Assets")
-        def appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigsCustom")
-        appConfigsDir.mkdirs()
+        def configsDir = new File(assets, "UnifiedBuildSystem-Assets/ConfigsCustom")
+        configsDir.mkdirs()
 
         buildFile << """
-        unityBuild.appConfigsDirectory = file("${escapedPath(appConfigsDir.path)}")
+        unityBuild.configsDirectory = file("${escapedPath(configsDir.path)}")
         """.stripIndent()
 
         and: "app config with delimiter in names"
         Yaml yaml = new Yaml()
-        def appConfig = ['MonoBehaviour': ['bundleId': 'net.wooga.test']]
-        createFile("${appConfigName}.asset", appConfigsDir) << yaml.dump(appConfig)
+        def config = ['MonoBehaviour': ['bundleId': 'net.wooga.test']]
+        createFile("${configName}.asset", configsDir) << yaml.dump(config)
 
         expect:
         runTasksSuccessfully(expectedTaskName, '--dry-run')
 
         where:
-        appConfigName << Gen.these('test-config-file', 'test_config_file', 'test config file')
+        configName << Gen.these('test-config-file', 'test_config_file', 'test config file')
             .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
         expectedTaskName << Gen.any("assemble", "export", "check", "publish").map { "${it}TestConfigFile" }
     }
