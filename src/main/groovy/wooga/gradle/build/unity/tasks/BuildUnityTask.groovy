@@ -6,6 +6,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import wooga.gradle.build.unity.internal.BuildRequestArguments
+import wooga.gradle.build.unity.models.BuildRequestOption
 import wooga.gradle.build.unity.models.UnityBuildEngineSpec
 import wooga.gradle.secrets.SecretSpec
 import wooga.gradle.secrets.internal.Secrets
@@ -26,17 +27,18 @@ class BuildUnityTask extends UnityTask implements SecretSpec, UnityBuildEngineSp
             list
         })
         environment.putAll(environmentSecrets)
+
     }
 
     protected void appendBuildArguments(BuildRequestArguments args) {
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
         args.with {
-            addArg("--build", build)
-            addArg("--configPath", configPath)
-            addArg("--config", config)
-            addArg("--outputPath", outputDirectory.asFile.map { out -> out.path })
-            addArg("--logPath", logDir.map { out -> out.asFile.path })
-            addArg("-executeMethod", args.executeMethod)
+            addArg(BuildRequestOption.build.flag, build)
+            addArg(BuildRequestOption.configPath.flag, configPath)
+            addArg(BuildRequestOption.config.flag, config)
+            addArg(BuildRequestOption.outputPath.flag, outputDirectory.asFile.map { out -> out.path })
+            addArg(BuildRequestOption.logPath.flag, logDir.map { out -> out.asFile.path })
+            //addArg("-executeMethod", args.executeMethod)
         }
     }
 

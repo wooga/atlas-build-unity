@@ -21,6 +21,7 @@ import org.gradle.api.GradleException
 import org.gradle.internal.execution.WorkValidationException
 import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
@@ -55,7 +56,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         hasKeyValue("--build", "UBSBuild", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export/UBSBuild/project").path, customArgsParts)
         hasKeyValue("--logPath", new File(projectDir, "build/logs/unity").path, customArgsParts)
-        hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
+        hasKeyValue("-executeMethod", (String)UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value, customArgsParts)
         !customArgsParts.contains("--configPath")
     }
 

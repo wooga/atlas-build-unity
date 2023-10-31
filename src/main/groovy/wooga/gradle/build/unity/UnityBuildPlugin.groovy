@@ -259,6 +259,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
             }))
             t.ubsCompatibilityVersion.convention(extension.ubsCompatibilityVersion)
+            t.executeMethod.convention(extension.exportMethodName)
         }
     }
 

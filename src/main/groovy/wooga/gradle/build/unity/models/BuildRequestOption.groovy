@@ -11,6 +11,7 @@ enum BuildRequestOption {
     version("--build-version"),
     versionCode("--build-versionCode"),
     outputPath,
+    logPath,
     toolsVersion,
     commitHash
 
@@ -22,5 +23,10 @@ enum BuildRequestOption {
 
     BuildRequestOption(String flag) {
         this.flag = flag
+    }
+
+    @Override
+    String toString() {
+        flag
     }
 }
