@@ -4,7 +4,7 @@ package wooga.gradle.build.unity.tasks
 import org.gradle.api.file.*
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import wooga.gradle.build.unity.UBSVersion
+import org.gradle.api.tasks.Internal
 import wooga.gradle.build.unity.internal.BuildEngineArgs
 import wooga.gradle.build.unity.models.UnityBuildEngineSpec
 import wooga.gradle.secrets.SecretSpec
@@ -19,45 +19,37 @@ import javax.crypto.spec.SecretKeySpec
 class BuildUnityTask extends UnityTask implements SecretSpec, UnityBuildEngineSpec {
 
     BuildUnityTask() {
-        setupExecution()
+        additionalArguments.addAll(project.provider {
+            def args  = new BuildEngineArgs(project.providers, exportMethodName)
+            appendBuildArguments(args)
+            def list = args.getArguments().get()
+            list
+        })
+        environment.putAll(environmentSecrets)
     }
 
-    protected BuildEngineArgs defaultArgs() {
-        ubsCompatibilityVersion.convention(UBSVersion.v100)
+    protected void appendBuildArguments(BuildEngineArgs args) {
         Provider<Directory> logDir = gradleDirectoryFrom(logPath)
-
-        def secrets = secretsFile.map { RegularFile secretsFile ->
-            Secrets.decode(secretsFile.asFile.text)
-        }
-        def environmentSecrets = project.provider({
-            generateSecretsEnvironment(secrets, secretsKey)
-        }.memoize())
-
-        def buildEngineArgs = new BuildEngineArgs(project.providers, exportMethodName)
-        buildEngineArgs.with {
+        args.with {
             addArg("--build", build)
             addArg("--configPath", configPath)
             addArg("--config", config)
             addArg("--outputPath", outputDirectory.asFile.map { out -> out.path })
             addArg("--logPath", logDir.map { out -> out.asFile.path })
             addArgs(customArguments)
-            addEnvs(environmentSecrets)
+            addArg("-executeMethod", args.method)
         }
-        return buildEngineArgs
     }
 
-    protected void setupExecution(){
-        def args = defaultArgs()
-        setupExecution(args)
-    }
-
-    protected void setupExecution(BuildEngineArgs unityArgs) {
-        environment.putAll(unityArgs.environment)
-        unityArgs.arguments.each { Provider<List<String>> argsProvider ->
-            additionalArguments.addAll(argsProvider)
+    @Internal
+    Provider<Secrets.EnvironmentSecrets> getEnvironmentSecrets() {
+        def secrets = secretsFile.map { RegularFile secretsFile ->
+            Secrets.decode(secretsFile.asFile.text)
         }
-        additionalArguments.add("-executeMethod")
-        additionalArguments.add(unityArgs.method)
+        def environmentSecrets = project.provider({
+            generateSecretsEnvironment(secrets, secretsKey)
+        }.memoize())
+        environmentSecrets
     }
 
     protected Secrets.EnvironmentSecrets generateSecretsEnvironment(Provider<Secrets> secrets,

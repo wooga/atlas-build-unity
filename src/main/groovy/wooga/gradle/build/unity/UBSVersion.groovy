@@ -6,5 +6,7 @@ enum UBSVersion {
      */
     v100,
     v120,
-    v160
+
+    // TODO: Remove the other versions
+    v160,
 }

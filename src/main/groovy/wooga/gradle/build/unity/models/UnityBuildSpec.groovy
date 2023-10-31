@@ -9,11 +9,16 @@ import org.gradle.api.tasks.Optional
 
 trait UnityBuildSpec extends UnityBuildBaseSpec {
 
-    private final MapProperty<String, ?> customArguments = objects.mapProperty(String, Object)
+    // TODO:
+//    private final MapProperty<String, ?> customArguments = objects.mapProperty(String, Object)
+//
+//    @Optional
+//    @Input
+//    MapProperty<String, ?> getCustomArguments() {
+//        customArguments
+//    }
+}
 
-    @Optional
-    @Input
-    MapProperty<String, ?> getCustomArguments() {
-        customArguments
-    }
+enum BuildRequestOption {
+
 }

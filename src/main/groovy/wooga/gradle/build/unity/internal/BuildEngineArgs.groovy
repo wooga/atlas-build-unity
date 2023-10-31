@@ -4,6 +4,9 @@ package wooga.gradle.build.unity.internal
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
+/**
+ * The arguments for executing a build request via the Unified Build System
+ */
 class BuildEngineArgs {
 
     private static class BuildEngineArg {
@@ -122,5 +125,9 @@ class BuildEngineArgs {
             return allArgs
         }
     }
+
+}
+
+class UnifiedBuildSystemOption {
 
 }

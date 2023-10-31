@@ -115,10 +115,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                                        LifecycleBasePlugin.BUILD_GROUP,
                                        PublishingPlugin.PUBLISH_TASK_GROUP]
 
-        // Configure the base tasks (which many other derive from)
         configureBaseTasks(extension, project, unityExt)
-        // Configure the opinionated task to build a player, which derives from the base unity build task
-        configureUnityBuildPlayerTasks(project, extension)
+        configurePlayerBuildUnityTasks(project, extension)
         configureGradleBuildTasks(project)
         configureSonarqubeTasks(project)
         configureFetchSecretsTasks(project)
@@ -197,6 +195,9 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
     }
 
+    /**
+     * Configures {@link BuildUnityTask}
+     */
     private static void configureBaseTasks(UnityBuildPluginExtension extension, Project project, UnityPluginExtension unityExt) {
 
         def inputFiles = { UnityTask t ->
@@ -255,7 +256,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.outputDirectory.convention(outputDir)
 
             t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
-            t.customArguments.convention(extension.customArguments.map { [it] })
+            //t.customArguments.convention(extension.customArguments.map { [it] })
             t.inputFiles.from(inputFiles(t))
             t.buildTarget.convention(t.configPath.map({
                 def config = new GenericUnityAssetFile(it.asFile)
@@ -272,9 +273,17 @@ class UnityBuildPlugin implements Plugin<Project> {
         }
     }
 
-    private static configureUnityBuildPlayerTasks(Project project, UnityBuildPluginExtension extension) {
+    /**
+     * Configures {@link PlayerBuildUnityTask}
+     */
+    private static configurePlayerBuildUnityTasks(Project project, UnityBuildPluginExtension extension) {
         project.tasks.withType(PlayerBuildUnityTask).configureEach { task ->
             task.build.convention("Player")
+            task.doFirst {
+                if (!task.configPath.present && !task.config.present) {
+                    throw new IllegalArgumentException("configPath or config task property must be present in the task ${task}")
+                }
+            }
             def appConfigName = task.config.orElse(
                 task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
             )
