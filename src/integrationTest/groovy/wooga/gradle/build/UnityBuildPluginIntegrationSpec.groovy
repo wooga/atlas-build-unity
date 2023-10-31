@@ -17,10 +17,9 @@
 
 package wooga.gradle.build
 
-import com.wooga.gradle.PlatformUtils
+
 import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
-import com.wooga.gradle.test.writers.PropertySetInvocation
 import com.wooga.gradle.test.writers.PropertySetterWriter
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
@@ -33,7 +32,6 @@ import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.UnityBuildPluginConventions
-import wooga.gradle.unity.UnityPluginConventions
 import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.models.UnityCommandLineOption
 
@@ -85,7 +83,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains("-executeMethod ${UnityBuildPluginConventions.BUILD_METHOD_NAME.value}")
+        result.standardOutput.contains("-executeMethod ${UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value}")
         result.standardOutput.contains(expectedParameters)
 
         where:
@@ -114,8 +112,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun      | expectedMethod                                      | expectedParameters                      | ubsVersion
-        "exportCustom" | UnityBuildPluginConventions.BUILD_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
-        "exportCustom" | UnityBuildPluginConventions.BUILD_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
+        "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
+        "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
     }
 
     String convertPropertyToEnvName(String property) {

@@ -1,6 +1,6 @@
 package wooga.gradle.build.unity.tasks
 
-import wooga.gradle.build.unity.internal.BuildEngineArgs
+import wooga.gradle.build.unity.internal.BuildRequestArguments
 import wooga.gradle.build.unity.models.VersionSpec
 
 /**
@@ -12,7 +12,7 @@ class PlayerBuildUnityTask extends BuildUnityTask implements VersionSpec {
     }
 
     @Override
-    protected void appendBuildArguments(BuildEngineArgs args) {
+    protected void appendBuildArguments(BuildRequestArguments args) {
         super.appendBuildArguments(args)
 
         args.with {

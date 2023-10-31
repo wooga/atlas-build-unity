@@ -24,7 +24,7 @@ class UnityBuildPluginConventions {
     /**
      * Method used by the Unity editor application to start a build
      */
-    static final PropertyLookup BUILD_METHOD_NAME = new PropertyLookup(
+    static final PropertyLookup EXECUTE_METHOD_NAME = new PropertyLookup(
         "UNITY_BUILD_EXPORT_METHOD_NAME",
         "unityBuild.exportMethodName",
         "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")

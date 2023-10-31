@@ -27,6 +27,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final DirectoryProperty outputDirectory = objects.directoryProperty()
 
+    /**
+     * @return The directory where the builds are output to
+     */
     @Internal //TODO: rethink this to get advantage from gradle UP-TO-DATE checks.
     Provider<Directory> getOutputDirectory() {
         return outputDirectory

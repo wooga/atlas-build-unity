@@ -8,6 +8,9 @@ trait UnityBuildBaseSpec implements UBSCompatibility, BaseSpec {
 
     private final Property<String> exportMethodName = objects.property(String)
 
+    /**
+     * @return The method to have Unity execute
+     */
     @Input
     Property<String> getExportMethodName() {
         exportMethodName

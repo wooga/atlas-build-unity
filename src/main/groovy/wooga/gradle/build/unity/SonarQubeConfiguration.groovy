@@ -2,8 +2,6 @@ package wooga.gradle.build.unity
 
 import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.tasks.TaskProvider
 import org.sonarqube.gradle.SonarQubeExtension
 import org.sonarqube.gradle.SonarQubeProperties
 import wooga.gradle.dotnetsonar.tasks.BuildSolution
