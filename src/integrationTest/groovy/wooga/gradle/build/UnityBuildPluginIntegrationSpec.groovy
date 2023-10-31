@@ -192,14 +192,14 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         expectedProperties.every { result.standardOutput.contains(it) }
 
         where:
-        property          | rawValue                        | type  | location    | message
-        "customArguments" | null                            | 'Map' | 'extension' | "null value"
-        "customArguments" | [:]                             | 'Map' | 'extension' | "empty map"
-        "customArguments" | ['foo': 'bar']                  | 'Map' | 'extension' | "simple map"
-        "customArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | 'extension' | "multiple values"
-        "customArguments" | ['anInt': 22]                   | 'Map' | 'extension' | "integer values"
-        "customArguments" | ['aFloat': 22.2]                | 'Map' | 'extension' | "float values"
-        "customArguments" | ['aFile': File.createTempDir()] | 'Map' | 'extension' | "file values"
+        property              | rawValue                        | type  | location    | message
+        "additionalArguments" | null                            | 'Map' | 'extension' | "null value"
+        "additionalArguments" | [:]                             | 'Map' | 'extension' | "empty map"
+        "additionalArguments" | ['foo': 'bar']                  | 'Map' | 'extension' | "simple map"
+        "additionalArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | 'extension' | "multiple values"
+        "additionalArguments" | ['anInt': 22]                   | 'Map' | 'extension' | "integer values"
+        "additionalArguments" | ['aFloat': 22.2]                | 'Map' | 'extension' | "float values"
+        "additionalArguments" | ['aFile': File.createTempDir()] | 'Map' | 'extension' | "file values"
         expectedProperties = rawValue.collect({ key, value -> "${key}=${value};" })
         value = wrapValueBasedOnType(rawValue, type)
     }
@@ -400,7 +400,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         appConfigName << Gen.these('test-config-file', 'test_config_file', 'test config file')
-                .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
+            .then(Gen.string(~/([$characterPattern]{1,5})test([$characterPattern]{1,5})config([$characterPattern]{1,5})file([$characterPattern]{1,5})/))
         expectedTaskName << Gen.any("assemble", "export", "check", "publish").map { "${it}TestConfigFile" }
     }
 

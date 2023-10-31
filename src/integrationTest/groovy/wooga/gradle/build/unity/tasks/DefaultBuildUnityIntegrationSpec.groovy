@@ -21,6 +21,7 @@ import org.gradle.api.GradleException
 import org.gradle.internal.execution.WorkValidationException
 import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.build.unity.UnityBuildPluginExtension
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
 import wooga.gradle.secrets.internal.SecretText
 import wooga.gradle.secrets.internal.Secrets
@@ -43,12 +44,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
 
     def "uses default settings when not configured"() {
         given: "a custom export task without configuration"
-
-        buildFile << """
-            def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
-            ext.customArguments.set(["--key":"value"])
-        """.stripIndent()
-
         addSubjectTask(true, """
             build = "UBSBuild"
         """.stripIndent())
@@ -61,17 +56,12 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         hasKeyValue("--build", "UBSBuild", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export/UBSBuild/project").path, customArgsParts)
         hasKeyValue("--logPath", new File(projectDir, "build/logs/unity").path, customArgsParts)
-        hasKeyValue("--key", "value", customArgsParts)
         hasKeyValue("-executeMethod", "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment", customArgsParts)
         !customArgsParts.contains("--configPath")
     }
 
     def "fails if build property isn't set"() {
         given: "a custom export task without configuration"
-        buildFile << """
-            def ext = project.extensions.getByType(wooga.gradle.build.unity.UnityBuildPluginExtension)
-            ext.customArguments.set(["--key":"value"])
-        """.stripIndent()
         addSubjectTask()
 
         when:
@@ -86,7 +76,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
 
     def "can configure custom unity entrypoint"() {
         given: "a export task with a custom unity entrypoint"
-
         addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 exportMethodName = "${entrypoint}"
@@ -105,13 +94,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
 
     def "can configure custom output directory"() {
         given: "a export task with a custom output directory"
-//        buildFile << """
-//            task("customExport", type: ${subjectUnderTestTypeName}) {
-//                build = "mandatoryBuildName"
-//                outputDirectory = file("${outputPath}")
-//            }
-//        """.stripIndent()
-
         addSubjectTask(true, """
                 build = "mandatoryBuildName"
                 outputDirectory = file("${outputPath}")
@@ -177,33 +159,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--configPath", configFile.absolutePath, customArgsParts)
         hasKeyValue("-buildTarget", "android", customArgsParts)
-    }
-
-    def "can configure extra arguments"() {
-        given: "a export task custom configuration"
-        addSubjectTask(true, """
-                build = "mandatoryBuildName"
-                customArguments = ${extraArgsString}
-        """.stripIndent())
-
-        when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
-
-        then:
-        def customArgsParts = unityArgs(result.standardOutput)
-        expectedCustomArgs.each { expectedArgs ->
-            if(expectedArgs instanceof Map) {
-                def argsPair = (expectedArgs as Map).entrySet().first() as Map.Entry<String, String>
-                return hasKeyValue(argsPair.key, argsPair.value, customArgsParts)
-            }
-            return customArgsParts.contains(expectedArgs)
-        }
-
-        where:
-        extraArgsString                                         | expectedCustomArgs
-        """["--an-arg", ["--valued-arg":"value"]]"""            | ["--an-arg", ["--valued-arg": "value"]]
-        """["--an-arg", "--valued-arg value"]"""                | ["--an-arg", ["--valued-arg": "value"]]
-        """["--an-arg", ["--varg":"val", "--oarg":"oval"]]"""   | ["--an-arg", ["--varg": "val"], ["--oarg": "oval"]]
     }
 
     @Unroll

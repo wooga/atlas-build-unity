@@ -41,15 +41,19 @@ class BuildEngineArgs {
         }
     }
 
+    /**
+     * Used to generate the providers
+     */
     private final ProviderFactory providers
+    /**
+     * The method to execute, which itself will parse in the other arguments provided
+     */
     final Provider<String> method
-    private Provider<Map<String, ?>> environment
     private List<Provider<?>> args
 
     BuildEngineArgs(ProviderFactory providers, Provider<String> method) {
         this.providers = providers
         this.method = method
-        this.environment = providers.provider { new HashMap<String, ?>() }
         this.args = []
     }
 
@@ -71,17 +75,6 @@ class BuildEngineArgs {
 
     void addArgs(Provider<List<?>> arguments) {
         this.args << arguments
-    }
-
-    void addEnvs(Provider<Map<String, ?>> envsProvider) {
-        this.environment = this.environment.map {
-            it.putAll(envsProvider.get())
-            return it
-        }
-    }
-
-    Provider<Map<String, ?>> getEnvironment() {
-        return environment
     }
 
     private List<String> fetchArguments(Object arg) {

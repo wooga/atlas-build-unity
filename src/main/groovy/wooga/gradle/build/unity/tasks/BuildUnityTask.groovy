@@ -36,7 +36,6 @@ class BuildUnityTask extends UnityTask implements SecretSpec, UnityBuildEngineSp
             addArg("--config", config)
             addArg("--outputPath", outputDirectory.asFile.map { out -> out.path })
             addArg("--logPath", logDir.map { out -> out.asFile.path })
-            addArgs(customArguments)
             addArg("-executeMethod", args.method)
         }
     }

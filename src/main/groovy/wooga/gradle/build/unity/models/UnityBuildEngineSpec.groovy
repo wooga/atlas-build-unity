@@ -68,18 +68,6 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
         this.secretsFile.set(secretsFile)
     }
 
-    private final ListProperty<Object> customArguments = objects.listProperty(Object)
-
-    @Optional
-    @Input
-    ListProperty<Object> getCustomArguments() {
-        return customArguments
-    }
-
-    void setCustomArguments(List<Object> customArguments) {
-        this.customArguments.set(customArguments)
-    }
-
     private final Property<String> config = objects.property(String)
 
     /**
