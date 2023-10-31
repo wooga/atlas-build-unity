@@ -5,10 +5,17 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 
+/**
+ * Version properties used by the Unified Build System
+ */
 trait VersionSpec extends BaseSpec {
 
     private final Property<String> version = objects.property(String)
 
+    /**
+     * @return This is the version string seen by the user. It isn't used for internal comparisons or anything,
+     * it's just for users to see.
+     */
     @Input
     Property<String> getVersion() {
         version
@@ -20,6 +27,11 @@ trait VersionSpec extends BaseSpec {
 
     private final Property<String> versionCode = objects.property(String)
 
+    /**
+     * @return An internal version number. This number is used only to determine whether one version is more
+     * recent than another, with higher numbers indicating more recent versions. This is not the version number
+     * shown to users; that number is set by the versionName attribute. The value must be set as an integer.
+     */
     @Optional
     @Input
     Property<String> getVersionCode() {
@@ -32,6 +44,9 @@ trait VersionSpec extends BaseSpec {
 
     private final Property<String> toolsVersion = objects.property(String)
 
+    /**
+     * @return The android tools version to use
+     */
     @Optional
     @Input
     Property<String> getToolsVersion() {
@@ -44,6 +59,10 @@ trait VersionSpec extends BaseSpec {
 
     private final Property<String> commitHash = objects.property(String)
 
+    /**
+     * @return The hash of the git commit the build was made from
+     */
+    @Optional
     @Optional
     @Input
     Property<String> getCommitHash() {
