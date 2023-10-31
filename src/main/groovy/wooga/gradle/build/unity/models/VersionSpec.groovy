@@ -63,7 +63,6 @@ trait VersionSpec extends BaseSpec {
      * @return The hash of the git commit the build was made from
      */
     @Optional
-    @Optional
     @Input
     Property<String> getCommitHash() {
         commitHash

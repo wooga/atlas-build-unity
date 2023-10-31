@@ -115,7 +115,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         configureFetchSecretsTasks(project)
 
         project.afterEvaluate {
-            def defaultAppConfigName = extension.getDefaultConfigName().getOrNull()
+            def defaultConfigName = extension.getDefaultConfigName().getOrNull()
             extension.getConfigs().each { File configFile ->
                 def configName = FilenameUtils.removeExtension(configFile.name)
                 def configAsset = new GenericUnityAssetFile(configFile)
@@ -172,12 +172,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                         }))
                     }
 
-                    if (defaultAppConfigName == configName) {
+                    if (defaultConfigName == configName) {
                         project.tasks.getByName(taskName).dependsOn(gradleBuild)
                     }
                 }
 
-                if (defaultAppConfigName == configName) {
+                if (defaultConfigName == configName) {
                     lifecycleExport.configure({
                         dependsOn(exportTask)
                     })

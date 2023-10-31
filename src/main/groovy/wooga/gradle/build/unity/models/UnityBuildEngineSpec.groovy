@@ -96,6 +96,7 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
     private final ConfigurableFileCollection inputFiles = objects.fileCollection()
 
     @SkipWhenEmpty
+    @IgnoreEmptyDirectories
     @InputFiles
     ConfigurableFileCollection getInputFiles() {
         inputFiles

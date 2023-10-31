@@ -80,7 +80,7 @@ class UnityBuildPluginConventions {
     static PropertyLookup SKIP_EXPORT = new PropertyLookup("UNITY_BUILD_SKIP_EXPORT", "unityBuild.skipExport", false)
 
     /**
-     * The key used for looking up secrets in the AppConfig during a build
+     * The key used for looking up secrets in the Config during a build
      */
     static PropertyLookup CONFIG_SECRETS_KEY = new PropertyLookup("UNITY_BUILD_CONFIG_SECRETS_KEY", "unityBuild.configSecretsKey", "secretIds")
 

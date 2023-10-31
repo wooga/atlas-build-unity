@@ -33,10 +33,11 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         then:
         def configName = FilenameUtils.removeExtension(new File(configValue).name)
         def actualConfigValue = configValueType == File ? new File(projectDir, configValue).absolutePath : configValue
+
         def customArgsParts = unityArgs(result.standardOutput)
         hasKeyValue("--build", "Player", customArgsParts)
         hasKeyValue("--${argName}".toString(), actualConfigValue, customArgsParts)
-        hasKeyValue("--version", version, customArgsParts)
+        hasKeyValue("--build-version", version, customArgsParts)
         hasKeyValue("--outputPath",
             new File(projectDir, "build/export/${configName}/project").path, customArgsParts)
         if (argName == "configPath") {
@@ -66,11 +67,11 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         hasKeyValue(argName, argValue, customArgsParts)
 
         where:
-        propName       | argName          | argValue
-        "build"        | "--build"        | "CustomBuild"
-        "versionCode"  | "--versionCode"  | "codeiguess"
-        "toolsVersion" | "--toolsVersion" | "10.0.1"
-        "commitHash"   | "--commitHash"   | "a345fc"
+        propName       | argName               | argValue
+        "build"        | "--build"             | "CustomBuild"
+        "versionCode"  | "--build-versionCode" | "codeiguess"
+        "toolsVersion" | "--toolsVersion"      | "10.0.1"
+        "commitHash"   | "--commitHash"        | "a345fc"
     }
 
     def "throws exception when no config/configPath/configFile property is given"() {

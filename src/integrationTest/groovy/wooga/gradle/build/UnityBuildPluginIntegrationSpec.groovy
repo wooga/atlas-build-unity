@@ -111,7 +111,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         !result.standardOutput.contains(expectedParameters)
 
         where:
-        taskToRun      | expectedMethod                                      | expectedParameters                      | ubsVersion
+        taskToRun      | expectedMethod                                        | expectedParameters                      | ubsVersion
         "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
         "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
     }
@@ -166,7 +166,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
 
         buildFile << """
-        unityBuild.defaultAppConfigName = 'android_ci'
+        unityBuild.defaultConfigName = 'android_ci'
         """.stripIndent()
 
         when:
@@ -189,9 +189,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Unroll
     def "#taskToRun executes #expectedHandlerTask when override default #override in #location with #value task"() {
         given: "a default gradle project with adjusted default platform/environment settings"
-        def extensionKey = 'unityBuild.defaultAppConfigName'
-        def propertiesKey = 'unityBuild.defaultAppConfigName'
-        def envKey = 'UNITY_BUILD_DEFAULT_APP_CONFIG_NAME'
+        def extensionKey = 'unityBuild.defaultConfigName'
+        def propertiesKey = 'unityBuild.defaultConfigName'
+        def envKey = 'UNITY_BUILD_DEFAULT_CONFIG_NAME'
 
         envs.clear(envKey)
 
@@ -214,19 +214,19 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         result.wasExecuted(handleTaskName)
 
         where:
-        taskToRun  | override               | location      | value        | expectedDefaultHandlerTask
-        "assemble" | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
-        "assemble" | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
-        "assemble" | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
-        "check"    | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
-        "check"    | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
-        "check"    | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
-        "publish"  | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
-        "publish"  | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
-        "publish"  | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
-        "export"   | "defaultAppConfigName" | "environment" | 'ios_ci'     | 'IosCi'
-        "export"   | "defaultAppConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
-        "export"   | "defaultAppConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        taskToRun  | override            | location      | value        | expectedDefaultHandlerTask
+        "assemble" | "defaultConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "assemble" | "defaultConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "assemble" | "defaultConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "check"    | "defaultConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "check"    | "defaultConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "check"    | "defaultConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "publish"  | "defaultConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "publish"  | "defaultConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "publish"  | "defaultConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
+        "export"   | "defaultConfigName" | "environment" | 'ios_ci'     | 'IosCi'
+        "export"   | "defaultConfigName" | "properties"  | 'android_ci' | 'AndroidCi'
+        "export"   | "defaultConfigName" | "extension"   | 'webGL_ci'   | 'WebGLCi'
         expectedHandlerTask = taskToRun + expectedDefaultHandlerTask
     }
 
@@ -271,14 +271,14 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "picks gradle version from config and executes exported project"() {
+    def "picks gradle version #version from config #configName and executes exported project"() {
         given: "a default gradle project with adjusted default platform/environment settings"
         buildFile << "unityBuild.defaultConfigName = '${configName}'"
 
         def expectedExportTask = "export${expectedDefaultHandlerTask}"
         def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
 
-        and: "an app config with configured gradle version"
+        and: "a config with configured gradle version"
         Yaml yaml = new Yaml()
         createFile("${configName}.asset", configsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
 
@@ -297,10 +297,10 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         outputContains(result, error)
 
         where:
-        taskToRun  | configName | version | expectedDefaultHandlerTask
-        "assemble" | "android_ci"  | "5.0.0" | 'AndroidCi'
-        "assemble" | "ios_ci"      | "4.4.0" | 'IosCi'
-        "assemble" | "webGL_ci"    | null    | 'WebGLCi'
+        taskToRun  | configName   | version | expectedDefaultHandlerTask
+        "assemble" | "android_ci" | "5.0.0" | 'AndroidCi'
+        "assemble" | "ios_ci"     | "4.4.0" | 'IosCi'
+        "assemble" | "webGL_ci"   | null    | 'WebGLCi'
     }
 
     @Unroll

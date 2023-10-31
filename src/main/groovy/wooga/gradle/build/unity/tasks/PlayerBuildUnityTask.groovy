@@ -23,3 +23,4 @@ class PlayerBuildUnityTask extends BuildUnityTask implements VersionSpec {
         }
     }
 }
+
