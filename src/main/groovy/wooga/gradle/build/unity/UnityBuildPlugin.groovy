@@ -64,8 +64,8 @@ class UnityBuildPlugin implements Plugin<Project> {
      * Configures the extension properties
      */
     static void configureExtension(Project project, UnityBuildPluginExtension extension, UnityPluginExtension unityExtension) {
+        extension.exportMethodName.set(UnityBuildPluginConventions.BUILD_METHOD_NAME.getStringValueProvider(project))
         extension.ubsCompatibilityVersion.convention(UnityBuildPluginConventions.COMPATIBILITY_VERSION.getEnumValueProvider(project, UBSVersion.class))
-        extension.exportMethodName.set(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
         extension.defaultAppConfigName.set(UnityBuildPluginConventions.DEFAULT_APP_CONFIG_NAME.getStringValueProvider(project))
         extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
         extension.toolsVersion.set(UnityBuildPluginConventions.BUILD_TOOLS_VERSION.getStringValueProvider(project))

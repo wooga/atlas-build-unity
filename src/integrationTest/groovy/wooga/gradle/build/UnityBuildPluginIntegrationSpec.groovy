@@ -27,6 +27,8 @@ import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.UnityBuildPluginConventions
+import wooga.gradle.unity.UnityPluginConventions
 import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.models.UnityCommandLineOption
 
@@ -38,20 +40,20 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
     @Shared
-    File appConfigsDir
+    File configsDir
 
     @Shared
-    File appConfigsDir2
+    File configsDir2
 
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
-        appConfigsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
-        appConfigsDir2 = new File(assets, "UnifiedBuildSystem-Assets/Configs")
-        appConfigsDir.mkdirs()
-        appConfigsDir2.mkdirs()
+        configsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
+        configsDir2 = new File(assets, "UnifiedBuildSystem-Assets/Configs")
+        configsDir.mkdirs()
+        configsDir2.mkdirs()
 
-        ['ios_ci', 'android_ci', 'webGL_ci'].collectMany { [createFile("${it}.asset", appConfigsDir), createFile("${it}.asset", appConfigsDir2)] }.each {
+        ['ios_ci', 'android_ci', 'webGL_ci'].collectMany { [createFile("${it}.asset", configsDir), createFile("${it}.asset", configsDir2)] }.each {
             it << UNITY_ASSET_HEADER
             it << "\n"
             Yaml yaml = new Yaml()
@@ -61,7 +63,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         }
 
         Yaml yaml = new Yaml()
-        [appConfigsDir, appConfigsDir2].each {
+        [configsDir, configsDir2].each {
             def appconfig = createFile("custom.asset", it)
             appconfig << UNITY_ASSET_HEADER
             appconfig << "\n"
@@ -78,7 +80,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
+        result.standardOutput.contains("-executeMethod ${UnityBuildPluginConventions.BUILD_METHOD_NAME.value}")
         result.standardOutput.contains(expectedParameters)
 
         where:
@@ -106,11 +108,9 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         !result.standardOutput.contains(expectedParameters)
 
         where:
-        taskToRun      | expectedMethod                                                     | expectedParameters                      | ubsVersion
-        "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | null
-        "exportCustom" | "Wooga.UnifiedBuildSystem.Build.Export"                            | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v100
-        "exportCustom" | "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment" | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v120
-        "exportCustom" | "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment" | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
+        taskToRun      | expectedMethod                                      | expectedParameters                      | ubsVersion
+        "exportCustom" | UnityBuildPluginConventions.BUILD_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
+        "exportCustom" | UnityBuildPluginConventions.BUILD_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
     }
 
     String convertPropertyToEnvName(String property) {
@@ -327,7 +327,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 //        if(version) {
 //        }
         Yaml yaml = new Yaml()
-        createFile("${appConfigName}.asset", appConfigsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
+        createFile("${appConfigName}.asset", configsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
 
         when:
         def result = runTasks(taskToRun)
