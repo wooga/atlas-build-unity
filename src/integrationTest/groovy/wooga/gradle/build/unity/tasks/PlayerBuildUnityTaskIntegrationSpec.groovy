@@ -47,15 +47,15 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
 
         where:
         configProperty | argName      | configValue                         | configValueType
-        "config"       | "config"     | "configName"                        | String
-        "configPath"   | "configPath" | "Assets/CustomConfigs/custom.asset" | File
+        "configName"   | "config"     | "configName"                        | String
+        "configFile"   | "configPath" | "Assets/CustomConfigs/custom.asset" | File
     }
 
     @Unroll
     def "can configure optional #argName argument"() {
         given: "a custom export task without configuration"
         addSubjectTask(false, """
-                config = "configPath"
+                configName = "pancakes"
                 version = "0.0.1"  
                 ${propName} = "${argValue}"      
         """)
@@ -75,7 +75,7 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         "commitHash"   | BuildRequestOption.commitHash.flag   | "a345fc"
     }
 
-    def "throws exception when no config/configPath/configFile property is given"() {
+    def "throws exception when no configFile/configName property is given"() {
         given: "a custom export task without configuration"
         addSubjectTask(false, """
                 version = "0.0.1"  
@@ -96,7 +96,7 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
         given: "a configured task"
         addSubjectTask(false, """
                 ubsCompatibilityVersion = ${wrapValueBasedOnType(compatibility, "UBSVersion", wrapValueFallback)}
-                configPath = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
+                configFile = ${wrapValueBasedOnType("Assets/CustomConfigs/custom.asset", "File")}
                 ${property} = ${wrapValueBasedOnType(expectedValue, "String")}
         """)
 

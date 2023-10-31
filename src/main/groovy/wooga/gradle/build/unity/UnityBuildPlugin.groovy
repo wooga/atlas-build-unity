@@ -142,7 +142,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                     PlayerBuildUnityTask t ->
                         t.group = "build unity"
                         t.description = "exports player targeted gradle project for app config ${configName}"
-                        t.configPath.set(configFile)
+                        t.configFile.set(configFile)
                         t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                         t.secretsKey.set(secretsExtension.secretsKey)
                 }
@@ -247,7 +247,7 @@ class UnityBuildPlugin implements Plugin<Project> {
             t.outputDirectory.convention(outputDir)
             t.logPath.convention(unityExt.logsDir.dir(unityExt.logCategory).map { it.asFile.absolutePath })
             t.inputFiles.from(inputFiles(t))
-            t.buildTarget.convention(t.configPath.map({
+            t.buildTarget.convention(t.configFile.map({
                 def config = new GenericUnityAssetFile(it.asFile)
                 // AppConfig
                 String appConfigBuildTarget = "batchModeBuildTarget"
@@ -271,12 +271,12 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.tasks.withType(PlayerBuildUnityTask).configureEach { task ->
             task.build.convention("Player")
             task.doFirst {
-                if (!task.configPath.present && !task.config.present) {
-                    throw new IllegalArgumentException("configPath or config task property must be present in the task ${task}")
+                if (!task.configFile.present && !task.configName.present) {
+                    throw new IllegalArgumentException("configFile or configName property must be assigned in the task ${task}")
                 }
             }
-            def configName = task.config.orElse(
-                task.configPath.asFile.map { FilenameUtils.removeExtension(it.name) }
+            def configName = task.configName.orElse(
+                task.configFile.asFile.map { FilenameUtils.removeExtension(it.name) }
             )
             def configRelativePath = configName.map { return new File(it, "project").path }
             def outputPath = extension.outputDirectoryBase.dir(configRelativePath)

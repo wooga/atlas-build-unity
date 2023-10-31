@@ -133,7 +133,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         given: "a export task with a custom output directory"
         addSubjectTask(true, """
                 build = "mandatoryBuildName"
-                config = "configName"
+                configName = ${wrapValueBasedOnType(value, String)}
         """.stripIndent())
 
         when:
@@ -141,7 +141,10 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
 
         then:
         def customArgsParts = unityArgs(result.standardOutput)
-        hasKeyValue("--config", "configName", customArgsParts)
+        hasKeyValue("--config", value, customArgsParts)
+
+        where:
+        value = "foobar"
     }
 
 
@@ -149,7 +152,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         given: "a export task with a custom output directory"
         addSubjectTask(true, """
                 build = "mandatoryBuildName"
-                configPath = ${wrapValueBasedOnType(configFile, File)}
+                configFile = ${wrapValueBasedOnType(configFile, File)}
         """.stripIndent())
 
         when:

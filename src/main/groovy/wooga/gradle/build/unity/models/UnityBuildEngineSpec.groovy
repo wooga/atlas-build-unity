@@ -7,7 +7,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import wooga.gradle.build.unity.models.UnityBuildBaseSpec
 
 trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
@@ -41,6 +40,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final Property<String> logPath = objects.property(String)
 
+    /**
+     * @return The directory path where log files will be written to
+     */
     @Optional
     @Input
     Property<String> getLogPath() {
@@ -53,6 +55,9 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
 
     private final RegularFileProperty secretsFile = objects.fileProperty()
 
+    /**
+     * @return The secret file used for resolution during the build process
+     */
     @Optional
     @InputFile
     RegularFileProperty getSecretsFile() {
@@ -63,42 +68,46 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
         this.secretsFile.set(secretsFile)
     }
 
-    private final Property<String> config = objects.property(String)
+    private final Property<String> configName = objects.property(String)
 
     /**
-     * @return The name of the configuration file to use. This should be used when no path is specified in {@code configPath}.
+     * @return The name of the configuration file to use. This should be used when no path is specified in {@code configFile}.
      */
     @Optional
     @Input
-    Property<String> getConfig() {
-        return config
+    Property<String> getConfigName() {
+        return configName
     }
 
-    void setConfig(String config) {
-        this.config.set(config)
+    void setConfigName(String config) {
+        this.configName.set(config)
     }
 
-    private final RegularFileProperty configPath = objects.fileProperty()
+    private final RegularFileProperty configFile = objects.fileProperty()
 
     /**
-     * @return The path to the configuration file for the build. This should be used when no name is specified in {@code config}
+     * @return The configuration file for the build. This should be used when no name is specified in {@code config}
      */
     @Optional
     @InputFile
-    RegularFileProperty getConfigPath() {
-        return configPath
+    RegularFileProperty getConfigFile() {
+        return configFile
     }
 
-    void setConfigPath(File config) {
-        this.configPath.set(config)
+    void setConfigFile(File config) {
+        this.configFile.set(config)
     }
 
-    private final ConfigurableFileCollection inputFiles = objects.fileCollection()
-
+    // TODO: Elaborate
+    /**
+     * @return The files used by the build
+     */
     @SkipWhenEmpty
     @IgnoreEmptyDirectories
     @InputFiles
     ConfigurableFileCollection getInputFiles() {
         inputFiles
     }
+
+    private final ConfigurableFileCollection inputFiles = objects.fileCollection()
 }
