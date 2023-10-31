@@ -117,6 +117,7 @@ class UnityBuildPlugin implements Plugin<Project> {
         project.afterEvaluate {
             def defaultConfigName = extension.getDefaultConfigName().getOrNull()
             extension.getConfigs().each { File configFile ->
+
                 def configName = FilenameUtils.removeExtension(configFile.name)
                 def configAsset = new GenericUnityAssetFile(configFile)
 
@@ -152,11 +153,12 @@ class UnityBuildPlugin implements Plugin<Project> {
                     }
                 })
 
+                // Configure the Gradle Build tasks
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
                     def gradleBuild = project.tasks.register("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
                         t.dependsOn exportTask
                         t.group = groupName
-                        t.description = "executes :${taskName} task on exported project for app config ${configName}"
+                        t.description = "executes :${taskName} task on exported project for config ${configName}"
                         t.dir.set(exportTask.flatMap({ it.outputDirectory }))
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
@@ -164,7 +166,7 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                         t.secretsKey.set(secretsExtension.secretsKey)
                         t.tasks.add(taskName)
-                        t.gradleVersion.set(project.provider({
+                        t.gradleVersion.convention(project.provider({
                             if (!configAsset.isValid()) {
                                 throw new StopExecutionException('provided config is invalid')
                             }

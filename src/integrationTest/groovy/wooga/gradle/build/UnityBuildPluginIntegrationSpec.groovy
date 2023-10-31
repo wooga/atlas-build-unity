@@ -32,6 +32,7 @@ import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
 import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.UnityBuildPluginConventions
+import wooga.gradle.build.unity.models.BuildRequestOption
 import wooga.gradle.unity.models.BuildTarget
 import wooga.gradle.unity.models.UnityCommandLineOption
 
@@ -275,9 +276,6 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         given: "a default gradle project with adjusted default platform/environment settings"
         buildFile << "unityBuild.defaultConfigName = '${configName}'"
 
-        def expectedExportTask = "export${expectedDefaultHandlerTask}"
-        def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
-
         and: "a config with configured gradle version"
         Yaml yaml = new Yaml()
         createFile("${configName}.asset", configsDir) << yaml.dump(['MonoBehaviour': ['bundleId': 'net.wooga.test', 'gradleVersion': version]])
@@ -286,15 +284,17 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasks(taskToRun)
 
         then:
+        def expectedExportTask = "export${expectedDefaultHandlerTask}"
+        def handleTaskName = "${taskToRun}${expectedDefaultHandlerTask}"
         result.wasExecuted(expectedExportTask)
         result.wasExecuted(handleTaskName)
 
         def expectedVersion = version ?: "7.6.1"
-        def error = "Could not execute build using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
+        def errorMessage = "Could not execute build using connection to Gradle distribution 'https://services.gradle.org/distributions/gradle-${expectedVersion}-bin.zip'"
         // we expecting this task to fail because its not a real integration test
         // but gradle should have attempted to run the exported gradle project with the configured version
         // we simply check if the error contains the correct gradle version
-        outputContains(result, error)
+        outputContains(result, errorMessage)
 
         where:
         taskToRun  | configName   | version | expectedDefaultHandlerTask
@@ -304,7 +304,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     }
 
     @Unroll
-    def "default version #rawValue is converted to String from #type"() {
+    def "task uses default version #rawValue that is set by script, converted to String from #type"() {
         given: "A custom project.version property"
         buildFile << """
             version = ${value}
@@ -314,8 +314,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully("exportAndroidCi")
 
         then:
-        //the batchmode task will be called with version
-        result.standardOutput.contains("version=$expectedValue;")
+        result.standardOutput.contains("${BuildRequestOption.version.flag} $expectedValue")
 
         where:
         rawValue | type       | expectedValue
