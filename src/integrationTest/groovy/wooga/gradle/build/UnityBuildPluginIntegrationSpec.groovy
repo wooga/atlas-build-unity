@@ -18,6 +18,10 @@
 package wooga.gradle.build
 
 import com.wooga.gradle.PlatformUtils
+import com.wooga.gradle.test.PropertyLocation
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import org.yaml.snakeyaml.Yaml
@@ -27,6 +31,7 @@ import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.UBSVersion
+import wooga.gradle.build.unity.UnityBuildPlugin
 import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.unity.UnityPluginConventions
 import wooga.gradle.unity.models.BuildTarget
@@ -117,91 +122,43 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         property.replaceAll(/([A-Z.])/, '_$1').replaceAll(/[.]/, '').toUpperCase()
     }
 
-
     @Unroll
-    def "can override property #property in #location"() {
-        given: "execute on a default project"
-        assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
-
-
-        def extensionKey = "unityBuild.$property"
-        def propertiesKey = "unityBuild.$property"
-        def envKey = convertPropertyToEnvName(extensionKey)
-
-        if (location == "environment") {
-            envs.set(envKey, value)
-        } else if (location == "properties") {
-            createFile("gradle.properties") << "${propertiesKey}=${value}"
-        } else if (location == "extension") {
-            buildFile << "${extensionKey} = ${PlatformUtils.escapedPath(value)}"
-        }
+    def "can override property #property in #location v2"() {
 
         when:
-        def result = runTasksSuccessfully("exportAndroidCi")
+        def query = runPropertyQuery(getter, setter)
 
         then:
-        result.standardOutput.contains("$expectedBuildParameterBase$rawValue")
+        query.matches(rawValue, type)
 
         where:
-        property              | rawValue                                    | type     | location      | expectedBuildParameterBase
-        "exportMethodName"    | "test1"                                     | ""       | 'environment' | "-executeMethod "
-        "exportMethodName"    | "test2"                                     | ""       | 'properties'  | "-executeMethod "
-        "exportMethodName"    | "test3"                                     | "String" | 'extension'   | "-executeMethod "
+        property              | rawValue                                    | type     | location
+        "exportMethodName"    | "test1"                                     | ""       | PropertyLocation.environment
+        "exportMethodName"    | "test2"                                     | ""       | PropertyLocation.property
+        "exportMethodName"    | "test3"                                     | "String" | PropertyLocation.script
 
-        "toolsVersion"        | "1.2.3"                                     | ""       | 'environment' | "toolsVersion="
-        "toolsVersion"        | "3.2.1"                                     | ""       | 'properties'  | "toolsVersion="
-        "toolsVersion"        | "2.1.3"                                     | "String" | 'extension'   | "toolsVersion="
+        "toolsVersion"        | "1.2.3"                                     | ""       | PropertyLocation.environment
+        "toolsVersion"        | "3.2.1"                                     | ""       | PropertyLocation.property
+        "toolsVersion"        | "2.1.3"                                     | "String" | PropertyLocation.script
 
-        "version"             | "1.2.3"                                     | ""       | 'environment' | "version="
-        "version"             | "3.2.1"                                     | ""       | 'properties'  | "version="
-        "version"             | "2.1.3"                                     | "String" | 'extension'   | "version="
+        "version"             | "1.2.3"                                     | ""       | PropertyLocation.environment
+        "version"             | "3.2.1"                                     | ""       | PropertyLocation.property
+        "version"             | "2.1.3"                                     | "String" | PropertyLocation.script
 
-        "versionCode"         | "10203"                                     | ""       | 'environment' | "versionCode="
-        "versionCode"         | "30201"                                     | ""       | 'properties'  | "versionCode="
-        "versionCode"         | "20103"                                     | "String" | 'extension'   | "versionCode="
+        "versionCode"         | "10203"                                     | ""       | PropertyLocation.environment
+        "versionCode"         | "30201"                                     | ""       | PropertyLocation.property
+        "versionCode"         | "20103"                                     | "String" | PropertyLocation.script
 
-        "commitHash"          | "abcdefg"                                   | ""       | 'environment' | "commitHash="
-        "commitHash"          | "gfedcba"                                   | ""       | 'properties'  | "commitHash="
-        "commitHash"          | "1234567"                                   | "String" | 'extension'   | "commitHash="
-        "outputDirectoryBase" | File.createTempDir("build", "export1").path | "File"   | 'extension'   | "outputPath="
+        "commitHash"          | "abcdefg"                                   | ""       | PropertyLocation.environment
+        "commitHash"          | "gfedcba"                                   | ""       | PropertyLocation.property
+        "commitHash"          | "1234567"                                   | "String" | PropertyLocation.script
+        "outputDirectoryBase" | File.createTempDir("build", "export1").path | "File"   | PropertyLocation.script
 
-        value = wrapValueBasedOnType(rawValue, type)
-    }
+        setter = new PropertySetterWriter(UnityBuildPlugin.EXTENSION_NAME, property)
+            .set(rawValue, type)
+            .to(location)
 
-    @Unroll("can append custom arguments with #message in #location")
-    def "can set custom arguments"() {
-        given: "execute on a default project"
-        assert runTasksSuccessfully("exportAndroidCi").standardOutput.contains("-executeMethod Wooga.UnifiedBuildSystem.Build.Export")
-
-        def extensionKey = "unityBuild.$property"
-        def propertiesKey = "unityBuild.$property"
-        def envKey = convertPropertyToEnvName(extensionKey)
-
-        if (location == "environment") {
-            envs.set(envKey, value)
-        } else if (location == "properties") {
-            createFile("gradle.properties") << "${propertiesKey}=${value}"
-        } else if (location == "extension") {
-            buildFile << "${extensionKey} = ${escapedPath(value)}"
-        }
-
-        when:
-        def result = runTasksSuccessfully("exportAndroidCi")
-
-        then:
-        expectedProperties.every { result.standardOutput.contains(it) }
-
-        where:
-        property              | rawValue                        | type  | location    | message
-        "additionalArguments" | null                            | 'Map' | 'extension' | "null value"
-        "additionalArguments" | [:]                             | 'Map' | 'extension' | "empty map"
-        "additionalArguments" | ['foo': 'bar']                  | 'Map' | 'extension' | "simple map"
-        "additionalArguments" | ['foo': 'bar', 'baz': 'faz']    | 'Map' | 'extension' | "multiple values"
-        "additionalArguments" | ['anInt': 22]                   | 'Map' | 'extension' | "integer values"
-        "additionalArguments" | ['aFloat': 22.2]                | 'Map' | 'extension' | "float values"
-        "additionalArguments" | ['aFile': File.createTempDir()] | 'Map' | 'extension' | "file values"
-        expectedProperties = rawValue.collect({ key, value -> "${key}=${value};" })
-        value = wrapValueBasedOnType(rawValue, type)
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll
