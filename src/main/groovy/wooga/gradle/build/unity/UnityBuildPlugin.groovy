@@ -137,7 +137,6 @@ class UnityBuildPlugin implements Plugin<Project> {
                 }
 
                 TaskProvider<? extends Task> exportTask = null
-                //def ubsVersion = extension.ubsCompatibilityVersion.get()
                 exportTask = project.tasks.register("export${baseName}", PlayerBuildUnityTask) {
                     PlayerBuildUnityTask t ->
                         t.group = "build unity"

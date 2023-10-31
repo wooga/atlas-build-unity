@@ -16,9 +16,9 @@ This plugin is work in progress.
 **build.gradle**
 ```groovy
 plugins {
-    id 'net.wooga.build-unity' version '0.14.0'
+    id 'net.wooga.build-unity' version '2.1.0'
 }
-```
+```~~~~~~~~
 
 
 Development
@@ -28,36 +28,18 @@ Development
 
 Gradle and Java Compatibility
 =============================
-
-Built with OpenJDK8
+~~~~
+Built with OpenJDK11
 
 | Gradle Version  | Works  |
-| :-------------: | :----: |
-| < 5.1           | ![no]  |
-| 5.1             | ![yes] |
-| 5.2             | ![yes] |
-| 5.3             | ![yes] |
-| 5.4             | ![yes] |
-| 5.5             | ![yes] |
-| 5.6             | ![yes] |
-| 5.6             | ![yes] |
-| 6.0             | ![yes] |
-| 6.1             | ![yes] |
-| 6.2             | ![yes] |
-| 6.3             | ![yes] |
-| 6.4             | ![yes] |
-| 6.5             | ![yes] |
-| 6.6             | ![yes] |
-| 6.6             | ![yes] |
-| 6.7             | ![yes] |
-| 6.8             | ![yes] |
-| 6.9             | ![yes] |
+| :-------------: | :----: |~~~~
+| < 7.0           | ![no]  |
 | 7.0             | ![yes] |
 
 LICENSE
 =======
 
-Copyright 2017 Wooga GmbH
+Copyright 2023 Wooga GmbH~~~~
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

@@ -46,14 +46,15 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
     @Shared
     File configsDir
 
+    // TODO: Remove
     @Shared
     File configsDir2
 
     def setup() {
         //create the default location for app configs
         def assets = new File(projectDir, "Assets")
-        configsDir = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
-        configsDir2 = new File(assets, "UnifiedBuildSystem-Assets/Configs")
+        configsDir = new File(assets, "UnifiedBuildSystem-Assets/Configs")
+        configsDir2 = new File(assets, "UnifiedBuildSystem-Assets/AppConfigs")
         configsDir.mkdirs()
         configsDir2.mkdirs()
 
@@ -62,7 +63,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
             it << "\n"
             Yaml yaml = new Yaml()
             def buildTarget = it.name.split(/_/, 2).first().toLowerCase()
-            def config = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'batchModeBuildTarget': buildTarget]]
+            def config = ['MonoBehaviour': ['bundleId': 'net.wooga.test', 'buildTargetString': buildTarget]]
             it << yaml.dump(config)
         }
 
