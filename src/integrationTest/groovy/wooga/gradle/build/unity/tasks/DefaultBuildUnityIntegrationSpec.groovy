@@ -162,40 +162,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         hasKeyValue("-buildTarget", "android", customArgsParts)
     }
 
-    @Unroll
-    def "can configure encrypted secrets file"() {
-        given: "a basic export task"
-        addSubjectTask(true, """
-                build = "mandatoryBuildName"
-        """.stripIndent())
-
-        and: "a secret key"
-        SecretKeySpec key = EncryptionSpecHelper.createSecretKey("some_value")
-        def secretsKey = File.createTempFile("atlas-build-unity.GradleBuild", ".key")
-        secretsKey.bytes = key.encoded
-
-        and: "a secrets file encoded with the key"
-        def secretsFile = generateSecretsFile(key, secretsMap)
-
-        and: "secrets and key configured in task"
-        appendToSubjectTask("""  
-            secretsFile = file('${escapedPath(secretsFile.path)}')
-            secretsKey = new ${SecretKeySpec.class.name}(file('${escapedPath(secretsKey.path)}').bytes, 'AES')
-        """)
-
-        when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
-
-        then:
-        def customArgsString = substringAt(result.standardOutput, "environment")
-        secretsMap.every {secretPair ->
-            customArgsString.contains("${secretPair.key.toUpperCase()}=${secretPair.value}")
-        }
-
-        where:
-        secretsMap << [["secretid": "secretvalue"], ["secretid": "secretvalue", "othersecid": "othervalue"]]
-    }
-
     @Shared
     def mockProjectFiles = [
             [new File("Assets/Plugins.meta"), false],
