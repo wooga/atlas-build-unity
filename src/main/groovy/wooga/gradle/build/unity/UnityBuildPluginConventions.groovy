@@ -25,7 +25,7 @@ class UnityBuildPluginConventions {
     /**
      * Method used by the Unity editor application to start a build
      */
-    static final PropertyLookup EXECUTE_METHOD_NAME = new PropertyLookup(
+    static final PropertyLookup EXPORT_METHOD_NAME = new PropertyLookup(
         "UNITY_BUILD_EXPORT_METHOD_NAME",
         "unityBuild.exportMethodName",
         "Wooga.UnifiedBuildSystem.Editor.BuildEngine.BuildFromEnvironment")
@@ -43,7 +43,7 @@ class UnityBuildPluginConventions {
     /**
      * The version of the Unified Build System to be compatible for, which affects task generation and certain configurations.
      */
-    static PropertyLookup COMPATIBILITY_VERSION = new PropertyLookup("UNITY_BUILD_COMPATIBILITY_VERSION", "unityBuild.version", UBSVersion.v160)
+    static PropertyLookup COMPATIBILITY_VERSION = new PropertyLookup("UNITY_BUILD_COMPATIBILITY_VERSION", "unityBuild.version", UBSVersion.v200)
 
     /**
      * The version code used for the Unity application being built

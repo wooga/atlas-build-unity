@@ -56,7 +56,7 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
         hasKeyValue("--build", "UBSBuild", customArgsParts)
         hasKeyValue("--outputPath", new File(projectDir, "build/export/UBSBuild/project").path, customArgsParts)
         hasKeyValue("--logPath", new File(projectDir, "build/logs/unity").path, customArgsParts)
-        hasKeyValue("-executeMethod", (String)UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value, customArgsParts)
+        hasKeyValue("-executeMethod", (String)UnityBuildPluginConventions.EXPORT_METHOD_NAME.value, customArgsParts)
         !customArgsParts.contains("--configPath")
     }
 

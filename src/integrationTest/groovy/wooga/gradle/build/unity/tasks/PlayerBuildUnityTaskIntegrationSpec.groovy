@@ -108,7 +108,7 @@ class PlayerBuildUnityTaskIntegrationSpec extends BuildUnityTaskIntegrationSpec<
 
         where:
         property      | expectedParamter       | expectedValue | compatibility
-        "version"     | "--build-version"      | "3.0.0"       | UBSVersion.v160
-        "versionCode" | "--build-version-code" | "3"           | UBSVersion.v160
+        "version"     | "--build-version"      | "3.0.0"       | UBSVersion.v200
+        "versionCode" | "--build-version-code" | "3"           | UBSVersion.v200
     }
 }

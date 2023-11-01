@@ -64,7 +64,7 @@ class UnityBuildPlugin implements Plugin<Project> {
      * Configures the extension properties
      */
     static void configureExtension(Project project, UnityBuildPluginExtension extension, UnityPluginExtension unityExtension) {
-        extension.exportMethodName.convention(UnityBuildPluginConventions.EXECUTE_METHOD_NAME.getStringValueProvider(project))
+        extension.exportMethodName.convention(UnityBuildPluginConventions.EXPORT_METHOD_NAME.getStringValueProvider(project))
         extension.ubsCompatibilityVersion.convention(UnityBuildPluginConventions.COMPATIBILITY_VERSION.getEnumValueProvider(project, UBSVersion.class))
         extension.defaultConfigName.set(UnityBuildPluginConventions.DEFAULT_CONFIG_NAME.getStringValueProvider(project))
         extension.commitHash.set(UnityBuildPluginConventions.BUILD_COMMIT_HASH.getStringValueProvider(project))
@@ -113,7 +113,6 @@ class UnityBuildPlugin implements Plugin<Project> {
         configurePlayerBuildUnityTasks(project, extension)
         configureGradleBuildTasks(project)
         configureSonarqubeTasks(project)
-        configureFetchSecretsTasks(project)
 
         project.afterEvaluate {
             def defaultConfigName = extension.getDefaultConfigName().getOrNull()
@@ -123,27 +122,17 @@ class UnityBuildPlugin implements Plugin<Project> {
                 def configAsset = new GenericUnityAssetFile(configFile)
 
                 def characterPattern = ':_\\-<>|*\\\\?/ '
-                def baseName = configName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
-                baseName = baseName.replaceAll(~/[$characterPattern]/, '')
-
-                TaskProvider<FetchSecrets> fetchSecretsTask = project.tasks.register("fetchSecrets${baseName}", FetchSecrets) { FetchSecrets t ->
-                    t.group = "secrets"
-                    t.description = "fetches all secrets configured in ${configName}"
-                    t.secretIds.convention(project.provider({
-                        if (configAsset.containsKey(extension.configSecretsKey.get())) {
-                            return configAsset[extension.configSecretsKey.get()] as List<String>
-                        }
-                        []
-                    }))
-                }
+                def buildSuffix = configName.capitalize().replaceAll(~/([$characterPattern]+)([\w])/) { all, delimiter, firstAfter -> "${firstAfter.capitalize()}" }
+                buildSuffix = buildSuffix.replaceAll(~/[$characterPattern]/, '')
 
                 TaskProvider<? extends Task> exportTask = null
-                exportTask = project.tasks.register("export${baseName}", PlayerBuildUnityTask) {
+                exportTask = project.tasks.register("export${buildSuffix}", PlayerBuildUnityTask) {
                     PlayerBuildUnityTask t ->
                         t.group = "build unity"
                         t.description = "exports player targeted gradle project for app config ${configName}"
                         t.configFile.set(configFile)
-                        t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
+                        // TODO: Needed?
+                        //t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                         t.secretsKey.set(secretsExtension.secretsKey)
                 }
 
@@ -155,7 +144,7 @@ class UnityBuildPlugin implements Plugin<Project> {
 
                 // Configure the Gradle Build tasks
                 [baseLifecycleTaskNames, baseLifecycleTaskGroups].transpose().each { String taskName, String groupName ->
-                    def gradleBuild = project.tasks.register("${taskName}${baseName.capitalize()}", GradleBuild) { GradleBuild t ->
+                    def gradleBuild = project.tasks.register("${taskName}${buildSuffix.capitalize()}", GradleBuild) { GradleBuild t ->
                         t.dependsOn exportTask
                         t.group = groupName
                         t.description = "executes :${taskName} task on exported project for config ${configName}"
@@ -163,7 +152,8 @@ class UnityBuildPlugin implements Plugin<Project> {
                         t.initScript.set(extension.exportInitScript)
                         t.buildDirBase.set(extension.exportBuildDirBase)
                         t.cleanBuildDirBeforeBuild.set(extension.cleanBuildDirBeforeBuild)
-                        t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
+                        // TODO: Needed?
+                        //t.secretsFile.set(fetchSecretsTask.flatMap({ it.secretsFile }))
                         t.secretsKey.set(secretsExtension.secretsKey)
                         t.tasks.add(taskName)
                         t.gradleVersion.convention(project.provider({
@@ -285,14 +275,6 @@ class UnityBuildPlugin implements Plugin<Project> {
             task.commitHash.convention(extension.commitHash)
             task.version.convention(extension.version)
             task.versionCode.convention(extension.versionCode)
-        }
-    }
-
-    private static configureFetchSecretsTasks(Project project) {
-        project.tasks.withType(FetchSecrets).configureEach { task ->
-            task.secretsFile.convention(project.provider {
-                project.layout.buildDirectory.dir("secret/${task.name}").get().file("secrets.yml")
-            })
         }
     }
 

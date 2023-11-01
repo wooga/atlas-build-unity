@@ -85,7 +85,7 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
         def result = runTasksSuccessfully(taskToRun)
 
         then:
-        result.standardOutput.contains("-executeMethod ${UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value}")
+        result.standardOutput.contains("-executeMethod ${UnityBuildPluginConventions.EXPORT_METHOD_NAME.value}")
         result.standardOutput.contains(expectedParameters)
 
         where:
@@ -114,8 +114,8 @@ class UnityBuildPluginIntegrationSpec extends UnityIntegrationSpec {
 
         where:
         taskToRun      | expectedMethod                                        | expectedParameters                      | ubsVersion
-        "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
-        "exportCustom" | UnityBuildPluginConventions.EXECUTE_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
+        "exportCustom" | UnityBuildPluginConventions.EXPORT_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | null
+        "exportCustom" | UnityBuildPluginConventions.EXPORT_METHOD_NAME.value | "${UnityCommandLineOption.buildTarget}" | UBSVersion.v160
     }
 
     String convertPropertyToEnvName(String property) {
