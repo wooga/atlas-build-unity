@@ -23,8 +23,6 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.unity.UnityBuildPluginConventions
 import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
-import wooga.gradle.secrets.internal.SecretText
-import wooga.gradle.secrets.internal.Secrets
 
 import javax.crypto.spec.SecretKeySpec
 
@@ -196,16 +194,6 @@ class DefaultBuildUnityIntegrationSpec extends BuildUnityTaskIntegrationSpec<Bui
 
         where:
         secretsMap << [["secretid": "secretvalue"], ["secretid": "secretvalue", "othersecid": "othervalue"]]
-    }
-
-    private static File generateSecretsFile(SecretKeySpec key, Map<String, String> secretsMap) {
-        Secrets secrets = new Secrets()
-        secretsMap.each{secretPair ->
-            secrets.putSecret(secretPair.key, new SecretText(secretPair.value), key)
-        }
-        def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
-        secretsFile.text = secrets.encode()
-        return secretsFile
     }
 
     @Shared

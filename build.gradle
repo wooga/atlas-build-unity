@@ -62,9 +62,6 @@ repositories {
 }
 
 dependencies {
-    api 'software.amazon.awssdk:secretsmanager:[2.16,3['
-    api 'net.wooga.gradle:secrets:[2,3['
-    api "net.wooga.gradle:macos-security:[2,3["
     implementation "net.wooga.gradle:dotnet-sonarqube:[1,2["
     implementation "net.wooga.gradle:unity:[4,5["
     implementation 'com.wooga.gradle:gradle-commons:[1.5,2['

@@ -21,11 +21,6 @@ import spock.lang.Shared
 import spock.lang.Unroll
 import wooga.gradle.build.IntegrationSpec
 import wooga.gradle.build.unity.UnityBuildPlugin
-import wooga.gradle.build.unity.secrets.internal.EncryptionSpecHelper
-import wooga.gradle.secrets.internal.SecretText
-import wooga.gradle.secrets.internal.Secrets
-
-import javax.crypto.spec.SecretKeySpec
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 
@@ -86,7 +81,7 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
     }
 
     def "can execute external gradle build"() {
-        given: "build script with exernal execution task"
+        given: "build script with external execution task"
         buildFile << """
             task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
                 dir = file("${escapedPath(externalDir.path)}")
@@ -166,49 +161,6 @@ class GradleBuildIntegrationSpec extends IntegrationSpec {
         method = useSetter ? "setEnvironment" : "environment"
         message1 = useSetter ? "custom environment variables" : "additional environment variables"
         message2 = useMapAPI ? "provided as map" : "as key value pair"
-    }
-
-    def "can execute external gradle build with provided secrets in environment"() {
-        given: "build script with external execution task"
-        buildFile << """
-            task("externalGradle", type:wooga.gradle.build.unity.tasks.GradleBuild) {
-                dir = file("${escapedPath(externalDir.path)}")
-                tasks = ['printEnv']
-            }
-        """.stripIndent()
-
-        and: "a secrets file an matching key"
-        Secrets secrets = new Secrets()
-        SecretKeySpec key = EncryptionSpecHelper.createSecretKey("some_value")
-        secrets.putSecret(secretId, new SecretText(secretValue), key)
-
-        and: "serialized key and secrets text"
-        def secretsKey = File.createTempFile("atlas-build-unity.GradleBuild", ".key")
-        def secretsFile = File.createTempFile("atlas-build-unity.GradleBuild", ".secrets.yaml")
-
-        secretsKey.bytes = key.encoded
-        secretsFile.text = secrets.encode()
-
-        and: "secrets and key configured in task"
-        buildFile << """
-            import javax.crypto.spec.SecretKeySpec
-            externalGradle.secretsFile = project.file('${escapedPath(secretsFile.path)}')
-            externalGradle.secretsKey = new SecretKeySpec(project.file('${escapedPath(secretsKey.path)}').bytes, 'AES')
-        """.stripIndent()
-
-        and: "future output files"
-        def envOutput = new File(externalDir, "build/env.txt")
-
-        when:
-        runTasksSuccessfully('externalGradle')
-
-        then:
-        envOutput.exists()
-        envOutput.text.contains("${secretId.toUpperCase()}=${secretValue}")
-
-        where:
-        secretId  | secretValue
-        "secret1" | "secret1Value"
     }
 
     def "can execute multiple tasks in external gradle build"() {

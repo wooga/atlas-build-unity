@@ -53,23 +53,6 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
         this.logPath.set(logPath)
     }
 
-    private final RegularFileProperty secretsFile = objects.fileProperty()
-
-    /**
-     * @return The secret file used for resolution during the build process
-     */
-    @Optional
-    @InputFile
-    RegularFileProperty getSecretsFile() {
-        return secretsFile
-    }
-
-    void setSecretsFile(File secretsFile) {
-        this.secretsFile.set(secretsFile)
-    }
-
-    private final Property<String> configName = objects.property(String)
-
     /**
      * @return The name of the configuration file to use. This should be used when no path is specified in {@code configFile}.
      */
@@ -79,11 +62,11 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
         return configName
     }
 
+    private final Property<String> configName = objects.property(String)
+
     void setConfigName(String config) {
         this.configName.set(config)
     }
-
-    private final RegularFileProperty configFile = objects.fileProperty()
 
     /**
      * @return The configuration file for the build. This should be used when no name is specified in {@code config}
@@ -94,13 +77,15 @@ trait UnityBuildEngineSpec extends UnityBuildBaseSpec {
         return configFile
     }
 
+    private final RegularFileProperty configFile = objects.fileProperty()
+
     void setConfigFile(File config) {
         this.configFile.set(config)
     }
 
     // TODO: Elaborate
     /**
-     * @return The files used by the build
+     * @return The files used by the build. Used for skipping the build when there's no asset files found.
      */
     @SkipWhenEmpty
     @IgnoreEmptyDirectories
